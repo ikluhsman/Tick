@@ -35,7 +35,7 @@ Open http://localhost:3000 and register your first account.
 docker run -d --name tick -p 3000:3000 \
   -e NUXT_DATABASE_URL='postgresql://tick:password@db-host:5432/tick' \
   -e NUXT_SESSION_PASSWORD="$(openssl rand -base64 36)" \
-  ghcr.io/OWNER/tick:latest
+  ghcr.io/ikluhsman/tick:latest
 ```
 
 Images are published to GHCR by CI on pushes to `main` (`latest`, `sha-…`) and on `v*` tags (semver).

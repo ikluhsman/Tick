@@ -3,8 +3,8 @@
 # chars — generate with `openssl rand -base64 36`). Compose reads .env automatically.
 services:
   app:
-    image: ghcr.io/OWNER/tick:latest # replace OWNER, or keep `build: .` for a local build
-    build: .
+    image: ghcr.io/ikluhsman/tick:latest # or uncomment `build: .` for a local build
+    # build: .
     restart: unless-stopped
     ports:
       - '${TICK_PORT:-3000}:3000'
