@@ -205,8 +205,10 @@ async function onBulkDelete() {
       <p class="text-[13px] text-muted">Start the timer above, or add a manual entry.</p>
     </div>
 
-    <!-- Dialogs (picker also serves the timer bar while on this page) -->
-    <TimePickerModal />
+    <!-- Dialogs (picker also serves the timer bar while on this page).
+         Order matters: modal slots carry no z-index, so teleport anchor order
+         decides stacking — the picker mounts last to layer above the dialog. -->
     <TimeManualEntryDialog />
+    <TimePickerModal />
   </div>
 </template>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 // Client / Project / Task picker (520px dialog, 12vh from the top).
-// Serves both the timer bar and the Manual-entry dialog: reads
-// uiStore.pickerTarget — 'timer' → timerStore.attach(type, id);
-// 'manual' → writes uiStore.pickerResult for the dialog to consume.
+// Serves the timer bar, the Manual-entry dialog and SelectionBar's "Move to…":
+// reads uiStore.pickerTarget — 'timer' → timerStore.attach(type, id);
+// 'manual' → writes uiStore.pickerResult for the dialog to consume;
+// 'bulk' → entriesStore.bulkReassign on the selection (plus a "No client /
+// project / task" row that clears refs) with an Undo toast.
 // Done tasks are hidden; no match → dashed "Create" row (via catalog store);
 // keyboard ↑↓ ↵ esc; list paginates at 50 with an "n more…" row.
 import type { ChainRef, RefType, SessionUser } from '#shared/types'
@@ -10,6 +12,8 @@ import type { ChainRef, RefType, SessionUser } from '#shared/types'
 const ui = useUiStore()
 const timer = useTimerStore()
 const catalog = useCatalogStore()
+const entriesStore = useEntriesStore()
+const toast = useToast()
 const { user } = useUserSession()
 
 const open = computed({
@@ -144,10 +148,45 @@ function buildChain(refType: RefType, refId: string): ChainRef {
 function pick(refType: RefType, refId: string) {
   if (ui.pickerTarget === 'timer') {
     timer.attach(refType, refId)
+  } else if (ui.pickerTarget === 'bulk') {
+    const chain = buildChain(refType, refId)
+    void bulkMove(refType, refId, chain.taskName ?? chain.projectName ?? chain.clientName ?? 'target')
+    return
   } else {
     ui.pickerResult = buildChain(refType, refId)
   }
   ui.closePicker()
+}
+
+// ── Bulk reassign ("Move to…"): move the selection, toast with Undo ─────────
+const moving = ref(false)
+
+async function bulkMove(refType: RefType | null, refId: string | null, name: string) {
+  if (moving.value) return
+  moving.value = true
+  try {
+    const res = await entriesStore.bulkReassign(refType, refId)
+    ui.closePicker()
+    if (!res) return
+    const n = res.dtos.length
+    toast.add({
+      title: `${n} ${n === 1 ? 'entry' : 'entries'} moved to ${name}`,
+      icon: 'i-lucide-folder-input',
+      color: 'neutral',
+      actions: [{
+        label: 'Undo',
+        color: 'primary',
+        variant: 'outline',
+        onClick: () => {
+          entriesStore.undoReassign(res.prev).catch(() => {})
+        }
+      }]
+    })
+  } catch {
+    // reassign failed — keep the picker open so the user can retry
+  } finally {
+    moving.value = false
+  }
 }
 
 async function createFromSearch() {
@@ -196,9 +235,11 @@ function onOpenAutoFocus(e: Event) {
 </script>
 
 <template>
+  <!-- z-20 keeps the picker above the Manual-entry dialog (modal slots are
+       z-auto, so DOM order would otherwise decide); toasts sit at z-[100]. -->
   <UModal
     v-model:open="open"
-    :ui="{ content: 'top-[12vh] translate-y-0 max-w-[520px]' }"
+    :ui="{ overlay: 'z-20', content: 'top-[12vh] translate-y-0 max-w-[520px] z-20' }"
     :content="{ onOpenAutoFocus }"
     aria-label="Pick a client, project or task"
   >
@@ -230,6 +271,21 @@ function onOpenAutoFocus(e: Event) {
           class="w-full"
           @keydown="onKeydown"
         />
+
+        <!-- Bulk mode: clear the selection's refs -->
+        <button
+          v-if="ui.pickerTarget === 'bulk'"
+          type="button"
+          class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]"
+          :disabled="moving"
+          @click="bulkMove(null, null, 'No client / project / task')"
+        >
+          <span class="size-2 shrink-0 rounded-full border border-dashed border-accented" />
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm text-highlighted">No client / project / task</span>
+            <span class="block truncate text-xs text-muted">Clear the assignment on the selected entries</span>
+          </span>
+        </button>
 
         <!-- Results -->
         <div ref="listEl" class="flex max-h-[340px] flex-col gap-px overflow-y-auto">

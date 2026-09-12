@@ -21,8 +21,10 @@ export const THEME_FONTS: Record<string, string> = {
   'Source Sans 3': "'Source Sans 3', system-ui, sans-serif"
 }
 
-export const THEME_PRIMARIES = ['violet', 'indigo', 'sky', 'teal', 'emerald', 'amber', 'rose', 'fuchsia'] as const
-export const THEME_NEUTRALS = ['slate', 'zinc', 'stone', 'gray', 'neutral'] as const
+// Full Tailwind v4 chromatic palette, spectrum order — matches the Nuxt UI theme picker.
+export const THEME_PRIMARIES = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'] as const
+// Classic five + the four tinted neutrals Tailwind v4 added (OKLCH-tuned undertones).
+export const THEME_NEUTRALS = ['slate', 'zinc', 'stone', 'gray', 'neutral', 'mauve', 'taupe', 'mist', 'olive'] as const
 
 const NOCTURNE: Omit<ThemeSettings, 'preset'> = {
   primary: 'violet',

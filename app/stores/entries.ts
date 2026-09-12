@@ -12,6 +12,19 @@ export interface ManualEntryPayload {
   tags?: string[]
 }
 
+/** PATCH payload — like ManualEntryPayload but ref fields accept null to clear the ref. */
+export type EntryPatch = Partial<Omit<ManualEntryPayload, 'refType' | 'refId'>> & {
+  refType?: RefType | null
+  refId?: string | null
+}
+
+/** Per-entry ref snapshot taken before a bulk reassign, for undo. */
+export interface ReassignPrev {
+  id: string
+  refType: RefType | null
+  refId: string | null
+}
+
 export const useEntriesStore = defineStore('entries', () => {
   const entries = ref<EntryDto[]>([])
   const selection = ref<Set<string>>(new Set())
@@ -71,11 +84,12 @@ export const useEntriesStore = defineStore('entries', () => {
     return dto
   }
 
-  /** PATCH /api/entries/:id (partial fields, e.g. { billable }). */
-  async function updateEntry(id: string, patch: Partial<ManualEntryPayload>) {
+  /** PATCH /api/entries/:id (partial fields, e.g. { billable }). Re-sorts so date edits regroup. */
+  async function updateEntry(id: string, patch: EntryPatch) {
     const dto = await $fetch<EntryDto>(`/api/entries/${id}`, { method: 'PATCH', body: patch })
     const i = entries.value.findIndex(e => e.id === id)
     if (i >= 0) entries.value.splice(i, 1, dto)
+    sortDesc()
     return dto
   }
 
@@ -114,6 +128,41 @@ export const useEntriesStore = defineStore('entries', () => {
     selection.value = new Set()
     await refresh()
     return count
+  }
+
+  /**
+   * POST /api/entries/bulk {action:'reassign'} — moves entries to the deepest
+   * ref (Rule 1); null refType/refId clears the ref. Defaults to the current
+   * selection (and clears it); pass `ids` to act on explicit rows (undo path).
+   * Returns the updated dtos plus a prior-ref snapshot for undo.
+   */
+  async function bulkReassign(refType: RefType | null, refId: string | null, ids?: string[]) {
+    const targetIds = ids ?? [...selection.value]
+    if (!targetIds.length) return null
+    const idSet = new Set(targetIds)
+    const prev: ReassignPrev[] = entries.value
+      .filter(e => idSet.has(e.id))
+      .map(e => ({ id: e.id, refType: e.ref?.refType ?? null, refId: e.ref?.refId ?? null }))
+    const dtos = await $fetch<EntryDto[]>('/api/entries/bulk', {
+      method: 'POST',
+      body: { ids: targetIds, action: 'reassign', refType, refId }
+    })
+    const byId = new Map(dtos.map(d => [d.id, d]))
+    entries.value = entries.value.map(e => byId.get(e.id) ?? e)
+    if (!ids) selection.value = new Set()
+    return { dtos, prev }
+  }
+
+  /** Undo a bulkReassign: restore each entry's previous ref, one call per prior target. */
+  async function undoReassign(prev: ReassignPrev[]) {
+    const groups = new Map<string, { refType: RefType | null, refId: string | null, ids: string[] }>()
+    for (const p of prev) {
+      const key = `${p.refType ?? ''}:${p.refId ?? ''}`
+      const g = groups.get(key)
+      if (g) g.ids.push(p.id)
+      else groups.set(key, { refType: p.refType, refId: p.refId, ids: [p.id] })
+    }
+    for (const g of groups.values()) await bulkReassign(g.refType, g.refId, g.ids)
   }
 
   /** POST /api/restore with a DeleteResult snapshot (undo toast). */
@@ -159,6 +208,8 @@ export const useEntriesStore = defineStore('entries', () => {
     remove,
     bulkDelete,
     bulkBillable,
+    bulkReassign,
+    undoReassign,
     restore,
     applyStoppedEntry,
     toggleSelect,

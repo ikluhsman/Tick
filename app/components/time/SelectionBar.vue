@@ -1,9 +1,11 @@
 <script setup lang="ts">
 // Bulk-action bar shown above the groups when ≥1 row is selected.
-// "n selected · Clear · Mark billable · Delete". Delete goes through a
-// confirmation dialog stating count and total hours (Rule 4), then emits
-// so the page can run the bulk delete and show the undo toast.
+// "n selected · Clear · Mark billable · Move to… · Delete". Delete goes through
+// a confirmation dialog stating count and total hours (Rule 4), then emits
+// so the page can run the bulk delete and show the undo toast. "Move to…"
+// opens the picker in bulk mode (target 'bulk'); the picker runs the reassign.
 const entriesStore = useEntriesStore()
+const ui = useUiStore()
 
 const emit = defineEmits<{ delete: [] }>()
 
@@ -44,6 +46,14 @@ function confirmDelete() {
     <span class="flex-1 text-[13px] text-primary">{{ count }} selected</span>
     <UButton color="primary" variant="ghost" size="sm" label="Clear" @click="entriesStore.clearSelection()" />
     <UButton color="neutral" variant="outline" size="sm" label="Mark billable" @click="markBillable" />
+    <UButton
+      color="neutral"
+      variant="outline"
+      size="sm"
+      icon="i-lucide-folder-input"
+      label="Move to…"
+      @click="ui.openPicker('bulk', 'project')"
+    />
     <UButton
       color="primary"
       variant="outline"

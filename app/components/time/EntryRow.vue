@@ -3,7 +3,8 @@
 // Grid: checkbox | name + chain | time range | $ toggle | duration + amount | actions.
 // Selection + billable talk to the entries store directly; delete bubbles up
 // so the page can show the undo toast (Rule 4); ▶ copies name/ref/billable
-// onto the timer and starts it.
+// onto the timer and starts it; ✎ (and clicking the name) opens the
+// Manual-entry dialog in edit mode via ui.openEdit.
 import type { EntryDto } from '#shared/types'
 
 const props = withDefaults(
@@ -21,6 +22,7 @@ const emit = defineEmits<{ delete: [] }>()
 
 const entriesStore = useEntriesStore()
 const timer = useTimerStore()
+const ui = useUiStore()
 
 const selected = computed(() => entriesStore.selection.has(props.entry.id))
 
@@ -79,7 +81,7 @@ async function startAgain() {
 
 <template>
   <div
-    class="group grid grid-cols-[30px_minmax(0,1fr)_auto_auto_auto_64px] items-center gap-[11px] py-[9px] pr-2 pl-1.5 transition-colors"
+    class="group grid grid-cols-[30px_minmax(0,1fr)_auto_auto_auto_94px] items-center gap-[11px] py-[9px] pr-2 pl-1.5 transition-colors"
     :class="selected ? 'bg-primary/10' : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_4%,transparent)]'"
     :style="first ? undefined : { boxShadow: 'inset 0 1px 0 color-mix(in srgb, var(--ui-text) 6%, transparent)' }"
   >
@@ -95,7 +97,14 @@ async function startAgain() {
     <!-- Name + tags, chain beneath -->
     <div class="flex min-w-0 flex-col gap-0.5">
       <div class="flex min-w-0 items-center gap-2">
-        <span class="truncate text-sm text-highlighted">{{ entry.name }}</span>
+        <button
+          type="button"
+          class="min-w-0 cursor-pointer truncate text-left text-sm text-highlighted hover:underline"
+          title="Edit entry"
+          @click="ui.openEdit(entry)"
+        >
+          {{ entry.name }}
+        </button>
         <UBadge
           v-for="t in entry.tags"
           :key="t"
@@ -159,6 +168,17 @@ async function startAgain() {
         class="size-[30px] justify-center"
         :ui="{ leadingIcon: 'size-[13px]' }"
         @click="startAgain"
+      />
+      <UButton
+        icon="i-lucide-pencil"
+        color="neutral"
+        variant="ghost"
+        square
+        title="Edit entry"
+        aria-label="Edit entry"
+        class="size-[30px] justify-center"
+        :ui="{ leadingIcon: 'size-[13px]' }"
+        @click="ui.openEdit(entry)"
       />
       <UButton
         icon="i-lucide-trash-2"

@@ -3,7 +3,9 @@
 // a live interpretation line; picker-trigger styled as an input; billable
 // toggle showing the client-side rate estimate (server re-resolves per Rule 2).
 // Submits via entriesStore.addManual — the saved entry sorts into its day group.
-import type { ChainRef, SessionUser } from '#shared/types'
+// Doubles as "Edit entry" when ui.editEntry is set: opens prefilled and saves
+// via entriesStore.updateEntry (the row re-sorts into its day group).
+import type { ChainRef, EntryDto, SessionUser } from '#shared/types'
 
 const ui = useUiStore()
 const entriesStore = useEntriesStore()
@@ -29,17 +31,28 @@ const saving = ref(false)
 
 const descInput = useTemplateRef<{ inputRef?: HTMLInputElement }>('descInput')
 
-// Fresh fields every time the dialog opens
+/** Captured on open so the title/labels stay stable through the close animation. */
+const editing = ref<EntryDto | null>(null)
+
+/** ISO timestamp → local "YYYY-MM-DD" for the free-text date field. */
+function toDateInput(iso: string): string {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// Fresh fields every time the dialog opens — prefilled when editing an entry
 watch(() => ui.manualOpen, (v) => {
   if (!v) return
-  desc.value = ''
-  refChain.value = null
-  billable.value = true
-  dateInput.value = ''
-  startInput.value = ''
-  endInput.value = ''
+  const e = ui.editEntry
+  editing.value = e
+  desc.value = e?.name ?? ''
+  refChain.value = e?.ref ? { ...e.ref } : null
+  billable.value = e?.billable ?? true
+  dateInput.value = e ? toDateInput(e.start) : ''
+  startInput.value = e ? formatTime(e.start) : ''
+  endInput.value = e?.end ? formatTime(e.end) : ''
   durInput.value = ''
-  tagsInput.value = ''
+  tagsInput.value = e ? e.tags.join(', ') : ''
   saving.value = false
   ui.pickerResult = null
 })
@@ -132,15 +145,28 @@ async function submit() {
   if (!parsed.value.valid || saving.value) return
   saving.value = true
   try {
-    await entriesStore.addManual({
-      name: desc.value.trim() || 'Untitled entry',
-      refType: refChain.value?.refType,
-      refId: refChain.value?.refId,
-      billable: billable.value,
-      start: parsed.value.start!.toISOString(),
-      end: parsed.value.end!.toISOString(),
-      tags: tags.value
-    })
+    if (editing.value) {
+      // Edit mode — PATCH; null ref fields clear a removed chain
+      await entriesStore.updateEntry(editing.value.id, {
+        name: desc.value.trim() || 'Untitled entry',
+        refType: refChain.value?.refType ?? null,
+        refId: refChain.value?.refId ?? null,
+        billable: billable.value,
+        start: parsed.value.start!.toISOString(),
+        end: parsed.value.end!.toISOString(),
+        tags: tags.value
+      })
+    } else {
+      await entriesStore.addManual({
+        name: desc.value.trim() || 'Untitled entry',
+        refType: refChain.value?.refType,
+        refId: refChain.value?.refId,
+        billable: billable.value,
+        start: parsed.value.start!.toISOString(),
+        end: parsed.value.end!.toISOString(),
+        tags: tags.value
+      })
+    }
     ui.closeManual()
   } catch {
     saving.value = false
@@ -160,11 +186,11 @@ function onOpenAutoFocus(e: Event) {
     v-model:open="open"
     :ui="{ content: 'max-w-[560px]' }"
     :content="{ onOpenAutoFocus }"
-    aria-label="Manual entry"
+    :aria-label="editing ? 'Edit entry' : 'Manual entry'"
   >
     <template #content>
       <div class="flex flex-col gap-4 p-5">
-        <h2 class="text-[17px] font-medium text-highlighted">Manual entry</h2>
+        <h2 class="text-[17px] font-medium text-highlighted">{{ editing ? 'Edit entry' : 'Manual entry' }}</h2>
 
         <UFormField label="What did you work on?">
           <UInput
@@ -249,7 +275,7 @@ function onOpenAutoFocus(e: Event) {
           <UButton
             color="primary"
             variant="outline"
-            label="Add entry"
+            :label="editing ? 'Save' : 'Add entry'"
             :disabled="!parsed.valid"
             :loading="saving"
             @click="submit"

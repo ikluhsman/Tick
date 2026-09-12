@@ -1,16 +1,21 @@
 // UI store — cross-component dialog state.
 // PickerModal (time agent) reads pickerOpen/pickerTarget/pickerTab and writes pickerResult
 // for the manual-entry dialog; the timer bar and pages only flip this state.
+// pickerTarget 'bulk' = SelectionBar's "Move to…" (picker reassigns the selection itself).
+
+export type PickerTarget = 'timer' | 'manual' | 'bulk'
 
 export const useUiStore = defineStore('ui', () => {
   const pickerOpen = ref(false)
-  const pickerTarget = ref<'timer' | 'manual'>('timer')
+  const pickerTarget = ref<PickerTarget>('timer')
   /** Which tab the picker opens on (set by the timer bar's + menu). */
   const pickerTab = ref<RefType>('task')
   /** Set by PickerModal when target is 'manual'; ManualEntryDialog consumes + clears it. */
   const pickerResult = ref<ChainRef | null>(null)
 
   const manualOpen = ref(false)
+  /** When set, ManualEntryDialog opens prefilled in edit mode for this entry. */
+  const editEntry = ref<EntryDto | null>(null)
 
   const cascade = ref<{ open: boolean, kind: 'client' | 'project', id: string | null }>({
     open: false,
@@ -18,7 +23,7 @@ export const useUiStore = defineStore('ui', () => {
     id: null
   })
 
-  function openPicker(target: 'timer' | 'manual', tab: RefType = 'task') {
+  function openPicker(target: PickerTarget, tab: RefType = 'task') {
     pickerTarget.value = target
     pickerTab.value = tab
     pickerOpen.value = true
@@ -29,11 +34,18 @@ export const useUiStore = defineStore('ui', () => {
   }
 
   function openManual() {
+    editEntry.value = null
+    manualOpen.value = true
+  }
+
+  function openEdit(entry: EntryDto) {
+    editEntry.value = entry
     manualOpen.value = true
   }
 
   function closeManual() {
     manualOpen.value = false
+    editEntry.value = null
   }
 
   function openCascade(kind: 'client' | 'project', id: string) {
@@ -50,10 +62,12 @@ export const useUiStore = defineStore('ui', () => {
     pickerTab,
     pickerResult,
     manualOpen,
+    editEntry,
     cascade,
     openPicker,
     closePicker,
     openManual,
+    openEdit,
     closeManual,
     openCascade,
     closeCascade
