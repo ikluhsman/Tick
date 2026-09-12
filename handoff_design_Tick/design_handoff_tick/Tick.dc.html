@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/nocturne-833f5ab6-5f9e-49f4-9730-bc709728daee/styles.css">
+  <script src="_ds/nocturne-833f5ab6-5f9e-49f4-9730-bc709728daee/_ds_bundle.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Manrope:wght@400;500;600&family=Source+Sans+3:wght@400;500;600&display=swap">
+  <style>
+    body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)}
+    a{color:var(--color-accent-300)} a:hover{color:var(--color-accent-400)}
+    @keyframes tickRise{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+    @keyframes tickGlow{0%,100%{box-shadow:0 0 0 1px var(--color-accent),0 0 12px color-mix(in srgb,var(--color-accent) 30%,transparent)}50%{box-shadow:0 0 0 1px var(--color-accent),0 0 26px color-mix(in srgb,var(--color-accent) 65%,transparent)}}
+  </style>
+</helmet>
+<div style="{{ themeStyle }}">
+<div style="display:flex;min-height:100vh;font-size:14px;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body)">
+  <!-- Sidebar -->
+  <aside style="width:224px;flex:none;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:var(--space-6);padding:var(--space-6) var(--space-4);color:var(--color-neutral-200);border-right:1px solid var(--color-divider);background:radial-gradient(circle at 18% 12%, rgba(243,245,254,.7) 0 .8px, transparent 1.4px),radial-gradient(circle at 72% 28%, rgba(243,245,254,.5) 0 .8px, transparent 1.5px),radial-gradient(circle at 40% 46%, rgba(243,245,254,.4) 0 .6px, transparent 1.2px),radial-gradient(circle at 86% 64%, rgba(243,245,254,.6) 0 .8px, transparent 1.4px),radial-gradient(circle at 22% 78%, rgba(243,245,254,.35) 0 .6px, transparent 1.2px),radial-gradient(circle at 60% 90%, rgba(243,245,254,.5) 0 .8px, transparent 1.4px),radial-gradient(circle at 8% 40%, rgba(243,245,254,.35) 0 .6px, transparent 1.1px),radial-gradient(circle at 92% 8%, rgba(243,245,254,.45) 0 .7px, transparent 1.3px),radial-gradient(circle at 55% 62%, rgba(243,245,254,.3) 0 .5px, transparent 1px),linear-gradient(180deg,var(--color-neutral-900) 0%,var(--color-bg) 70%);background-image:{{ sidebarBg }}">
+    <div style="display:flex;align-items:center;gap:10px;padding:0 var(--space-2)">
+      <svg width="42" height="42" viewBox="0 0 64 64" fill="none" stroke="var(--color-accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-label="Tick logo" style="filter:drop-shadow(0 0 6px color-mix(in srgb,var(--color-accent) 45%,transparent))">
+        <circle cx="32" cy="34" r="29" stroke-width="1.2" opacity=".35"/>
+        <path d="M32 5v3M32 60v3M3 34h3M58 34h3" stroke-width="1.6" opacity=".6"/>
+        <circle cx="32" cy="14" r="3.4"/>
+        <path d="M29.6 11.6 27.4 8.8M34.4 11.6 36.6 8.8"/>
+        <ellipse cx="32" cy="35" rx="13" ry="16"/>
+        <path d="M32 21.5v2.4M32 48.5v-2.4M20 35h2.4M44 35h-2.4" stroke-width="1.6"/>
+        <path d="M18.8 30C14.5 28.5 11 29 8 31.5"/>
+        <path d="M18.6 39.5C14 40 10.5 42.5 8.5 46"/>
+        <path d="M23.2 49C20 51.8 17.8 55 17.4 58"/>
+        <path d="M45.2 30C49.5 28.5 53 29 56 31.5"/>
+        <path d="M45.4 39.5C50 40 53.5 42.5 55.5 46"/>
+        <path d="M40.8 49C44 51.8 46.2 55 46.6 58"/>
+        <path d="M32 35 21.5 26" stroke-width="3"/>
+        <path d="M32 35 47.5 18.5" stroke-width="3"/>
+        <path d="M44.6 17.6l3.5 1 .6 3.5" stroke-width="2"/>
+        <circle cx="32" cy="35" r="1.8" fill="var(--color-accent)"/>
+      </svg>
+      <div style="font-family:var(--font-heading);font-weight:500;font-size:20px;letter-spacing:-.02em;line-height:1">Tick</div>
+    </div>
+    <button style="display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--color-divider);border-radius:var(--radius-md);background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left" style-hover="background:color-mix(in srgb,var(--color-text) 6%,transparent)">
+      <span style="width:22px;height:22px;border-radius:var(--radius-sm);background:var(--color-accent-900);color:var(--color-accent-200);display:grid;place-items:center;font-size:10px;font-weight:600">HS</span>
+      <span style="flex:1;font-size:13px">Hollow Studio</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"/></svg>
+    </button>
+    <nav style="display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{ navMain }}" as="n" hint-placeholder-count="4">
+        <button onClick="{{ n.go }}" aria-current="{{ n.current }}" style="display:flex;align-items:center;gap:10px;padding:7px 10px;border:0;border-radius:var(--radius-md);background:{{ n.bg }};color:{{ n.color }};font:inherit;font-size:14px;font-weight:500;cursor:pointer;text-align:left;box-shadow:{{ n.shadow }}" style-hover="background:color-mix(in srgb,var(--color-text) 6%,transparent)">
+          <span style="display:block;width:18px;height:18px;flex:none" dangerouslySetInnerHTML="{{ n.icon }}"></span>
+          <span style="flex:1">{{ n.label }}</span>
+        </button>
+      </sc-for>
+    </nav>
+    <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+      <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-600);padding:0 10px">Manage</div>
+      <nav style="display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ navManage }}" as="n" hint-placeholder-count="4">
+          <button onClick="{{ n.go }}" style="display:flex;align-items:center;gap:10px;padding:7px 10px;border:0;border-radius:var(--radius-md);background:{{ n.bg }};color:{{ n.color }};font:inherit;font-size:14px;font-weight:500;cursor:pointer;text-align:left;box-shadow:{{ n.shadow }}" style-hover="background:color-mix(in srgb,var(--color-text) 6%,transparent)">
+            <span style="display:block;width:18px;height:18px;flex:none" dangerouslySetInnerHTML="{{ n.icon }}"></span>
+            <span style="flex:1">{{ n.label }}</span>
+          </button>
+        </sc-for>
+      </nav>
+    </div>
+    <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:0 var(--space-2)">
+      <span style="width:28px;height:28px;border-radius:50%;background:var(--color-neutral-800);color:var(--color-neutral-200);display:grid;place-items:center;font-size:11px;font-weight:600">MJ</span>
+      <div style="line-height:1.25"><div style="font-size:13px">Mara Juhl</div><div style="font-size:11px;color:var(--color-neutral-500)">Owner · $85/h default</div></div>
+    </div>
+  </aside>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column">
+    <!-- Timer bar -->
+    <div style="position:sticky;top:0;z-index:5;padding:var(--space-4) var(--space-8);background:color-mix(in srgb, var(--color-bg) 86%, transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--color-divider)">
+      <div style="display:flex;align-items:center;gap:var(--space-3);padding:6px 6px 6px 14px;border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);position:relative">
+        <input class="input" value="{{ desc }}" onChange="{{ setDesc }}" onKeyDown="{{ descKey }}" placeholder="What are you working on?" style="flex:1;min-width:0;background:transparent;border:0;font-size:15px;padding:8px 0;min-height:40px"/>
+        <sc-if value="{{ hasRef }}" hint-placeholder-val="{{ false }}">
+          <span class="tag tag-accent" style="gap:6px;font-size:12px;padding:4px 5px 4px 10px;max-width:360px">
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ refChain }}</span>
+            <button onClick="{{ clearRef }}" aria-label="Remove" style="width:18px;height:18px;border:0;border-radius:var(--radius-sm);background:var(--color-accent-700);color:var(--color-accent-100);display:grid;place-items:center;cursor:pointer;padding:0" style-hover="background:var(--color-accent-600)"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          </span>
+        </sc-if>
+        <div style="position:relative">
+          <button class="btn btn-secondary btn-icon" onClick="{{ toggleMenu }}" aria-label="Add client, project or task" title="Add client, project or task" style="width:34px;height:34px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></button>
+          <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:42px;right:0;min-width:230px;padding:4px;border-radius:var(--radius-md);background:var(--color-surface);box-shadow:var(--shadow-md);display:flex;flex-direction:column;gap:2px;animation:tickRise .16s ease-out;z-index:20">
+              <sc-for list="{{ menuItems }}" as="m" hint-placeholder-count="3">
+                <button onClick="{{ m.open }}" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;border-radius:var(--radius-sm);background:transparent;font:inherit;font-size:14px;cursor:pointer;text-align:left;color:inherit" style-hover="background:color-mix(in srgb,var(--color-text) 7%,transparent)">
+                  <span style="width:16px;height:16px;display:block;color:var(--color-accent)" dangerouslySetInnerHTML="{{ m.icon }}"></span>
+                  <span style="flex:1">{{ m.label }}</span>
+                  <span style="font-size:11px;color:var(--color-neutral-500)">{{ m.count }}</span>
+                </button>
+              </sc-for>
+              <div style="padding:6px 10px 4px;font-size:11px;color:var(--color-neutral-500);border-top:1px solid var(--color-divider);margin-top:2px">Type <b style="color:var(--color-neutral-300)">#</b> for tags, <b style="color:var(--color-neutral-300)">@</b> for projects</div>
+            </div>
+          </sc-if>
+        </div>
+        <button class="btn btn-secondary" onClick="{{ toggleBillable }}" style="gap:6px;padding:6px 10px;color:{{ billableColor }};border-color:{{ billableBorder }}" title="Billable" aria-pressed="{{ billable }}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>{{ rateLabel }}</span>
+        </button>
+        <div style="font-family:var(--font-heading);font-weight:500;font-size:24px;letter-spacing:.01em;min-width:118px;text-align:right;font-variant-numeric:tabular-nums;color:{{ timerColor }};padding-right:6px">{{ clock }}</div>
+        <button class="btn btn-primary" onClick="{{ toggleTimer }}" style="height:40px;width:40px;padding:0;border-radius:50%;animation:{{ startAnim }};color:{{ startColor }};border-color:{{ startColor }}" aria-label="{{ startLabel }}">
+          <span style="display:block;width:18px;height:18px" dangerouslySetInnerHTML="{{ startIcon }}"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Time page -->
+    <sc-if value="{{ isTime }}" hint-placeholder-val="{{ true }}">
+      <section data-screen-label="Time" style="padding:var(--space-8) var(--space-8) 120px;display:flex;flex-direction:column;gap:var(--space-6);max-width:1100px">
+        <div style="display:flex;align-items:flex-end;gap:var(--space-4);flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <h1 style="font-size:28px;margin:0 0 2px">Time</h1>
+            <div class="text-muted" style="font-size:13px">{{ weekSummary }}</div>
+          </div>
+          <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap">
+            <div class="seg">
+              <span class="seg-opt" onClick="{{ groupDay }}" style="color:{{ segDayColor }};box-shadow:{{ segDayShadow }};white-space:nowrap">By day</span>
+              <span class="seg-opt" onClick="{{ groupProject }}" style="color:{{ segProjColor }};box-shadow:{{ segProjShadow }};white-space:nowrap">By project</span>
+            </div>
+            <div style="position:relative">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.5"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input class="input" value="{{ filter }}" onChange="{{ setFilter }}" placeholder="Filter, #tag, @project" style="width:240px;padding-left:32px"/>
+            </div>
+            <button class="btn btn-primary" onClick="{{ openManual }}" style="gap:6px;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>Manual entry</button>
+          </div>
+        </div>
+
+        <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:var(--space-3);padding:6px 6px 6px 14px;border-radius:var(--radius-md);background:var(--color-accent-900);color:var(--color-accent-100);animation:tickRise .16s ease-out;box-shadow:0 0 0 1px var(--color-accent-700)">
+            <span style="flex:1;font-size:13px">{{ selectionLabel }}</span>
+            <button class="btn btn-ghost" onClick="{{ clearSelection }}" style="font-size:13px;color:var(--color-accent-200)">Clear</button>
+            <button class="btn btn-secondary" onClick="{{ markBillableSel }}" style="font-size:13px;color:var(--color-accent-100)">Mark billable</button>
+            <button class="btn btn-primary" onClick="{{ askBulkDelete }}" style="font-size:13px;gap:6px;color:var(--color-accent-200);border-color:var(--color-accent-400)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Delete</button>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+            <div style="display:flex;align-items:baseline;gap:var(--space-3);padding:0 var(--space-2)">
+              <h3 style="font-size:16px;margin:0">{{ g.label }}</h3>
+              <span class="text-muted" style="font-size:12px">{{ g.sub }}</span>
+              <span style="margin-left:auto;font-weight:500;font-size:14px;font-variant-numeric:tabular-nums;color:var(--color-neutral-300)">{{ g.total }}</span>
+            </div>
+            <div style="border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);overflow:hidden">
+              <sc-for list="{{ g.entries }}" as="e" hint-placeholder-count="3">
+                <div style="display:grid;grid-template-columns:30px minmax(0,1fr) auto auto auto 64px;align-items:center;gap:var(--space-4);padding:9px var(--space-3) 9px var(--space-2);background:{{ e.rowBg }};box-shadow:{{ e.rowLine }}" style-hover="background:color-mix(in srgb, var(--color-text) 4%, transparent)">
+                  <button onClick="{{ e.toggle }}" aria-label="Select" style="width:18px;height:18px;margin-left:6px;border-radius:var(--radius-sm);border:1.5px solid {{ e.checkBorder }};background:{{ e.checkBg }};display:grid;place-items:center;cursor:pointer;padding:0;color:var(--color-bg)">
+                    <sc-if value="{{ e.selected }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></sc-if>
+                  </button>
+                  <div style="min-width:0;display:flex;flex-direction:column;gap:2px">
+                    <div style="display:flex;align-items:center;gap:8px;min-width:0">
+                      <span style="font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.name }}</span>
+                      <sc-for list="{{ e.tags }}" as="t" hint-placeholder-count="0"><span class="tag tag-neutral" style="font-size:10px;padding:1px 7px">#{{ t }}</span></sc-for>
+                    </div>
+                    <sc-if value="{{ e.hasChain }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-neutral-500);flex-wrap:wrap">
+                        <span style="width:7px;height:7px;border-radius:50%;background:{{ e.dot }};flex:none"></span>
+                        <sc-for list="{{ e.chain }}" as="c" hint-placeholder-count="2"><span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap"><span style="color:{{ c.color }}">{{ c.label }}</span><span style="opacity:.4">{{ c.sep }}</span></span></sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <span class="text-muted" style="font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap">{{ e.range }}</span>
+                  <button onClick="{{ e.toggleBillable }}" title="{{ e.billTitle }}" style="width:26px;height:26px;border-radius:var(--radius-sm);border:1px solid {{ e.billBorder }};display:grid;place-items:center;cursor:pointer;padding:0;background:transparent;color:{{ e.billColor }}" style-hover="background:color-mix(in srgb,var(--color-text) 6%,transparent)">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  </button>
+                  <div style="text-align:right;min-width:84px">
+                    <div style="font-weight:500;font-size:14px;font-variant-numeric:tabular-nums">{{ e.dur }}</div>
+                    <sc-if value="{{ showAmounts }}" hint-placeholder-val="{{ true }}"><div class="text-muted" style="font-size:11px;font-variant-numeric:tabular-nums">{{ e.amount }}</div></sc-if>
+                  </div>
+                  <div style="display:flex;gap:2px">
+                    <button class="btn btn-ghost btn-icon" onClick="{{ e.resume }}" title="Start again" style="width:30px;height:30px"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
+                    <button class="btn btn-ghost btn-icon" onClick="{{ e.remove }}" title="Delete (undo available)" style="width:30px;height:30px;color:var(--color-neutral-500)" style-hover="color:var(--color-accent-300)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ noEntries }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:var(--space-8);text-align:center;border-radius:var(--radius-lg);background:var(--color-surface)">
+            <h3 style="margin:0 0 4px;font-size:18px">Nothing here yet</h3>
+            <p class="text-muted" style="margin:0;font-size:13px">Start the timer above, or add a manual entry.</p>
+          </div>
+        </sc-if>
+      </section>
+    </sc-if>
+
+    <!-- Dashboard -->
+    <sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Dashboard" style="padding:var(--space-8) var(--space-8) 120px;display:flex;flex-direction:column;gap:var(--space-6);max-width:1100px">
+        <div>
+          <h1 style="font-size:28px;margin:0 0 2px">Good afternoon, Mara</h1>
+          <div class="text-muted" style="font-size:13px">{{ dashDate }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:var(--space-3)">
+          <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+            <div class="card elev-sm" style="gap:3px;padding:var(--space-4) var(--space-6)">
+              <div class="card-kicker">{{ s.label }}</div>
+              <div style="font-weight:500;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+              <div class="card-meta">{{ s.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:var(--space-3)">
+          <div class="card elev-sm" style="padding:var(--space-6)">
+            <div style="display:flex;align-items:baseline;gap:10px"><div class="card-title" style="font-size:15px">Activity</div><span class="card-meta">last 16 weeks · brighter means more time logged</span></div>
+            <div style="display:flex;gap:10px;margin-top:8px">
+              <div style="display:flex;flex-direction:column;gap:7px;font-size:10px;color:var(--color-neutral-600);width:14px">
+                <sc-for list="{{ dayLetters }}" as="d" hint-placeholder-count="5"><span style="height:13px;line-height:13px">{{ d }}</span></sc-for>
+              </div>
+              <div style="display:flex;gap:7px;flex:1;justify-content:space-between">
+                <sc-for list="{{ activity }}" as="w" hint-placeholder-count="16">
+                  <div style="display:flex;flex-direction:column;gap:7px">
+                    <sc-for list="{{ w.days }}" as="d" hint-placeholder-count="5">
+                      <span title="{{ d.title }}" style="width:13px;height:13px;border-radius:50%;background:var(--color-accent);opacity:{{ d.opacity }};box-shadow:{{ d.glow }}"></span>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div class="card elev-sm" style="padding:var(--space-6);align-items:center">
+            <div class="card-title" style="align-self:flex-start;font-size:15px">Billable this week</div>
+            <div style="position:relative;width:140px;height:140px;margin:2px 0">
+              <svg viewBox="0 0 120 120" width="140" height="140" style="transform:rotate(-90deg)">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-neutral-800)" stroke-width="8"/>
+                <circle cx="60" cy="60" r="50" fill="none" stroke="var(--color-accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="{{ donutDash }}" style="filter:drop-shadow(0 0 6px color-mix(in srgb,var(--color-accent) 50%,transparent))"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:grid;place-items:center;text-align:center"><div><div style="font-weight:500;font-size:24px;line-height:1">{{ donutPct }}</div><div class="text-muted" style="font-size:11px">billable</div></div></div>
+            </div>
+            <div style="display:flex;gap:var(--space-4);font-size:12px">
+              <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--color-accent)"></span>{{ billableHrs }} billable</span>
+              <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--color-neutral-700)"></span>{{ nonBillableHrs }} not</span>
+            </div>
+          </div>
+        </div>
+        <div class="card elev-sm" style="padding:var(--space-6)">
+          <div style="display:flex;align-items:baseline;gap:10px"><div class="card-title" style="font-size:15px">This week</div><span class="card-meta">Mon 7 – Sun 13 Sep</span></div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
+            <sc-for list="{{ week }}" as="d" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:34px minmax(0,1fr) 52px;align-items:center;gap:12px;font-size:12px">
+                <span style="color:{{ d.labelColor }}">{{ d.label }}</span>
+                <div style="height:8px;border-radius:999px;background:var(--color-neutral-900);overflow:hidden;display:flex;gap:2px">
+                  <span style="height:100%;width:{{ d.billPct }}%;background:var(--color-accent);border-radius:999px"></span>
+                  <span style="height:100%;width:{{ d.nonPct }}%;background:var(--color-neutral-700);border-radius:999px"></span>
+                </div>
+                <span style="text-align:right;font-variant-numeric:tabular-nums;font-weight:500">{{ d.hours }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- Projects & tasks -->
+    <sc-if value="{{ isProjects }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Projects" style="padding:var(--space-8) var(--space-8) 120px;display:flex;flex-direction:column;gap:var(--space-6);max-width:1100px">
+        <div style="display:flex;align-items:flex-end;gap:var(--space-4)">
+          <div style="flex:1"><h1 style="font-size:28px;margin:0 0 2px">Projects & tasks</h1><div class="text-muted" style="font-size:13px">{{ projSummary }}</div></div>
+          <button class="btn btn-secondary">New task</button>
+          <button class="btn btn-primary">New project</button>
+        </div>
+        <sc-for list="{{ projectRows }}" as="p" hint-placeholder-count="3">
+          <div style="border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);overflow:hidden">
+            <button onClick="{{ p.toggle }}" style="display:grid;grid-template-columns:minmax(0,1fr) 220px 90px 24px;align-items:center;gap:var(--space-6);width:100%;padding:12px var(--space-6);border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer" style-hover="background:color-mix(in srgb,var(--color-text) 4%,transparent)">
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:{{ p.dot }}"></span><span style="font-weight:500;font-size:15px">{{ p.name }}</span><span class="tag tag-neutral" style="font-size:10px">{{ p.billTag }}</span></div>
+                <div style="font-size:12px;color:var(--color-neutral-500);margin-left:16px">{{ p.client }} · {{ p.taskCount }} · {{ p.rate }}</div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-neutral-500);margin-bottom:4px"><span>{{ p.tracked }} tracked</span><span>{{ p.estLabel }}</span></div>
+                <div style="height:6px;border-radius:999px;background:var(--color-neutral-900);overflow:hidden"><span style="display:block;height:100%;width:{{ p.pct }}%;background:{{ p.barColor }};border-radius:999px"></span></div>
+              </div>
+              <div style="text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--color-neutral-300)">{{ p.amount }}</div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate({{ p.chev }}deg);transition:transform .15s;opacity:.6"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <sc-if value="{{ p.open }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:2px var(--space-6) var(--space-4) var(--space-6);display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ p.tasks }}" as="t" hint-placeholder-count="2">
+                  <div style="display:grid;grid-template-columns:22px minmax(0,1fr) 110px 80px 30px;align-items:center;gap:var(--space-4);padding:7px 0 7px 8px;border-top:1px solid color-mix(in srgb,var(--color-text) 6%,transparent)">
+                    <button onClick="{{ t.toggleDone }}" aria-label="Mark complete" style="width:16px;height:16px;border-radius:50%;border:1.5px solid {{ t.doneBorder }};background:{{ t.doneBg }};display:grid;place-items:center;cursor:pointer;padding:0;color:var(--color-bg)"><sc-if value="{{ t.done }}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></sc-if></button>
+                    <span style="font-size:13px;text-decoration:{{ t.strike }};color:{{ t.color }}">{{ t.name }}</span>
+                    <span style="font-size:12px;color:var(--color-neutral-500)">{{ t.entries }}</span>
+                    <span style="font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--color-neutral-300)">{{ t.tracked }}</span>
+                    <button class="btn btn-ghost btn-icon" onClick="{{ t.start }}" title="Start timer on this task" style="width:28px;height:28px"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
+                  </div>
+                </sc-for>
+                <button style="align-self:flex-start;margin-top:6px;padding:5px 8px;border:0;background:transparent;color:var(--color-accent-300);font:inherit;font-size:12px;cursor:pointer;border-radius:var(--radius-sm)" style-hover="background:color-mix(in srgb,var(--color-accent) 10%,transparent)">+ Add task</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+          <div style="display:flex;align-items:baseline;gap:var(--space-3);padding:0 var(--space-2)"><h3 style="font-size:16px;margin:0">Standalone tasks</h3><span class="text-muted" style="font-size:12px">no project — still billable if you say so</span></div>
+          <div style="border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);padding:4px var(--space-6)">
+            <sc-for list="{{ looseTasks }}" as="t" hint-placeholder-count="1">
+              <div style="display:grid;grid-template-columns:22px minmax(0,1fr) 110px 80px 30px;align-items:center;gap:var(--space-4);padding:8px 0 8px 8px">
+                <button onClick="{{ t.toggleDone }}" aria-label="Mark complete" style="width:16px;height:16px;border-radius:50%;border:1.5px solid {{ t.doneBorder }};background:{{ t.doneBg }};display:grid;place-items:center;cursor:pointer;padding:0;color:var(--color-bg)"><sc-if value="{{ t.done }}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></sc-if></button>
+                <span style="font-size:13px;text-decoration:{{ t.strike }};color:{{ t.color }}">{{ t.name }}</span>
+                <span style="font-size:12px;color:var(--color-neutral-500)">{{ t.entries }}</span>
+                <span style="font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--color-neutral-300)">{{ t.tracked }}</span>
+                <button class="btn btn-ghost btn-icon" onClick="{{ t.start }}" title="Start timer on this task" style="width:28px;height:28px"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- Clients -->
+    <sc-if value="{{ isClients }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Clients" style="padding:var(--space-8) var(--space-8) 120px;display:flex;flex-direction:column;gap:var(--space-6);max-width:1100px">
+        <div style="display:flex;align-items:flex-end;gap:var(--space-4)">
+          <div style="flex:1"><h1 style="font-size:28px;margin:0 0 2px">Clients</h1><div class="text-muted" style="font-size:13px">Rates set here are inherited by projects without their own rate.</div></div>
+          <button class="btn btn-primary">New client</button>
+        </div>
+        <div style="border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) 1fr 1fr 1fr 1fr 70px;gap:var(--space-4);padding:8px var(--space-6);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);border-bottom:1px solid var(--color-divider)">
+            <span>Client</span><span>Rate</span><span>Projects</span><span>Tasks</span><span>Tracked</span><span></span>
+          </div>
+          <sc-for list="{{ clientRows }}" as="c" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:minmax(0,1.4fr) 1fr 1fr 1fr 1fr 70px;gap:var(--space-4);align-items:center;padding:11px var(--space-6);border-bottom:1px solid color-mix(in srgb,var(--color-text) 6%,transparent);font-size:13px" style-hover="background:color-mix(in srgb,var(--color-text) 4%,transparent)">
+              <div style="display:flex;align-items:center;gap:10px"><span style="width:26px;height:26px;border-radius:50%;background:{{ c.dot }};display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--color-bg)">{{ c.initials }}</span><span style="font-weight:500;font-size:14px">{{ c.name }}</span></div>
+              <span style="color:{{ c.rateColor }}">{{ c.rate }}</span>
+              <span>{{ c.projects }}</span>
+              <span>{{ c.tasks }}</span>
+              <span style="font-variant-numeric:tabular-nums">{{ c.tracked }} <span class="text-muted">· {{ c.amount }}</span></span>
+              <div style="display:flex;gap:2px;justify-content:flex-end">
+                <button class="btn btn-ghost btn-icon" title="Edit" style="width:30px;height:30px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+                <button class="btn btn-ghost btn-icon" onClick="{{ c.askDelete }}" title="Delete" style="width:30px;height:30px;color:var(--color-neutral-500)" style-hover="color:var(--color-accent-300)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- Reports -->
+    <sc-if value="{{ isReports }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Reports" style="padding:var(--space-8) var(--space-8) 120px;display:flex;flex-direction:column;gap:var(--space-6);max-width:1100px">
+        <div style="display:flex;align-items:flex-end;gap:var(--space-4);flex-wrap:wrap">
+          <div style="flex:1;min-width:200px"><h1 style="font-size:28px;margin:0 0 2px">Reports</h1><div class="text-muted" style="font-size:13px">{{ repRangeLabel }}</div></div>
+          <div style="display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap">
+            <div class="seg">
+              <sc-for list="{{ repRanges }}" as="o" hint-placeholder-count="3"><span class="seg-opt" onClick="{{ o.go }}" style="white-space:nowrap;color:{{ o.color }};box-shadow:{{ o.shadow }}">{{ o.label }}</span></sc-for>
+            </div>
+            <div class="seg">
+              <sc-for list="{{ repBillFilters }}" as="o" hint-placeholder-count="3"><span class="seg-opt" onClick="{{ o.go }}" style="white-space:nowrap;color:{{ o.color }};box-shadow:{{ o.shadow }}">{{ o.label }}</span></sc-for>
+            </div>
+            <button class="btn btn-secondary" style="gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>CSV</button>
+            <button class="btn btn-primary" style="gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l5 5v13H6z"/><path d="M14 3v6h6"/></svg>Export PDF</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--space-3)">
+          <sc-for list="{{ repStats }}" as="s" hint-placeholder-count="4">
+            <div class="card elev-sm" style="gap:3px;padding:var(--space-4) var(--space-6)">
+              <div class="card-kicker">{{ s.label }}</div>
+              <div style="font-weight:500;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums">{{ s.value }}</div>
+              <div class="card-meta">{{ s.sub }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div class="card elev-sm" style="padding:var(--space-6)">
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+            <div class="card-title" style="font-size:15px">Hours by day</div>
+            <span class="card-meta">stacked by {{ repGroupLabel }}</span>
+            <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--color-neutral-400)">
+              <sc-for list="{{ repLegend }}" as="l" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:2px;background:{{ l.color }}"></span>{{ l.label }}</span></sc-for>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat({{ repDayCount }},minmax(0,1fr));gap:6px;align-items:end;height:180px;margin-top:var(--space-4);padding-bottom:22px;position:relative">
+            <sc-for list="{{ repDays }}" as="d" hint-placeholder-count="7">
+              <div style="display:flex;flex-direction:column-reverse;gap:2px;height:100%;position:relative;justify-content:flex-start">
+                <sc-for list="{{ d.stack }}" as="seg" hint-placeholder-count="2"><span title="{{ seg.title }}" style="display:block;height:{{ seg.pct }}%;background:{{ seg.color }};border-radius:3px;min-height:{{ seg.min }}px"></span></sc-for>
+                <span style="position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:11px;color:{{ d.labelColor }}">{{ d.label }}</span>
+                <span style="position:absolute;top:-16px;left:0;right:0;text-align:center;font-size:10px;color:var(--color-neutral-500);font-variant-numeric:tabular-nums">{{ d.total }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+          <div style="display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-2)">
+            <h3 style="font-size:16px;margin:0">Breakdown</h3>
+            <div class="seg" style="margin-left:auto">
+              <sc-for list="{{ repGroups }}" as="o" hint-placeholder-count="4"><span class="seg-opt" onClick="{{ o.go }}" style="white-space:nowrap;color:{{ o.color }};box-shadow:{{ o.shadow }}">{{ o.label }}</span></sc-for>
+            </div>
+          </div>
+          <div style="border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);overflow:hidden">
+            <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 80px 80px 90px 90px;gap:var(--space-4);padding:8px var(--space-6);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);border-bottom:1px solid var(--color-divider)">
+              <span>{{ repGroupLabel }}</span><span>Share</span><span style="text-align:right">Entries</span><span style="text-align:right">Hours</span><span style="text-align:right">Billable</span><span style="text-align:right">Amount</span>
+            </div>
+            <sc-for list="{{ repRows }}" as="r" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 80px 80px 90px 90px;gap:var(--space-4);align-items:center;padding:10px var(--space-6);border-bottom:1px solid color-mix(in srgb,var(--color-text) 6%,transparent);font-size:13px" style-hover="background:color-mix(in srgb,var(--color-text) 4%,transparent)">
+                <div style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:8px;height:8px;border-radius:2px;background:{{ r.color }};flex:none"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.label }}</span><span class="text-muted" style="font-size:11px;white-space:nowrap">{{ r.sub }}</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:6px;border-radius:999px;background:var(--color-neutral-900);overflow:hidden"><span style="display:block;height:100%;width:{{ r.sharePct }}%;background:{{ r.color }};border-radius:999px"></span></div><span style="font-size:11px;color:var(--color-neutral-500);width:32px;text-align:right;font-variant-numeric:tabular-nums">{{ r.share }}</span></div>
+                <span style="text-align:right;color:var(--color-neutral-400);font-variant-numeric:tabular-nums">{{ r.count }}</span>
+                <span style="text-align:right;font-variant-numeric:tabular-nums;font-weight:500">{{ r.hours }}</span>
+                <span style="text-align:right;font-variant-numeric:tabular-nums;color:var(--color-accent-300)">{{ r.billable }}</span>
+                <span style="text-align:right;font-variant-numeric:tabular-nums">{{ r.amount }}</span>
+              </div>
+            </sc-for>
+            <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 80px 80px 90px 90px;gap:var(--space-4);padding:10px var(--space-6);font-size:13px;font-weight:500">
+              <span>Total</span><span></span><span style="text-align:right;color:var(--color-neutral-400)">{{ repTotal.count }}</span><span style="text-align:right;font-variant-numeric:tabular-nums">{{ repTotal.hours }}</span><span style="text-align:right;font-variant-numeric:tabular-nums;color:var(--color-accent-300)">{{ repTotal.billable }}</span><span style="text-align:right;font-variant-numeric:tabular-nums">{{ repTotal.amount }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- Settings · Appearance -->
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Settings" style="padding:var(--space-8) var(--space-8) 120px;display:flex;flex-direction:column;gap:var(--space-8);max-width:1100px">
+        <div style="display:flex;align-items:flex-end;gap:var(--space-4);flex-wrap:wrap">
+          <div style="flex:1;min-width:200px"><h1 style="font-size:28px;margin:0 0 2px">Settings</h1><div class="text-muted" style="font-size:13px">Appearance applies live to the whole app and is saved per user.</div></div>
+          <div style="display:flex;gap:var(--space-3)">
+            <button class="btn btn-secondary" onClick="{{ themeReset }}">Reset</button>
+            <button class="btn btn-primary" style="gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>Copy app.config.ts</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:var(--space-3);border-bottom:1px solid var(--color-divider)">
+          <sc-for list="{{ settingsTabs }}" as="t" hint-placeholder-count="5"><span style="padding:8px 4px;font-size:13px;color:{{ t.color }};box-shadow:{{ t.shadow }}">{{ t.label }}</span></sc-for>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-8);align-items:start">
+          <div style="display:flex;flex-direction:column;gap:var(--space-8)">
+            <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+              <div><h3 style="font-size:15px;margin:0">Presets</h3><span class="text-muted" style="font-size:12px">A starting point — every control below still applies on top.</span></div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--space-3)">
+                <sc-for list="{{ presets }}" as="p" hint-placeholder-count="5">
+                  <button onClick="{{ p.apply }}" style="display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid {{ p.border }};border-radius:var(--radius-md);background:{{ p.bg }};color:{{ p.text }};cursor:pointer;text-align:left;font:inherit;box-shadow:{{ p.shadow }}">
+                    <span style="display:flex;gap:4px"><span style="width:18px;height:18px;border-radius:50%;background:{{ p.accent }}"></span><span style="width:18px;height:18px;border-radius:50%;background:{{ p.surface }};border:1px solid {{ p.border }}"></span><span style="flex:1"></span><span style="width:26px;height:18px;border-radius:{{ p.r }}px;border:1px solid {{ p.accent }}"></span></span>
+                    <span style="font-size:13px;font-weight:500;font-family:{{ p.font }}">{{ p.name }}</span>
+                    <span style="font-size:11px;opacity:.6">{{ p.sub }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+              <div style="display:flex;align-items:baseline;gap:8px"><h3 style="font-size:15px;margin:0">Primary</h3><span class="text-muted" style="font-size:12px">{{ theme.primary }}</span></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ primaries }}" as="c" hint-placeholder-count="8">
+                  <button onClick="{{ c.pick }}" title="{{ c.name }}" aria-label="{{ c.name }}" style="width:32px;height:32px;border-radius:50%;background:{{ c.swatch }};border:2px solid var(--color-bg);cursor:pointer;padding:0;box-shadow:{{ c.ring }}"></button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+              <div style="display:flex;align-items:baseline;gap:8px"><h3 style="font-size:15px;margin:0">Neutral</h3><span class="text-muted" style="font-size:12px">{{ theme.neutral }}</span></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ neutrals }}" as="c" hint-placeholder-count="5">
+                  <button onClick="{{ c.pick }}" title="{{ c.name }}" aria-label="{{ c.name }}" style="width:32px;height:32px;border-radius:50%;background:{{ c.swatch }};border:2px solid var(--color-bg);cursor:pointer;padding:0;box-shadow:{{ c.ring }}"></button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6)">
+              <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+                <h3 style="font-size:15px;margin:0">Radius</h3>
+                <div class="seg"><sc-for list="{{ radii }}" as="o" hint-placeholder-count="5"><span class="seg-opt" onClick="{{ o.go }}" style="white-space:nowrap;color:{{ o.color }};box-shadow:{{ o.shadow }};padding:7px 10px">{{ o.label }}</span></sc-for></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+                <h3 style="font-size:15px;margin:0">Mode</h3>
+                <div class="seg"><sc-for list="{{ modes }}" as="o" hint-placeholder-count="3"><span class="seg-opt" onClick="{{ o.go }}" style="white-space:nowrap;color:{{ o.color }};box-shadow:{{ o.shadow }}">{{ o.label }}</span></sc-for></div>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+              <h3 style="font-size:15px;margin:0">Font</h3>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ fonts }}" as="f" hint-placeholder-count="5">
+                  <button onClick="{{ f.pick }}" style="display:flex;align-items:center;gap:12px;padding:8px 10px;border:1px solid {{ f.border }};border-radius:var(--radius-md);background:transparent;color:inherit;font-family:{{ f.family }};cursor:pointer;text-align:left" style-hover="background:color-mix(in srgb,var(--color-text) 6%,transparent)">
+                    <span style="font-size:15px;flex:1">{{ f.name }}</span><span style="font-size:12px;color:var(--color-neutral-500)">Aa 0123 · 2h 30m</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+              <h3 style="font-size:15px;margin:0">Sidebar</h3>
+              <div class="seg"><sc-for list="{{ starOpts }}" as="o" hint-placeholder-count="3"><span class="seg-opt" onClick="{{ o.go }}" style="white-space:nowrap;color:{{ o.color }};box-shadow:{{ o.shadow }}">{{ o.label }}</span></sc-for></div>
+            </div>
+          </div>
+
+          <!-- Live sample + config -->
+          <div style="position:sticky;top:96px;display:flex;flex-direction:column;gap:var(--space-4)">
+            <div class="card elev-sm" style="padding:var(--space-6);gap:var(--space-4)">
+              <div style="display:flex;align-items:center;gap:8px"><div class="card-title" style="font-size:15px;flex:1">Sample</div><span class="tag tag-accent">billable</span><span class="tag tag-neutral">#design</span></div>
+              <div style="display:flex;gap:8px;align-items:center;padding:6px 6px 6px 12px;border-radius:var(--radius-lg);background:var(--color-bg);box-shadow:var(--shadow-sm)"><span style="flex:1;font-size:14px;color:var(--color-neutral-500)">What are you working on?</span><span style="font-weight:500;font-size:18px;color:var(--color-neutral-500);font-variant-numeric:tabular-nums">00:00:00</span><span class="btn btn-primary" style="width:34px;height:34px;padding:0;border-radius:50%"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg></span></div>
+              <div style="display:flex;gap:8px"><span class="btn btn-primary">Primary</span><span class="btn btn-secondary">Secondary</span><span class="btn btn-ghost">Ghost</span></div>
+              <input class="input" placeholder="Input" value="Hero layout pass" readOnly="{{ true }}"/>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <sc-for list="{{ sampleBars }}" as="d" hint-placeholder-count="3">
+                  <div style="display:grid;grid-template-columns:30px minmax(0,1fr) 40px;align-items:center;gap:10px;font-size:12px"><span style="color:var(--color-neutral-500)">{{ d.label }}</span><div style="height:8px;border-radius:999px;background:var(--color-neutral-900);overflow:hidden;display:flex;gap:2px"><span style="height:100%;width:{{ d.a }}%;background:var(--color-accent);border-radius:999px"></span><span style="height:100%;width:{{ d.b }}%;background:var(--color-neutral-700);border-radius:999px"></span></div><span style="text-align:right;font-variant-numeric:tabular-nums">{{ d.h }}</span></div>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:3px"><sc-for list="{{ rampPreview }}" as="c" hint-placeholder-count="9"><span title="{{ c.name }}" style="flex:1;height:14px;border-radius:3px;background:{{ c.color }}"></span></sc-for></div>
+            </div>
+            <div class="card elev-sm" style="padding:var(--space-4) var(--space-6);gap:6px">
+              <div class="card-kicker">app.config.ts</div>
+              <pre style="margin:0;font-size:12px;line-height:1.5;color:var(--color-neutral-300);white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace">{{ configText }}</pre>
+            </div>
+            <div style="font-size:11px;color:var(--color-neutral-500);line-height:1.5;padding:0 4px">Implementation note: this page is a design of Nuxt UI's theme picker. Build it with Nuxt UI components — <b style="color:var(--color-neutral-300)">UColorPicker</b>-style swatch rows bound to <b style="color:var(--color-neutral-300)">app.config.ts → ui.colors.primary / neutral</b>, <b style="color:var(--color-neutral-300)">URadioGroup</b>/<b style="color:var(--color-neutral-300)">UTabs</b> for radius and mode (`--ui-radius`, `useColorMode()`), <b style="color:var(--color-neutral-300)">USelectMenu</b> for the font, and ship the presets as named app.config overrides. Tailwind's own palettes are the color source; the ramps here approximate them.</div>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <!-- Calendar -->
+    <sc-if value="{{ isCalendar }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Calendar" style="padding:var(--space-8) var(--space-8) 120px;display:flex;flex-direction:column;gap:var(--space-6);max-width:1200px">
+        <div style="display:flex;align-items:flex-end;gap:var(--space-4);flex-wrap:wrap">
+          <div style="flex:1;min-width:200px"><h1 style="font-size:28px;margin:0 0 2px">Calendar</h1><div class="text-muted" style="font-size:13px">{{ calSummary }}</div></div>
+          <div style="display:flex;gap:var(--space-3);align-items:center">
+            <div class="seg"><span class="seg-opt" style="white-space:nowrap;color:var(--color-accent);box-shadow:inset 0 0 0 1px var(--color-accent)">Week</span><span class="seg-opt" style="white-space:nowrap">Day</span></div>
+            <button class="btn btn-secondary btn-icon" onClick="{{ calPrev }}" aria-label="Previous week"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+            <button class="btn btn-secondary" onClick="{{ calToday }}" style="white-space:nowrap">Today</button>
+            <button class="btn btn-secondary btn-icon" onClick="{{ calNext }}" aria-label="Next week"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+            <span style="font-weight:500;font-size:15px;min-width:150px">{{ calTitle }}</span>
+          </div>
+        </div>
+        <div style="border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);overflow:hidden">
+          <div style="display:grid;grid-template-columns:52px repeat(7,minmax(0,1fr));border-bottom:1px solid var(--color-divider)">
+            <div></div>
+            <sc-for list="{{ calDays }}" as="d" hint-placeholder-count="7">
+              <div style="padding:10px 8px 8px;display:flex;flex-direction:column;gap:2px;border-left:1px solid color-mix(in srgb,var(--color-text) 6%,transparent)">
+                <span style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:{{ d.labelColor }}">{{ d.wd }}</span>
+                <span style="display:flex;align-items:baseline;gap:8px"><span style="font-weight:500;font-size:18px;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;margin-left:-6px;color:{{ d.numColor }};box-shadow:{{ d.numRing }}">{{ d.num }}</span><span style="font-size:11px;color:var(--color-neutral-500);font-variant-numeric:tabular-nums">{{ d.total }}</span></span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:52px repeat(7,minmax(0,1fr));position:relative;height:{{ calHeight }}px">
+            <div style="position:relative">
+              <sc-for list="{{ calHours }}" as="h" hint-placeholder-count="12"><span style="position:absolute;top:{{ h.top }}px;right:8px;transform:translateY(-50%);font-size:10px;color:var(--color-neutral-500);font-variant-numeric:tabular-nums">{{ h.label }}</span></sc-for>
+            </div>
+            <sc-for list="{{ calDays }}" as="d" hint-placeholder-count="7">
+              <div style="position:relative;border-left:1px solid color-mix(in srgb,var(--color-text) 6%,transparent);background:{{ d.colBg }}">
+                <sc-for list="{{ calHours }}" as="h" hint-placeholder-count="12"><span style="position:absolute;left:0;right:0;top:{{ h.top }}px;height:1px;background:color-mix(in srgb,var(--color-text) 5%,transparent)"></span></sc-for>
+                <sc-for list="{{ d.blocks }}" as="b" hint-placeholder-count="2">
+                  <button onClick="{{ b.resume }}" title="{{ b.title }}" style="position:absolute;left:3px;right:3px;top:{{ b.top }}px;height:{{ b.h }}px;padding:4px 6px;border:0;border-left:2px solid {{ b.edge }};border-radius:var(--radius-sm);background:{{ b.bg }};color:var(--color-text);font:inherit;text-align:left;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;gap:1px" style-hover="filter:brightness(1.12)">
+                    <span style="font-size:11px;font-weight:500;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.name }}</span>
+                    <span style="font-size:10px;color:var(--color-neutral-400);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.sub }}</span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ d.isToday }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:0;right:0;top:{{ nowTop }}px;height:1px;background:var(--color-accent);box-shadow:0 0 6px var(--color-accent)"><span style="position:absolute;left:-3px;top:-2.5px;width:6px;height:6px;border-radius:50%;background:var(--color-accent)"></span></span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div class="text-muted" style="font-size:12px">Drag on empty space to create an entry, drag a block's edge to resize, drag the block to move. Click a block to start the timer again with the same task.</div>
+      </section>
+    </sc-if>
+
+    <!-- Tags -->
+    <sc-if value="{{ isTags }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Tags" style="padding:var(--space-8) var(--space-8) 120px;display:flex;flex-direction:column;gap:var(--space-6);max-width:1100px">
+        <div style="display:flex;align-items:flex-end;gap:var(--space-4);flex-wrap:wrap">
+          <div style="flex:1;min-width:200px"><h1 style="font-size:28px;margin:0 0 2px">Tags</h1><div class="text-muted" style="font-size:13px">Free-form labels across clients and projects. Type <b style="color:var(--color-neutral-300)">#tag</b> anywhere an entry is named.</div></div>
+          <div style="display:flex;gap:var(--space-2)">
+            <input class="input" value="{{ newTag }}" onChange="{{ setNewTag }}" onKeyDown="{{ newTagKey }}" placeholder="New tag" style="width:180px"/>
+            <button class="btn btn-primary" onClick="{{ addTag }}" style="white-space:nowrap">Add</button>
+          </div>
+        </div>
+        <div style="border-radius:var(--radius-lg);background:var(--color-surface);box-shadow:var(--shadow-sm);overflow:hidden">
+          <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 80px 90px 110px 70px;gap:var(--space-4);padding:8px var(--space-6);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-500);border-bottom:1px solid var(--color-divider)">
+            <span>Tag</span><span>Used on</span><span style="text-align:right">Entries</span><span style="text-align:right">Hours</span><span>Last used</span><span></span>
+          </div>
+          <sc-for list="{{ tagRows }}" as="t" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1.2fr) 80px 90px 110px 70px;gap:var(--space-4);align-items:center;padding:10px var(--space-6);border-bottom:1px solid color-mix(in srgb,var(--color-text) 6%,transparent);font-size:13px" style-hover="background:color-mix(in srgb,var(--color-text) 4%,transparent)">
+              <span><span class="tag tag-neutral" style="font-size:12px">#{{ t.name }}</span></span>
+              <span style="font-size:12px;color:var(--color-neutral-400);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.usedOn }}</span>
+              <span style="text-align:right;font-variant-numeric:tabular-nums;color:var(--color-neutral-400)">{{ t.count }}</span>
+              <span style="text-align:right;font-variant-numeric:tabular-nums;font-weight:500">{{ t.hours }}</span>
+              <span style="font-size:12px;color:var(--color-neutral-400)">{{ t.last }}</span>
+              <div style="display:flex;gap:2px;justify-content:flex-end">
+                <button class="btn btn-ghost btn-icon" onClick="{{ t.filter }}" title="Show entries" style="width:30px;height:30px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg></button>
+                <button class="btn btn-ghost btn-icon" onClick="{{ t.remove }}" title="Delete tag (entries keep their time)" style="width:30px;height:30px;color:var(--color-neutral-500)" style-hover="color:var(--color-accent-300)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div class="text-muted" style="font-size:12px">Deleting a tag only strips the label from its entries — never the time. Merge two tags by renaming one to the other.</div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ isStub }}" hint-placeholder-val="{{ false }}">
+      <section data-screen-label="Stub" style="padding:var(--space-8);max-width:1100px">
+        <h1 style="font-size:28px;margin:0 0 4px">{{ stubTitle }}</h1>
+        <p class="text-muted" style="font-size:13px">Next round. The timer stays put on every page.</p>
+      </section>
+    </sc-if>
+  </main>
+
+  <!-- Picker modal -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" onClick="{{ closeModal }}" style="z-index:50;align-items:start;padding-top:12vh">
+      <div class="dialog" onClick="{{ stop }}" style="width:min(520px,100%);padding:var(--space-4);gap:var(--space-3);animation:tickRise .18s ease-out">
+        <div style="display:flex;gap:4px">
+          <sc-for list="{{ modalTabs }}" as="t" hint-placeholder-count="3">
+            <button onClick="{{ t.go }}" style="padding:5px 12px;border:1px solid {{ t.border }};border-radius:var(--radius-md);font:inherit;font-size:13px;cursor:pointer;background:transparent;color:{{ t.color }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <input class="input" autoFocus="{{ true }}" value="{{ search }}" onChange="{{ setSearch }}" placeholder="{{ modalPlaceholder }}" style="font-size:14px;min-height:40px"/>
+        <div style="display:flex;flex-direction:column;gap:1px;max-height:340px;overflow:auto">
+          <sc-for list="{{ modalItems }}" as="it" hint-placeholder-count="4">
+            <button onClick="{{ it.pick }}" style="display:flex;align-items:center;gap:12px;padding:9px 10px;border:0;border-radius:var(--radius-md);background:transparent;font:inherit;cursor:pointer;text-align:left;color:inherit" style-hover="background:color-mix(in srgb,var(--color-text) 7%,transparent)">
+              <span style="width:8px;height:8px;border-radius:50%;background:{{ it.dot }};flex:none"></span>
+              <span style="flex:1;min-width:0"><span style="display:block;font-size:14px">{{ it.name }}</span><span style="display:block;font-size:12px;color:var(--color-neutral-500)">{{ it.sub }}</span></span>
+              <span class="text-muted" style="font-size:12px">{{ it.meta }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ modalEmpty }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ closeModal }}" style="display:flex;align-items:center;gap:12px;padding:9px 10px;border:1px dashed var(--color-divider);border-radius:var(--radius-md);background:transparent;font:inherit;cursor:pointer;text-align:left;color:var(--color-accent-300)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>Create “{{ search }}”</button>
+          </sc-if>
+        </div>
+        <div class="text-muted" style="font-size:11px">Picking a task brings its project and client along. ↑↓ move · ↵ pick · esc close</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Manual entry -->
+  <sc-if value="{{ manualOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" onClick="{{ closeManual }}" style="z-index:50">
+      <div class="dialog" onClick="{{ stop }}" style="width:min(560px,100%);gap:var(--space-4);animation:tickRise .18s ease-out">
+        <div class="dialog-title" style="font-size:17px">Manual entry</div>
+        <div class="field"><label>What did you work on?</label><input class="input" autoFocus="{{ true }}" value="{{ m.desc }}" onChange="{{ mSet.desc }}" placeholder="e.g. Invoice reconciliation"/></div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:end">
+          <div class="field"><label>Client, project or task</label>
+            <button onClick="{{ mOpenPicker }}" class="input" style="display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer;color:{{ mRefColor }}"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ mRefLabel }}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" style="opacity:.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+          </div>
+          <button class="btn btn-secondary" onClick="{{ mToggleBillable }}" style="gap:6px;height:36px;color:{{ mBillColor }};border-color:{{ mBillBorder }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>{{ mRateLabel }}</button>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1.3fr) 1fr 1fr 1fr;gap:var(--space-3)">
+          <div class="field"><label>Date — type it any way</label><input class="input" value="{{ m.date }}" onChange="{{ mSet.date }}" placeholder="2025-03-14, mar 14, last tue…" style="font-variant-numeric:tabular-nums"/></div>
+          <div class="field"><label>Start</label><input class="input" value="{{ m.start }}" onChange="{{ mSet.start }}" placeholder="9:00"/></div>
+          <div class="field"><label>End</label><input class="input" value="{{ m.end }}" onChange="{{ mSet.end }}" placeholder="11:30"/></div>
+          <div class="field"><label>or Duration</label><input class="input" value="{{ m.dur }}" onChange="{{ mSet.dur }}" placeholder="2h 30m"/></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:8px 10px;border-radius:var(--radius-md);background:var(--color-bg);color:{{ mParsedColor }}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <span>{{ mParsed }}</span>
+        </div>
+        <div class="field"><label>Tags</label><input class="input" value="{{ m.tags }}" onChange="{{ mSet.tags }}" placeholder="design, qa"/></div>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" onClick="{{ closeManual }}">Cancel</button>
+          <button class="btn btn-primary" onClick="{{ saveManual }}" disabled="{{ mInvalid }}">Add entry</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Cascade delete -->
+  <sc-if value="{{ cascadeOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" onClick="{{ cancelCascade }}" style="z-index:50">
+      <div class="dialog" onClick="{{ stop }}" style="width:min(500px,100%);animation:tickRise .18s ease-out">
+        <div class="dialog-title" style="font-size:17px">Delete {{ cascade.name }}?</div>
+        <div class="dialog-body">Choose what goes with it. Ticking a level takes everything beneath it — a project's tasks and entries go with the project.</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ cascadeRows }}" as="r" hint-placeholder-count="3">
+            <button onClick="{{ r.toggle }}" disabled="{{ r.locked }}" style="display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:12px;padding:9px 10px;border:0;border-radius:var(--radius-md);background:{{ r.bg }};color:inherit;font:inherit;text-align:left;cursor:pointer;opacity:{{ r.opacity }}" style-hover="background:color-mix(in srgb,var(--color-text) 6%,transparent)">
+              <span style="width:16px;height:16px;border-radius:var(--radius-sm);border:1.5px solid {{ r.border }};background:{{ r.fill }};display:grid;place-items:center;color:var(--color-bg)"><sc-if value="{{ r.on }}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg></sc-if></span>
+              <span><span style="display:block;font-size:14px">{{ r.label }}</span><span style="display:block;font-size:12px;color:var(--color-neutral-500)">{{ r.hint }}</span></span>
+              <span class="tag tag-neutral">{{ r.count }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="font-size:12px;color:var(--color-neutral-400);padding:8px 10px;border-radius:var(--radius-md);background:var(--color-bg);display:flex;flex-direction:column;gap:4px">
+          <sc-for list="{{ cascadeOutcome }}" as="o" hint-placeholder-count="2"><span>{{ o }}</span></sc-for>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" onClick="{{ cancelCascade }}">Keep client</button>
+          <button class="btn btn-primary" onClick="{{ doCascade }}">Move to trash</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Bulk delete confirm -->
+  <sc-if value="{{ confirmBulk }}" hint-placeholder-val="{{ false }}">
+    <div class="dialog-backdrop" onClick="{{ cancelBulk }}" style="z-index:50">
+      <div class="dialog" onClick="{{ stop }}" style="animation:tickRise .18s ease-out">
+        <div class="dialog-title" style="font-size:17px">Delete {{ selectionCount }} entries?</div>
+        <div class="dialog-body">{{ bulkBody }} They sit in the trash for 30 days — restore from Settings → Trash.</div>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" onClick="{{ cancelBulk }}">Keep them</button>
+          <button class="btn btn-primary" onClick="{{ doBulkDelete }}">Move to trash</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Undo toast -->
+  <sc-if value="{{ toastOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:var(--space-4);padding:8px 8px 8px 16px;border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text);box-shadow:var(--shadow-md);animation:tickRise .18s ease-out;min-width:320px">
+      <span style="flex:1;font-size:13px">{{ toastText }}</span>
+      <span style="width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-variant-numeric:tabular-nums;background:var(--color-neutral-800);color:var(--color-neutral-300)">{{ toastLeft }}</span>
+      <button class="btn btn-primary" onClick="{{ undo }}" style="padding:6px 14px">Undo</button>
+    </div>
+  </sc-if>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showAmounts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Time list&quot;},&quot;undoSeconds&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:8,&quot;min&quot;:3,&quot;max&quot;:30,&quot;step&quot;:1,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Deleting&quot;}}">
+const svg = (p, fill) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="${fill || 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const I = {
+  dash: svg('<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>'),
+  time: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  cal: svg('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
+  rep: svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
+  proj: svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  task: svg('<path d="m4 12 3 3 5-6M13 6h7M13 12h7M13 18h7M4 18h1"/>'),
+  client: svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  tag: svg('<path d="M3 3h8l10 10-8 8L3 11z"/><circle cx="8" cy="8" r="1.5"/>'),
+  set: svg('<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4.9a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.5a7 7 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6A7 7 0 0 0 5 12a7 7 0 0 0 .1 1.2l-2 1.6 2 3.4 2.4-.9a7 7 0 0 0 2 1.2L10 21h4l.5-2.5a7 7 0 0 0 2-1.2l2.4.9 2-3.4-2-1.6A7 7 0 0 0 19 12z"/>'),
+  play: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>',
+  stop: '<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>',
+};
+const DOTS = ['var(--color-accent-400)', 'var(--color-accent-2-600)', 'var(--color-neutral-400)', 'var(--color-accent-600)'];
+const USER_RATE = 85;
+const DAY = 86400000;
+const today = new Date(2026, 8, 11);
+const at = (dOff, h, m) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + dOff, h, m).getTime();
+const seedClients = () => [
+  { id: 'c1', name: 'Acme Co', rate: 110, dot: DOTS[0] },
+  { id: 'c2', name: 'Birchwood Bakery', rate: null, dot: DOTS[1] },
+  { id: 'c3', name: 'Northwind Legal', rate: 140, dot: DOTS[3] },
+];
+const seedProjects = () => [
+  { id: 'p1', name: 'Website redesign', client: 'c1', rate: null, billable: true, est: 40, open: true },
+  { id: 'p2', name: 'Brand refresh', client: 'c2', rate: 95, billable: true, est: 20 },
+  { id: 'p3', name: 'Internal tooling', client: null, rate: null, billable: false, est: null },
+  { id: 'p4', name: 'Contract review portal', client: 'c3', rate: null, billable: true, est: 60 },
+];
+const seedTasks = () => [
+  { id: 't1', name: 'Homepage hero', project: 'p1', done: false },
+  { id: 't2', name: 'Checkout flow', project: 'p1', done: false },
+  { id: 't3', name: 'Logo sketches', project: 'p2', done: false },
+  { id: 't4', name: 'Menu board typography', project: 'p2', done: true },
+  { id: 't5', name: 'Fix CI pipeline', project: 'p3', done: false },
+  { id: 't6', name: 'Bookkeeping', project: null, done: false },
+  { id: 't7', name: 'Intake form', project: 'p4', done: false },
+];
+const seedEntries = () => [
+  { id: 1, name: 'Hero layout pass', ref: { type: 'task', id: 't1' }, tags: ['design'], billable: true, start: at(0, 9, 5), end: at(0, 11, 20) },
+  { id: 2, name: 'Standup + planning', ref: null, tags: ['meeting'], billable: false, start: at(0, 11, 30), end: at(0, 12, 0) },
+  { id: 3, name: 'Intake form validation', ref: { type: 'task', id: 't7' }, tags: [], billable: true, start: at(0, 13, 0), end: at(0, 14, 45) },
+  { id: 4, name: 'Checkout error states', ref: { type: 'task', id: 't2' }, tags: ['design', 'qa'], billable: true, start: at(-1, 8, 40), end: at(-1, 12, 10) },
+  { id: 5, name: 'Reply to Birchwood re: colours', ref: { type: 'client', id: 'c2' }, tags: ['email'], billable: true, start: at(-1, 13, 10), end: at(-1, 13, 35) },
+  { id: 6, name: 'Fix flaky CI job', ref: { type: 'task', id: 't5' }, tags: [], billable: false, start: at(-1, 14, 0), end: at(-1, 16, 30) },
+  { id: 7, name: 'Logo round two', ref: { type: 'task', id: 't3' }, tags: ['design'], billable: true, start: at(-3, 9, 0), end: at(-3, 12, 30) },
+  { id: 8, name: 'Quarterly bookkeeping', ref: { type: 'task', id: 't6' }, tags: ['admin'], billable: false, start: at(-3, 14, 0), end: at(-3, 15, 15) },
+  { id: 9, name: 'Portal architecture notes', ref: { type: 'project', id: 'p4' }, tags: [], billable: true, start: at(-3, 15, 30), end: at(-3, 17, 50) },
+  { id: 10, name: 'Nav + footer components', ref: { type: 'task', id: 't1' }, tags: ['design'], billable: true, start: at(-4, 9, 0), end: at(-4, 12, 45) },
+  { id: 11, name: 'Client call — scope', ref: { type: 'project', id: 'p4' }, tags: ['meeting'], billable: true, start: at(-4, 14, 0), end: at(-4, 15, 0) },
+  { id: 12, name: 'Type pairing tests', ref: { type: 'task', id: 't3' }, tags: ['design'], billable: true, start: at(-7, 10, 0), end: at(-7, 13, 30) },
+  { id: 13, name: 'Deploy pipeline cleanup', ref: { type: 'task', id: 't5' }, tags: [], billable: false, start: at(-8, 9, 0), end: at(-8, 11, 15) },
+  { id: 14, name: 'Cart drawer states', ref: { type: 'task', id: 't2' }, tags: ['design', 'qa'], billable: true, start: at(-9, 8, 30), end: at(-9, 13, 0) },
+  { id: 15, name: 'Invoice prep', ref: { type: 'task', id: 't6' }, tags: ['admin'], billable: false, start: at(-10, 16, 0), end: at(-10, 17, 0) },
+  { id: 16, name: 'Intake form wireframes', ref: { type: 'task', id: 't7' }, tags: ['design'], billable: true, start: at(-11, 9, 0), end: at(-11, 14, 20) },
+];
+// Theme editor — approximations of Tailwind palettes in OKLCH (hue, chroma). Nuxt UI maps these to ui.colors.primary / neutral in app.config.ts.
+const PRIMARIES = { violet: [289, 0.125], indigo: [275, 0.14], sky: [235, 0.12], teal: [185, 0.10], emerald: [160, 0.11], amber: [75, 0.13], rose: [12, 0.14], fuchsia: [330, 0.15] };
+const NEUTRALS = { slate: [277, 0.02], zinc: [286, 0.006], stone: [60, 0.012], gray: [265, 0.014], neutral: [0, 0] };
+const FONTS = { Inter: '"Inter", system-ui, sans-serif', 'DM Sans': '"DM Sans", system-ui, sans-serif', 'IBM Plex Sans': '"IBM Plex Sans", system-ui, sans-serif', Manrope: '"Manrope", system-ui, sans-serif', 'Source Sans 3': '"Source Sans 3", system-ui, sans-serif' };
+const RAMP_L = [0.97, 0.93, 0.86, 0.76, 0.66, 0.56, 0.45, 0.34, 0.24];
+const RAMP_C = [0.25, 0.45, 0.7, 0.92, 1, 0.95, 0.8, 0.6, 0.42];
+const DEFAULT_THEME = { primary: 'violet', neutral: 'slate', radius: 8, font: 'Inter', mode: 'dark', stars: 'stars' };
+const PRESETS = [
+  { name: 'Nocturne', sub: 'the default', t: DEFAULT_THEME },
+  { name: 'Daylight', sub: 'light · sky · zinc', t: { primary: 'sky', neutral: 'zinc', radius: 12, font: 'DM Sans', mode: 'light', stars: 'plain' } },
+  { name: 'Ember', sub: 'dark · amber · stone', t: { primary: 'amber', neutral: 'stone', radius: 4, font: 'IBM Plex Sans', mode: 'dark', stars: 'stars' } },
+  { name: 'Orchard', sub: 'light · emerald · stone', t: { primary: 'emerald', neutral: 'stone', radius: 16, font: 'Manrope', mode: 'light', stars: 'plain' } },
+  { name: 'Lagoon', sub: 'dark · teal · gray', t: { primary: 'teal', neutral: 'gray', radius: 8, font: 'Source Sans 3', mode: 'dark', stars: 'stars' } },
+];
+const okl = (l, c, h) => `oklch(${l.toFixed(3)} ${c.toFixed(3)} ${h})`;
+function themeVars(t) {
+  const [ph, pc] = PRIMARIES[t.primary], [nh, nc] = NEUTRALS[t.neutral]; const light = t.mode === 'light';
+  const v = { display: 'contents' };
+  const ramp = (prefix, h, c) => RAMP_L.forEach((l, i) => { const step = light ? (9 - i) * 100 : (i + 1) * 100; v[`${prefix}-${step}`] = okl(l, c * RAMP_C[i], h); });
+  ramp('--color-accent', ph, pc); ramp('--color-accent-2', ph, pc * 0.66); ramp('--color-neutral', nh, nc);
+  v['--color-accent'] = okl(light ? 0.56 : 0.66, pc, ph); v['--color-accent-2'] = okl(light ? 0.6 : 0.73, pc * 0.66, ph);
+  v['--color-bg'] = light ? okl(0.985, nc * 0.3, nh) : okl(0.22, nc, nh);
+  v['--color-surface'] = light ? okl(0.955, nc * 0.5, nh) : okl(0.27, nc, nh);
+  v['--color-text'] = light ? okl(0.22, nc, nh) : okl(0.93, nc * 0.3, nh);
+  v['--color-divider'] = `color-mix(in srgb, ${v['--color-text']} 16%, transparent)`;
+  v['--radius-sm'] = `${Math.round(t.radius / 2)}px`; v['--radius-md'] = `${t.radius}px`; v['--radius-lg'] = `${Math.round(t.radius * 1.75)}px`;
+  v['--font-body'] = FONTS[t.font]; v['--font-heading'] = FONTS[t.font];
+  if (light) { v['--shadow-sm'] = '0 1px 2px rgba(20,20,40,.10)'; v['--shadow-md'] = '0 3px 10px rgba(20,20,40,.14)'; v['--shadow-lg'] = '0 12px 32px rgba(20,20,40,.20)'; }
+  return v;
+}
+const SERIES = ['var(--color-accent)', 'var(--color-accent-2-600)', 'var(--color-neutral-400)', 'var(--color-accent-800)', 'var(--color-neutral-600)'];
+const hms = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return [s / 3600, (s % 3600) / 60, s % 60].map(v => String(Math.floor(v)).padStart(2, '0')).join(':'); };
+const hm = (ms) => { const m = Math.round(ms / 60000); const h = Math.floor(m / 60); return h ? `${h}h ${String(m % 60).padStart(2, '0')}m` : `${m}m`; };
+const tm = (t) => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).toLowerCase().replace(' ', '');
+const money = (n) => '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+const dayLabel = (t) => { const d = new Date(t); const diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / DAY); return diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : diff < 7 ? d.toLocaleDateString([], { weekday: 'long' }) : d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined }); };
+const daySub = (t) => new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric' });
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const WD = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+function parseDate(str) {
+  const s = (str || '').trim().toLowerCase(); if (!s || s === 'today') return new Date(today);
+  if (s === 'yesterday') return new Date(today.getTime() - DAY);
+  let m;
+  if ((m = s.match(/^(?:last\s+)?(sun|mon|tue|wed|thu|fri|sat)/))) { const wd = WD.indexOf(m[1]); let d = new Date(today); do { d = new Date(d.getTime() - DAY); } while (d.getDay() !== wd); return d; }
+  if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return new Date(+m[1], +m[2] - 1, +m[3]);
+  if ((m = s.match(/^(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?$/))) { let y = m[3] ? +m[3] : today.getFullYear(); if (y < 100) y += 2000; return new Date(y, +m[1] - 1, +m[2]); }
+  if ((m = s.match(/^([a-z]{3,})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?(?:\s+(\d{4}))?$/)) || (m = s.match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3,})\.?,?(?:\s+(\d{4}))?$/) && [m[0], m[2], m[1], m[3]])) { const mi = MONTHS.indexOf(m[1].slice(0, 3)); if (mi >= 0) return new Date(m[3] ? +m[3] : today.getFullYear(), mi, +m[2]); }
+  const d = new Date(s); return isNaN(d) ? null : d;
+}
+function parseTime(str) { const m = (str || '').trim().toLowerCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm|a|p)?$/); if (!m) return null; let h = +m[1]; const mi = +(m[2] || 0); if (m[3] && m[3][0] === 'p' && h < 12) h += 12; if (m[3] && m[3][0] === 'a' && h === 12) h = 0; return h > 23 || mi > 59 ? null : h * 60 + mi; }
+function parseDur(str) { const s = (str || '').trim().toLowerCase(); if (!s) return null; let m; if ((m = s.match(/^(\d+(?:\.\d+)?)\s*h?$/))) return +m[1] * 60; const h = s.match(/(\d+(?:\.\d+)?)\s*h/), mm = s.match(/(\d+)\s*m/); if (!h && !mm) { if ((m = s.match(/^(\d{1,2}):(\d{2})$/))) return +m[1] * 60 + +m[2]; return null; } return (h ? +h[1] * 60 : 0) + (mm ? +mm[1] : 0); }
+
+class Component extends DCLogic {
+  state = { page: 'time', running: false, startedAt: null, now: Date.now(), desc: '', ref: null, billable: true, menuOpen: false, modal: null, modalTarget: 'timer', search: '', clients: seedClients(), projects: seedProjects(), tasks: seedTasks(), entries: seedEntries(), selected: {}, filter: '', groupBy: 'day', toast: null, confirmBulk: false, nextId: 100, manual: null, cascade: null, report: { range: 'week', bill: 'all', group: 'project' }, theme: { ...DEFAULT_THEME }, calWeek: 0, newTag: '', extraTags: ['urgent'] };
+  componentDidMount() { this.tick = setInterval(() => this.setState({ now: Date.now() }), 1000); document.addEventListener('keydown', this.onKey); }
+  componentWillUnmount() { clearInterval(this.tick); document.removeEventListener('keydown', this.onKey); }
+  onKey = (e) => { if (e.key === 'Escape') this.setState(s => ({ modal: null, menuOpen: false, confirmBulk: false, cascade: null, manual: s.modal ? s.manual : null })); };
+  resolve(ref) {
+    const s = this.state; let task = null, project = null, client = null; if (!ref) return { task, project, client };
+    if (ref.type === 'task') { task = s.tasks.find(t => t.id === ref.id) || null; project = task && s.projects.find(p => p.id === task.project); }
+    if (ref.type === 'project') project = s.projects.find(p => p.id === ref.id);
+    if (ref.type === 'client') client = s.clients.find(c => c.id === ref.id);
+    if (project && !client) client = s.clients.find(c => c.id === project.client) || null;
+    return { task, project: project || null, client: client || null };
+  }
+  rateFor(r) { return (r.project && r.project.rate) || (r.client && r.client.rate) || USER_RATE; }
+  chainOf(res) { const out = []; if (res.task) out.push({ label: res.task.name, color: 'var(--color-neutral-300)' }); if (res.project) out.push({ label: res.project.name, color: res.task ? 'var(--color-neutral-500)' : 'var(--color-neutral-300)' }); if (res.client) out.push({ label: res.client.name, color: 'var(--color-accent-300)' }); return out.map((c, i) => ({ ...c, sep: i < out.length - 1 ? '·' : '' })); }
+  startTimer() { this.setState({ running: true, startedAt: Date.now(), now: Date.now() }); }
+  stopTimer() {
+    const { startedAt, desc, ref, billable } = this.state; const end = Date.now();
+    if (end - startedAt < 1000) { this.setState({ running: false, startedAt: null }); return; }
+    const e = { id: this.state.nextId, name: desc || 'Untitled entry', ref, tags: [], billable, start: startedAt, end };
+    this.setState(s => ({ running: false, startedAt: null, desc: '', ref: null, entries: [e, ...s.entries], nextId: s.nextId + 1, page: 'time' }));
+  }
+  undoMs() { return (this.props.undoSeconds ?? 8) * 1000; }
+  toast(text, restore) { clearTimeout(this.toastT); this.setState({ toast: { text, restore, until: Date.now() + this.undoMs() } }); this.toastT = setTimeout(() => this.setState({ toast: null }), this.undoMs()); }
+  remove(id) { const e = this.state.entries.find(x => x.id === id); if (!e) return; this.setState(s => ({ entries: s.entries.filter(x => x.id !== id) })); this.toast(`Deleted “${e.name}”`, (s) => ({ entries: [...s.entries, e].sort((a, b) => b.start - a.start) })); }
+  pick(type, id) { this.setState(s => s.modalTarget === 'manual' ? { modal: null, search: '', manual: { ...s.manual, ref: { type, id } } } : { ref: { type, id }, modal: null, search: '' }); }
+  renderVals() {
+    const s = this.state; const P = this.props; const showAmounts = P.showAmounts ?? true;
+    const go = (page) => () => this.setState({ page, menuOpen: false });
+    const nav = (arr) => arr.map(n => ({ ...n, go: go(n.page), current: s.page === n.page ? 'page' : undefined, bg: s.page === n.page ? 'var(--color-surface)' : 'transparent', shadow: s.page === n.page ? 'inset 2px 0 0 var(--color-accent)' : 'none', color: s.page === n.page ? 'var(--color-text)' : 'var(--color-neutral-400)' }));
+    const navMain = nav([{ page: 'dashboard', label: 'Dashboard', icon: { __html: I.dash } }, { page: 'time', label: 'Time', icon: { __html: I.time } }, { page: 'calendar', label: 'Calendar', icon: { __html: I.cal } }, { page: 'reports', label: 'Reports', icon: { __html: I.rep } }]);
+    const navManage = nav([{ page: 'projects', label: 'Projects & tasks', icon: { __html: I.proj } }, { page: 'clients', label: 'Clients', icon: { __html: I.client } }, { page: 'tags', label: 'Tags', icon: { __html: I.tag } }, { page: 'settings', label: 'Settings', icon: { __html: I.set } }]);
+    const r = this.resolve(s.ref);
+    const refChain = this.chainOf(r).map(c => c.label).join(' · ');
+    const elapsed = s.running ? s.now - s.startedAt : 0;
+    const openTasks = s.tasks.filter(t => !t.done);
+    const menuItems = [
+      { key: 'client', label: 'Client', count: s.clients.length, icon: { __html: I.client } },
+      { key: 'project', label: 'Project', count: s.projects.length, icon: { __html: I.proj } },
+      { key: 'task', label: 'Task', count: openTasks.length + ' open', icon: { __html: I.task } },
+    ].map(m => ({ ...m, open: () => this.setState({ modal: m.key, modalTarget: 'timer', menuOpen: false, search: '' }) }));
+    const q = s.search.toLowerCase();
+    let modalItems = [];
+    if (s.modal === 'client') modalItems = s.clients.filter(c => c.name.toLowerCase().includes(q)).map(c => ({ name: c.name, sub: s.projects.filter(p => p.client === c.id).length + ' projects', meta: c.rate ? `$${c.rate}/h` : `default $${USER_RATE}/h`, dot: c.dot, pick: () => this.pick('client', c.id) }));
+    if (s.modal === 'project') modalItems = s.projects.filter(p => p.name.toLowerCase().includes(q)).map(p => { const c = s.clients.find(x => x.id === p.client); return { name: p.name, sub: c ? c.name : 'No client', meta: p.est ? `${p.est}h est.` : '', dot: c ? c.dot : DOTS[2], pick: () => this.pick('project', p.id) }; });
+    if (s.modal === 'task') modalItems = openTasks.filter(t => t.name.toLowerCase().includes(q)).map(t => { const p = s.projects.find(x => x.id === t.project); const c = p && s.clients.find(x => x.id === p.client); return { name: t.name, sub: p ? p.name + (c ? ' · ' + c.name : '') : 'Standalone task', meta: '', dot: c ? c.dot : DOTS[2], pick: () => this.pick('task', t.id) }; });
+    const modalTabs = ['client', 'project', 'task'].map(k => ({ label: k[0].toUpperCase() + k.slice(1), go: () => this.setState({ modal: k }), border: s.modal === k ? 'var(--color-accent)' : 'var(--color-divider)', color: s.modal === k ? 'var(--color-accent)' : 'var(--color-neutral-300)' }));
+    // entries
+    const f = s.filter.toLowerCase();
+    const rows = s.entries.map(e => { const res = this.resolve(e.ref); return { e, res, rate: this.rateFor(res), text: (e.name + ' ' + e.tags.map(t => '#' + t).join(' ') + ' ' + this.chainOf(res).map(c => '@' + c.label).join(' ')).toLowerCase() }; }).filter(x => !f || x.text.includes(f));
+    const view = (x, i) => { const e = x.e; const dur = e.end - e.start; const sel = !!s.selected[e.id]; const chain = this.chainOf(x.res); return {
+      id: e.id, name: e.name, tags: e.tags, chain, hasChain: chain.length > 0, dot: x.res.client ? x.res.client.dot : DOTS[2], range: `${tm(e.start)} – ${tm(e.end)}`, dur: hm(dur),
+      amount: e.billable ? money(dur / 3600000 * x.rate) : '—', selected: sel, checkBorder: sel ? 'var(--color-accent)' : 'var(--color-neutral-600)', checkBg: sel ? 'var(--color-accent)' : 'transparent', rowBg: sel ? 'var(--color-accent-900)' : 'transparent', rowLine: i ? 'inset 0 1px 0 color-mix(in srgb, var(--color-text) 6%, transparent)' : 'none',
+      billBorder: e.billable ? 'var(--color-accent-600)' : 'var(--color-neutral-800)', billColor: e.billable ? 'var(--color-accent-300)' : 'var(--color-neutral-600)', billTitle: e.billable ? `Billable at $${x.rate}/h` : 'Not billable',
+      toggle: () => this.setState(st => ({ selected: { ...st.selected, [e.id]: !st.selected[e.id] } })), remove: () => this.remove(e.id),
+      toggleBillable: () => this.setState(st => ({ entries: st.entries.map(y => y.id === e.id ? { ...y, billable: !y.billable } : y) })),
+      resume: () => this.setState({ desc: e.name, ref: e.ref, billable: e.billable, running: true, startedAt: Date.now(), now: Date.now() }),
+    }; };
+    const sortDesc = (xs) => xs.sort((a, b) => b.e.start - a.e.start);
+    let groups = [];
+    if (s.groupBy === 'day') { const m = new Map(); sortDesc([...rows]).forEach(x => { const k = new Date(x.e.start).toDateString(); if (!m.has(k)) m.set(k, []); m.get(k).push(x); }); groups = [...m.values()].map(xs => ({ label: dayLabel(xs[0].e.start), sub: daySub(xs[0].e.start), total: hm(xs.reduce((a, x) => a + x.e.end - x.e.start, 0)), entries: xs.map(view) })); }
+    else { const m = new Map(); rows.forEach(x => { const k = x.res.project ? x.res.project.id : (x.res.client ? x.res.client.id : 'none'); if (!m.has(k)) m.set(k, []); m.get(k).push(x); }); groups = [...m.values()].map(xs => { const res = xs[0].res; return { label: res.project ? res.project.name : res.client ? res.client.name : 'No project', sub: res.project && res.client ? res.client.name : '', total: hm(xs.reduce((a, x) => a + x.e.end - x.e.start, 0)), entries: sortDesc(xs).map(view) }; }); }
+    const selIds = Object.keys(s.selected).filter(k => s.selected[k]);
+    const sum = (xs) => xs.reduce((a, e) => a + e.end - e.start, 0);
+    const weekMs = sum(s.entries), billMs = sum(s.entries.filter(e => e.billable));
+    const earned = s.entries.filter(e => e.billable).reduce((a, e) => a + (e.end - e.start) / 3600000 * this.rateFor(this.resolve(e.ref)), 0);
+    const todayMs = sum(s.entries.filter(e => dayLabel(e.start) === 'Today')) + elapsed;
+    // dashboard
+    const rnd = (i) => { const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+    const activity = Array.from({ length: 16 }, (_, w) => ({ days: Array.from({ length: 5 }, (_, d) => { const v = rnd(w * 5 + d); const op = v < 0.18 ? 0.1 : 0.25 + v * 0.75; return { opacity: op.toFixed(2), title: `${(v * 8).toFixed(1)}h`, glow: v > 0.75 ? '0 0 8px color-mix(in srgb,var(--color-accent) 60%,transparent)' : 'none' }; }) }));
+    const weekHours = [6.3, 6.4, 4.1, 5.1, 3.9, 0, 0], weekBill = [4.5, 5.2, 3.5, 2.9, 3.9, 0, 0];
+    const week = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((l, i) => ({ label: l, hours: weekHours[i] ? weekHours[i].toFixed(1) + 'h' : '–', billPct: (weekBill[i] / 8 * 100).toFixed(0), nonPct: ((weekHours[i] - weekBill[i]) / 8 * 100).toFixed(0), labelColor: i === 4 ? 'var(--color-accent-300)' : 'var(--color-neutral-500)' }));
+    const pct = weekMs ? billMs / weekMs : 0; const circ = 2 * Math.PI * 50;
+    // projects page
+    const taskView = (t) => { const es = s.entries.filter(e => e.ref && e.ref.type === 'task' && e.ref.id === t.id); return { name: t.name, done: t.done, strike: t.done ? 'line-through' : 'none', color: t.done ? 'var(--color-neutral-600)' : 'var(--color-text)', doneBorder: t.done ? 'var(--color-accent)' : 'var(--color-neutral-600)', doneBg: t.done ? 'var(--color-accent)' : 'transparent', entries: es.length ? `${es.length} entr${es.length === 1 ? 'y' : 'ies'}` : 'no entries', tracked: es.length ? hm(sum(es)) : '—', toggleDone: () => this.setState(st => ({ tasks: st.tasks.map(x => x.id === t.id ? { ...x, done: !x.done } : x) })), start: () => this.setState({ desc: t.name, ref: { type: 'task', id: t.id }, running: true, startedAt: Date.now(), now: Date.now(), page: 'time' }) }; };
+    const projectRows = s.projects.map(p => { const c = s.clients.find(x => x.id === p.client); const ts = s.tasks.filter(t => t.project === p.id); const es = s.entries.filter(e => { const res = this.resolve(e.ref); return res.project && res.project.id === p.id; }); const ms = sum(es); const h = ms / 3600000; const pctP = p.est ? Math.min(100, h / p.est * 100) : (ms ? 100 : 0); const rate = this.rateFor({ project: p, client: c }); return { name: p.name, dot: c ? c.dot : DOTS[2], client: c ? c.name : 'No client', taskCount: `${ts.filter(t => !t.done).length}/${ts.length} tasks open`, rate: p.rate ? `$${p.rate}/h` : c && c.rate ? `$${c.rate}/h from client` : `$${USER_RATE}/h default`, billTag: p.billable ? 'billable' : 'internal', tracked: hm(ms), estLabel: p.est ? `${p.est}h estimated` : 'no estimate', pct: pctP.toFixed(0), barColor: p.est && h > p.est ? 'var(--color-accent-300)' : 'var(--color-accent)', amount: p.billable ? money(h * rate) : '', open: !!p.open, chev: p.open ? 180 : 0, toggle: () => this.setState(st => ({ projects: st.projects.map(x => x.id === p.id ? { ...x, open: !x.open } : x) })), tasks: ts.map(taskView) }; });
+    const looseTasks = s.tasks.filter(t => !t.project).map(taskView);
+    // clients page
+    const clientRows = s.clients.map(c => { const ps = s.projects.filter(p => p.client === c.id); const ts = s.tasks.filter(t => ps.some(p => p.id === t.project)); const es = s.entries.filter(e => { const res = this.resolve(e.ref); return res.client && res.client.id === c.id; }); const ms = sum(es); return { name: c.name, initials: c.name.split(' ').map(w => w[0]).join('').slice(0, 2), dot: c.dot, rate: c.rate ? `$${c.rate}/h` : `$${USER_RATE}/h (default)`, rateColor: c.rate ? 'var(--color-text)' : 'var(--color-neutral-500)', projects: ps.length, tasks: ts.length, tracked: hm(ms), amount: money(es.filter(e => e.billable).reduce((a, e) => a + (e.end - e.start) / 3600000 * this.rateFor(this.resolve(e.ref)), 0)), askDelete: () => this.setState({ cascade: { id: c.id, name: c.name, projects: false, tasks: false, entries: false } }) }; });
+    // cascade dialog
+    let cascadeRows = [], cascadeOutcome = [];
+    const cz = s.cascade;
+    if (cz) {
+      const ps = s.projects.filter(p => p.client === cz.id); const ts = s.tasks.filter(t => ps.some(p => p.id === t.project)); const es = s.entries.filter(e => { const res = this.resolve(e.ref); return res.client && res.client.id === cz.id; });
+      const set = (k) => () => this.setState(st => { const c = { ...st.cascade }; c[k] = !c[k]; if (k === 'projects' && c.projects) { c.tasks = true; c.entries = true; } if (k === 'tasks' && c.tasks) c.entries = true; if (k === 'entries' && !c.entries) { c.tasks = false; c.projects = false; } if (k === 'tasks' && !c.tasks) c.projects = false; return { cascade: c }; });
+      const row = (k, label, hint, count, on) => ({ label, hint, count, on, toggle: set(k), locked: false, opacity: 1, bg: on ? 'var(--color-accent-900)' : 'transparent', border: on ? 'var(--color-accent)' : 'var(--color-neutral-600)', fill: on ? 'var(--color-accent)' : 'transparent' });
+      cascadeRows = [row('projects', 'Projects', 'and all their tasks and entries', ps.length, cz.projects), row('tasks', 'Tasks', 'and every entry logged on them', ts.length, cz.tasks), row('entries', 'Time entries', 'anything that resolves to this client', es.length, cz.entries)];
+      if (!cz.projects && ps.length) cascadeOutcome.push(`${ps.length} project${ps.length > 1 ? 's' : ''} kept — client cleared, so they'll fall back to the $${USER_RATE}/h default rate.`);
+      if (!cz.tasks && ts.length) cascadeOutcome.push(`${ts.length} task${ts.length > 1 ? 's' : ''} kept${cz.projects ? ' as standalone tasks' : ' under their projects'}.`);
+      if (!cz.entries && es.length) cascadeOutcome.push(`${es.length} entries kept — ${hm(sum(es))} stays in reports, unassigned to any client.`);
+      if (cz.entries && es.length) cascadeOutcome.push(`${hm(sum(es))} of tracked time moves to the trash with the client.`);
+      if (!cascadeOutcome.length) cascadeOutcome.push('Nothing else is affected.');
+    }
+    // reports
+    const rep = s.report;
+    const dow = (today.getDay() + 6) % 7; // Mon=0
+    const weekStart = today.getTime() - dow * DAY;
+    const ranges = { week: [weekStart, weekStart + 7 * DAY, 'This week'], lastweek: [weekStart - 7 * DAY, weekStart, 'Last week'], month: [new Date(today.getFullYear(), today.getMonth(), 1).getTime(), new Date(today.getFullYear(), today.getMonth() + 1, 1).getTime(), 'This month'] };
+    const [r0, r1, rangeName] = ranges[rep.range];
+    const segOpt = (list, cur, set) => list.map(([k, label]) => ({ label, go: () => this.setState(st => ({ report: { ...st.report, [set]: k } })), color: cur === k ? 'var(--color-accent)' : 'inherit', shadow: cur === k ? 'inset 0 0 0 1px var(--color-accent)' : 'none' }));
+    const repEntries = s.entries.filter(e => e.start >= r0 && e.start < r1 && (rep.bill === 'all' || (rep.bill === 'billable') === e.billable)).map(e => ({ e, res: this.resolve(e.ref), ms: e.end - e.start }));
+    const keyOf = (x) => { const g = rep.group; if (g === 'client') return x.res.client ? [x.res.client.id, x.res.client.name, ''] : ['none', 'No client', '']; if (g === 'project') return x.res.project ? [x.res.project.id, x.res.project.name, x.res.client ? x.res.client.name : ''] : ['none', 'No project', '']; if (g === 'task') return x.res.task ? [x.res.task.id, x.res.task.name, x.res.project ? x.res.project.name : ''] : ['none', 'No task', '']; return null; };
+    const buckets = new Map();
+    const add = (k, label, sub, x) => { if (!buckets.has(k)) buckets.set(k, { label, sub, count: 0, ms: 0, bill: 0, amt: 0 }); const b = buckets.get(k); b.count++; b.ms += x.ms; if (x.e.billable) { b.bill += x.ms; b.amt += x.ms / 3600000 * this.rateFor(x.res); } };
+    repEntries.forEach(x => { if (rep.group === 'tag') { (x.e.tags.length ? x.e.tags : ['untagged']).forEach(t => add(t, t === 'untagged' ? 'Untagged' : '#' + t, '', x)); } else { const [k, l, sb] = keyOf(x); add(k, l, sb, x); } });
+    const totalMs = repEntries.reduce((a, x) => a + x.ms, 0);
+    const sorted = [...buckets.entries()].sort((a, b) => b[1].ms - a[1].ms);
+    const colorOf = new Map(sorted.map(([k], i) => [k, SERIES[Math.min(i, SERIES.length - 1)]]));
+    const repRows = sorted.map(([k, b]) => ({ label: b.label, sub: b.sub, color: colorOf.get(k), count: b.count, hours: hm(b.ms), billable: b.bill ? hm(b.bill) : '—', amount: b.amt ? money(b.amt) : '—', share: totalMs ? Math.round(b.ms / totalMs * 100) + '%' : '0%', sharePct: totalMs ? (b.ms / totalMs * 100).toFixed(0) : 0 }));
+    const dayCount = Math.round((r1 - r0) / DAY);
+    let maxDay = 0; const perDay = Array.from({ length: dayCount }, (_, i) => { const d0 = r0 + i * DAY; const xs = repEntries.filter(x => x.e.start >= d0 && x.e.start < d0 + DAY); const byKey = new Map(); xs.forEach(x => { const ks = rep.group === 'tag' ? (x.e.tags.length ? x.e.tags : ['untagged']) : [keyOf(x)[0]]; ks.forEach(k => byKey.set(k, (byKey.get(k) || 0) + x.ms)); }); const tot = xs.reduce((a, x) => a + x.ms, 0); maxDay = Math.max(maxDay, tot); return { d0, byKey, tot }; });
+    const repDays = perDay.map(d => { const dt = new Date(d.d0); const isToday = dt.toDateString() === today.toDateString(); return { label: dayCount > 7 ? String(dt.getDate()) : dt.toLocaleDateString([], { weekday: 'short' }), labelColor: isToday ? 'var(--color-accent-300)' : 'var(--color-neutral-500)', total: d.tot ? (d.tot / 3600000).toFixed(1) : '', stack: [...d.byKey.entries()].sort((a, b) => b[1] - a[1]).map(([k, ms]) => ({ pct: maxDay ? (ms / maxDay * 100).toFixed(1) : 0, min: ms ? 3 : 0, color: colorOf.get(k), title: `${(buckets.get(k) || {}).label}: ${hm(ms)}` })) }; });
+    const repBillMs = repEntries.filter(x => x.e.billable).reduce((a, x) => a + x.ms, 0);
+    const repAmt = repEntries.filter(x => x.e.billable).reduce((a, x) => a + x.ms / 3600000 * this.rateFor(x.res), 0);
+    const workedDays = perDay.filter(d => d.tot).length;
+    // theme editor
+    const T = s.theme; const setT = (patch) => this.setState(st => ({ theme: { ...st.theme, ...patch } }));
+    const isDefault = JSON.stringify(T) === JSON.stringify(DEFAULT_THEME);
+    const on = (b) => ({ color: b ? 'var(--color-accent)' : 'inherit', shadow: b ? 'inset 0 0 0 1px var(--color-accent)' : 'none' });
+    const primaries = Object.entries(PRIMARIES).map(([name, [h, c]]) => ({ name, swatch: okl(0.66, c, h), pick: () => setT({ primary: name }), ring: T.primary === name ? '0 0 0 2px var(--color-accent)' : '0 0 0 1px var(--color-divider)' }));
+    const neutrals = Object.entries(NEUTRALS).map(([name, [h, c]]) => ({ name, swatch: `linear-gradient(135deg, ${okl(0.86, c * 0.7, h)} 50%, ${okl(0.34, c * 0.6, h)} 50%)`, pick: () => setT({ neutral: name }), ring: T.neutral === name ? '0 0 0 2px var(--color-accent)' : '0 0 0 1px var(--color-divider)' }));
+    const radii = [0, 4, 8, 12, 16].map(r => ({ label: r === 0 ? 'None' : r === 4 ? 'Sm' : r === 8 ? 'Md' : r === 12 ? 'Lg' : 'Xl', go: () => setT({ radius: r }), ...on(T.radius === r) }));
+    const modes = [['dark', 'Dark'], ['light', 'Light']].map(([k, label]) => ({ label, go: () => setT({ mode: k }), ...on(T.mode === k) }));
+    const starOpts = [['stars', 'Starfield'], ['plain', 'Plain']].map(([k, label]) => ({ label, go: () => setT({ stars: k }), ...on(T.stars === k) }));
+    const fonts = Object.entries(FONTS).map(([name, family]) => ({ name, family, pick: () => setT({ font: name }), border: T.font === name ? 'var(--color-accent)' : 'var(--color-divider)' }));
+    const presets = PRESETS.map(p => { const pv = themeVars(p.t); const active = JSON.stringify(p.t) === JSON.stringify(T); return { name: p.name, sub: p.sub, apply: () => this.setState({ theme: { ...p.t } }), bg: pv['--color-bg'], text: pv['--color-text'], accent: pv['--color-accent'], surface: pv['--color-surface'], border: active ? pv['--color-accent'] : pv['--color-neutral-700'], shadow: active ? `0 0 0 1px ${pv['--color-accent']}` : 'none', r: Math.min(9, p.t.radius / 2 + 1), font: FONTS[p.t.font] }; });
+    const rampPreview = [100, 200, 300, 400, 500, 600, 700, 800, 900].map(n => ({ name: `${T.primary}-${n}`, color: `var(--color-accent-${n})` }));
+    const configText = `export default defineAppConfig({\n  ui: {\n    colors: { primary: '${T.primary}', neutral: '${T.neutral}' }\n  },\n  tick: {\n    radius: ${T.radius / 16},   // --ui-radius: ${T.radius / 16}rem\n    font: '${T.font}',\n    colorMode: '${T.mode}',\n    sidebar: '${T.stars}'\n  }\n})`;
+    const STARS = 'radial-gradient(circle at 18% 12%, rgba(243,245,254,.7) 0 .8px, transparent 1.4px),radial-gradient(circle at 72% 28%, rgba(243,245,254,.5) 0 .8px, transparent 1.5px),radial-gradient(circle at 40% 46%, rgba(243,245,254,.4) 0 .6px, transparent 1.2px),radial-gradient(circle at 86% 64%, rgba(243,245,254,.6) 0 .8px, transparent 1.4px),radial-gradient(circle at 22% 78%, rgba(243,245,254,.35) 0 .6px, transparent 1.2px),radial-gradient(circle at 60% 90%, rgba(243,245,254,.5) 0 .8px, transparent 1.4px),radial-gradient(circle at 8% 40%, rgba(243,245,254,.35) 0 .6px, transparent 1.1px),radial-gradient(circle at 92% 8%, rgba(243,245,254,.45) 0 .7px, transparent 1.3px),radial-gradient(circle at 55% 62%, rgba(243,245,254,.3) 0 .5px, transparent 1px),';
+    const sidebarBg = (T.stars === 'stars' && T.mode === 'dark' ? STARS : '') + 'linear-gradient(180deg,var(--color-neutral-900) 0%,var(--color-bg) 70%)';
+    // calendar
+    const HOUR_PX = 48, H0 = 7, H1 = 19;
+    const calStart = weekStart + s.calWeek * 7 * DAY;
+    const calHours = Array.from({ length: H1 - H0 + 1 }, (_, i) => ({ label: `${((H0 + i) % 12) || 12}${H0 + i < 12 ? 'am' : 'pm'}`, top: i * HOUR_PX }));
+    const yOf = (t) => { const d = new Date(t); return ((d.getHours() + d.getMinutes() / 60) - H0) * HOUR_PX; };
+    let calTotal = 0;
+    const calDays = Array.from({ length: 7 }, (_, i) => { const d0 = calStart + i * DAY; const dt = new Date(d0); const isToday = dt.toDateString() === today.toDateString(); const xs = s.entries.filter(e => e.start >= d0 && e.start < d0 + DAY); const tot = sum(xs); calTotal += tot;
+      return { wd: dt.toLocaleDateString([], { weekday: 'short' }), num: dt.getDate(), total: tot ? hm(tot) : '', isToday, labelColor: isToday ? 'var(--color-accent-300)' : 'var(--color-neutral-500)', numColor: isToday ? 'var(--color-accent)' : 'var(--color-text)', numRing: isToday ? 'inset 0 0 0 1px var(--color-accent)' : 'none', colBg: i >= 5 ? 'color-mix(in srgb,var(--color-text) 2%,transparent)' : 'transparent',
+        blocks: xs.map(e => { const res = this.resolve(e.ref); const chain = this.chainOf(res); return { name: e.name, sub: chain.length ? chain[0].label + (res.client && chain.length > 1 ? ' · ' + res.client.name : '') : (e.tags.length ? '#' + e.tags.join(' #') : 'No project'), top: yOf(e.start) + 1, h: Math.max(22, (e.end - e.start) / 3600000 * HOUR_PX - 2), edge: e.billable ? 'var(--color-accent)' : 'var(--color-neutral-500)', bg: e.billable ? 'var(--color-accent-900)' : 'var(--color-neutral-800)', title: `${e.name} · ${tm(e.start)} – ${tm(e.end)} · ${hm(e.end - e.start)}`, resume: () => this.setState({ desc: e.name, ref: e.ref, billable: e.billable, running: true, startedAt: Date.now(), now: Date.now(), page: 'time' }) }; }) }; });
+    const nowD = new Date(s.now); const nowTop = ((nowD.getHours() + nowD.getMinutes() / 60) - H0) * HOUR_PX;
+    // tags
+    const tagMap = new Map(); s.extraTags.forEach(t => tagMap.set(t, []));
+    s.entries.forEach(e => e.tags.forEach(t => { if (!tagMap.has(t)) tagMap.set(t, []); tagMap.get(t).push(e); }));
+    const tagRows = [...tagMap.entries()].sort((a, b) => sum(b[1]) - sum(a[1])).map(([name, es]) => { const used = [...new Set(es.map(e => { const res = this.resolve(e.ref); return res.project ? res.project.name : res.client ? res.client.name : null; }).filter(Boolean))]; const last = es.length ? Math.max(...es.map(e => e.start)) : null; return { name, count: es.length, hours: es.length ? hm(sum(es)) : '—', usedOn: used.length ? used.join(', ') : (es.length ? 'Entries without a project' : 'Not used yet'), last: last ? dayLabel(last) : '—', filter: () => this.setState({ page: 'time', filter: '#' + name }), remove: () => { const snap = { entries: s.entries, extraTags: s.extraTags }; this.setState(st => ({ extraTags: st.extraTags.filter(t => t !== name), entries: st.entries.map(e => e.tags.includes(name) ? { ...e, tags: e.tags.filter(t => t !== name) } : e) })); this.toast(`Removed #${name} from ${es.length} entries`, () => snap); } }; });
+    const addTag = () => { const t = s.newTag.trim().replace(/^#/, '').toLowerCase(); if (!t || tagMap.has(t)) { this.setState({ newTag: '' }); return; } this.setState(st => ({ extraTags: [...st.extraTags, t], newTag: '' })); };
+    // manual entry
+    const m = s.manual || {};
+    const mRes = this.resolve(m.ref); const mChain = this.chainOf(mRes).map(c => c.label).join(' · ');
+    const mDate = parseDate(m.date); const mStart = parseTime(m.start); const mEnd = parseTime(m.end); const mDur = parseDur(m.dur);
+    let mParsed = 'Pick a date and a start + end, or a duration.', mValid = false, mStartMs = 0, mEndMs = 0;
+    if (s.manual) {
+      if (!mDate) mParsed = `Couldn't read “${m.date}” as a date.`;
+      else { const d0 = new Date(mDate.getFullYear(), mDate.getMonth(), mDate.getDate()).getTime(); const dateStr = mDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        if (mStart != null && mEnd != null && mEnd > mStart) { mStartMs = d0 + mStart * 60000; mEndMs = d0 + mEnd * 60000; mValid = true; mParsed = `${dateStr} · ${tm(mStartMs)} – ${tm(mEndMs)} · ${hm(mEndMs - mStartMs)}`; }
+        else if (mDur && mStart != null) { mStartMs = d0 + mStart * 60000; mEndMs = mStartMs + mDur * 60000; mValid = true; mParsed = `${dateStr} · ${tm(mStartMs)} – ${tm(mEndMs)} · ${hm(mDur * 60000)}`; }
+        else if (mDur) { mStartMs = d0 + 9 * 3600000; mEndMs = mStartMs + mDur * 60000; mValid = true; mParsed = `${dateStr} · ${hm(mDur * 60000)} (no start time — logged from 9:00)`; }
+        else if (mStart != null && mEnd != null) mParsed = `${dateStr} · end must be after start.`;
+        else mParsed = `${dateStr} · add a start + end, or a duration.`; }
+    }
+    const mSet = {}; ['desc', 'date', 'start', 'end', 'dur', 'tags'].forEach(k => { mSet[k] = (e) => this.setState(st => ({ manual: { ...st.manual, [k]: e.target.value } })); });
+    return {
+      navMain, navManage,
+      desc: s.desc, setDesc: (e) => this.setState({ desc: e.target.value }), descKey: (e) => { if (e.key === 'Enter') s.running ? this.stopTimer() : this.startTimer(); },
+      hasRef: !!s.ref, refChain, clearRef: () => this.setState({ ref: null }),
+      menuOpen: s.menuOpen, toggleMenu: () => this.setState(st => ({ menuOpen: !st.menuOpen })), menuItems,
+      billable: s.billable, toggleBillable: () => this.setState(st => ({ billable: !st.billable })), rateLabel: s.billable ? `$${this.rateFor(r)}/h` : 'Not billable',
+      billableColor: s.billable ? 'var(--color-accent-300)' : 'var(--color-neutral-500)', billableBorder: s.billable ? 'var(--color-accent-700)' : 'var(--color-divider)',
+      clock: hms(elapsed), timerColor: s.running ? 'var(--color-accent-300)' : 'var(--color-neutral-500)',
+      toggleTimer: () => s.running ? this.stopTimer() : this.startTimer(), startAnim: s.running ? 'tickGlow 2s ease-in-out infinite' : 'none', startColor: s.running ? 'var(--color-accent-300)' : 'var(--color-accent)', startLabel: s.running ? 'Stop' : 'Start', startIcon: { __html: s.running ? I.stop : I.play },
+      isTime: s.page === 'time', isDashboard: s.page === 'dashboard', isProjects: s.page === 'projects', isClients: s.page === 'clients', isSettings: s.page === 'settings', isCalendar: s.page === 'calendar', isTags: s.page === 'tags', isStub: !['time', 'dashboard', 'projects', 'clients', 'reports', 'settings', 'calendar', 'tags'].includes(s.page), stubTitle: s.page[0].toUpperCase() + s.page.slice(1),
+      weekSummary: `${hm(weekMs)} this week · ${hm(billMs)} billable · ${money(earned)} unbilled`,
+      groupDay: () => this.setState({ groupBy: 'day' }), groupProject: () => this.setState({ groupBy: 'project' }),
+      segDayColor: s.groupBy === 'day' ? 'var(--color-accent)' : 'inherit', segDayShadow: s.groupBy === 'day' ? 'inset 0 0 0 1px var(--color-accent)' : 'none',
+      segProjColor: s.groupBy === 'project' ? 'var(--color-accent)' : 'inherit', segProjShadow: s.groupBy === 'project' ? 'inset 0 0 0 1px var(--color-accent)' : 'none',
+      filter: s.filter, setFilter: (e) => this.setState({ filter: e.target.value }),
+      hasSelection: selIds.length > 0, selectionLabel: `${selIds.length} selected`, selectionCount: selIds.length, clearSelection: () => this.setState({ selected: {} }),
+      markBillableSel: () => this.setState(st => ({ entries: st.entries.map(e => st.selected[e.id] ? { ...e, billable: true } : e), selected: {} })),
+      askBulkDelete: () => this.setState({ confirmBulk: true }), cancelBulk: () => this.setState({ confirmBulk: false }), confirmBulk: s.confirmBulk,
+      bulkBody: `${hm(sum(s.entries.filter(e => s.selected[e.id])))} of tracked time across ${selIds.length} entries.`,
+      doBulkDelete: () => { const items = s.entries.filter(e => s.selected[e.id]); this.setState(st => ({ confirmBulk: false, selected: {}, entries: st.entries.filter(e => !st.selected[e.id]) })); this.toast(`Moved ${items.length} entries to trash`, (st) => ({ entries: [...st.entries, ...items].sort((a, b) => b.start - a.start) })); },
+      groups, noEntries: rows.length === 0, showAmounts,
+      modalOpen: !!s.modal, closeModal: () => this.setState({ modal: null }), stop: (e) => e.stopPropagation(), modalTabs, modalItems, modalEmpty: !!s.search && modalItems.length === 0,
+      search: s.search, setSearch: (e) => this.setState({ search: e.target.value }), modalPlaceholder: `Search ${s.modal === 'task' ? 'open tasks' : (s.modal || '') + 's'}…`,
+      toastOpen: !!s.toast, toastText: s.toast ? s.toast.text : '', toastLeft: s.toast ? Math.max(0, Math.ceil((s.toast.until - s.now) / 1000)) : 0,
+      undo: () => { clearTimeout(this.toastT); this.setState(st => ({ ...st.toast.restore(st), toast: null })); },
+      dashDate: today.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' }),
+      stats: [
+        { label: 'Today', value: hm(todayMs), sub: s.running ? 'timer running' : `${s.entries.filter(e => dayLabel(e.start) === 'Today').length} entries` },
+        { label: 'This week', value: hm(weekMs), sub: 'of 30h target' },
+        { label: 'Billable', value: hm(billMs), sub: `${Math.round(pct * 100)}% of tracked` },
+        { label: 'Unbilled', value: money(earned), sub: `across ${s.clients.length} clients` },
+      ],
+      dayLetters: ['M', 'T', 'W', 'R', 'F'], activity, week,
+      donutDash: `${(pct * circ).toFixed(1)} ${circ.toFixed(1)}`, donutPct: Math.round(pct * 100) + '%', billableHrs: hm(billMs), nonBillableHrs: hm(weekMs - billMs),
+      projSummary: `${s.projects.length} projects · ${openTasks.length} open tasks · ${s.tasks.filter(t => t.done).length} done`, projectRows, looseTasks,
+      clientRows,
+      cascadeOpen: !!cz, cascade: cz || {}, cascadeRows, cascadeOutcome, cancelCascade: () => this.setState({ cascade: null }),
+      doCascade: () => { const snap = { clients: s.clients, projects: s.projects, tasks: s.tasks, entries: s.entries }; const ps = s.projects.filter(p => p.client === cz.id).map(p => p.id); const ts = s.tasks.filter(t => ps.includes(t.project)).map(t => t.id); const esIds = s.entries.filter(e => { const res = this.resolve(e.ref); return res.client && res.client.id === cz.id; }).map(e => e.id);
+        let projects = s.projects.filter(p => !(cz.projects && p.client === cz.id)).map(p => p.client === cz.id ? { ...p, client: null } : p);
+        let tasks = s.tasks.filter(t => !(cz.tasks && ts.includes(t.id))).map(t => cz.projects && ps.includes(t.project) ? { ...t, project: null } : t);
+        let entries = s.entries.filter(e => !(cz.entries && esIds.includes(e.id))).map(e => { if (!e.ref) return e; if (e.ref.type === 'client' && e.ref.id === cz.id) return { ...e, ref: null }; if (e.ref.type === 'project' && cz.projects && ps.includes(e.ref.id)) return { ...e, ref: null }; if (e.ref.type === 'task' && cz.tasks && ts.includes(e.ref.id)) return { ...e, ref: null }; return e; });
+        this.setState({ cascade: null, clients: s.clients.filter(c => c.id !== cz.id), projects, tasks, entries }); this.toast(`Deleted ${cz.name}`, () => snap); },
+      isReports: s.page === 'reports',
+      repRangeLabel: `${rangeName} · ${new Date(r0).toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${new Date(r1 - DAY).toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${repEntries.length} entries`,
+      repRanges: segOpt([['week', 'This week'], ['lastweek', 'Last week'], ['month', 'This month']], rep.range, 'range'),
+      repBillFilters: segOpt([['all', 'All'], ['billable', 'Billable'], ['non', 'Non-billable']], rep.bill, 'bill'),
+      repGroups: segOpt([['client', 'Client'], ['project', 'Project'], ['task', 'Task'], ['tag', 'Tag']], rep.group, 'group'),
+      repGroupLabel: rep.group[0].toUpperCase() + rep.group.slice(1),
+      repStats: [
+        { label: 'Tracked', value: hm(totalMs), sub: `${workedDays} working day${workedDays === 1 ? '' : 's'}` },
+        { label: 'Billable', value: hm(repBillMs), sub: totalMs ? `${Math.round(repBillMs / totalMs * 100)}% of tracked` : '—' },
+        { label: 'Amount', value: money(repAmt), sub: repBillMs ? `avg $${Math.round(repAmt / (repBillMs / 3600000))}/h` : 'nothing billable' },
+        { label: 'Per day', value: workedDays ? hm(totalMs / workedDays) : '—', sub: 'average on worked days' },
+      ],
+      repLegend: repRows.slice(0, 5).map(r => ({ label: r.label, color: r.color })), repDayCount: dayCount, repDays, repRows,
+      repTotal: { count: repEntries.length, hours: hm(totalMs), billable: hm(repBillMs), amount: money(repAmt) },
+      themeStyle: isDefault ? { display: 'contents' } : themeVars(T), sidebarBg, theme: T, themeReset: () => this.setState({ theme: { ...DEFAULT_THEME } }),
+      settingsTabs: [['Appearance', true], ['Profile', false], ['Organization', false], ['Members & roles', false], ['Trash', false], ['Import', false]].map(([label, a]) => ({ label, color: a ? 'var(--color-text)' : 'var(--color-neutral-500)', shadow: a ? 'inset 0 -2px 0 var(--color-accent)' : 'none' })),
+      presets, primaries, neutrals, radii, modes, starOpts, fonts, rampPreview, configText,
+      sampleBars: [{ label: 'Mon', a: 56, b: 22, h: '6.3h' }, { label: 'Tue', a: 65, b: 15, h: '6.4h' }, { label: 'Wed', a: 44, b: 8, h: '4.1h' }],
+      calDays, calHours, calHeight: (H1 - H0) * HOUR_PX + 1, nowTop, calPrev: () => this.setState(st => ({ calWeek: st.calWeek - 1 })), calNext: () => this.setState(st => ({ calWeek: st.calWeek + 1 })), calToday: () => this.setState({ calWeek: 0 }),
+      calTitle: `${new Date(calStart).toLocaleDateString([], { month: 'short', day: 'numeric' })} – ${new Date(calStart + 6 * DAY).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}`,
+      calSummary: `${hm(calTotal)} this week · ${s.calWeek === 0 ? 'current week' : s.calWeek === -1 ? 'last week' : Math.abs(s.calWeek) + ' weeks ' + (s.calWeek < 0 ? 'ago' : 'ahead')}`,
+      tagRows, newTag: s.newTag, setNewTag: (e) => this.setState({ newTag: e.target.value }), newTagKey: (e) => { if (e.key === 'Enter') addTag(); }, addTag,
+      manualOpen: !!s.manual, m, mSet,
+      openManual: () => this.setState({ manual: { desc: '', ref: null, billable: true, date: '', start: '', end: '', dur: '', tags: '' } }), closeManual: () => this.setState({ manual: null }),
+      mOpenPicker: () => this.setState({ modal: 'task', modalTarget: 'manual', search: '' }),
+      mRefLabel: mChain || 'None — simple entry', mRefColor: mChain ? 'var(--color-text)' : 'var(--color-neutral-500)',
+      mToggleBillable: () => this.setState(st => ({ manual: { ...st.manual, billable: !st.manual.billable } })), mRateLabel: m.billable ? `$${this.rateFor(mRes)}/h` : 'Not billable', mBillColor: m.billable ? 'var(--color-accent-300)' : 'var(--color-neutral-500)', mBillBorder: m.billable ? 'var(--color-accent-700)' : 'var(--color-divider)',
+      mParsed, mParsedColor: mValid ? 'var(--color-accent-300)' : 'var(--color-neutral-400)', mInvalid: !mValid,
+      saveManual: () => { if (!mValid) return; const e = { id: s.nextId, name: m.desc || 'Untitled entry', ref: m.ref, tags: m.tags.split(',').map(t => t.trim()).filter(Boolean), billable: m.billable, start: mStartMs, end: mEndMs }; this.setState(st => ({ manual: null, entries: [...st.entries, e].sort((a, b) => b.start - a.start), nextId: st.nextId + 1, page: 'time' })); },
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,287 @@
+<script setup lang="ts">
+// Client / Project / Task picker (520px dialog, 12vh from the top).
+// Serves both the timer bar and the Manual-entry dialog: reads
+// uiStore.pickerTarget — 'timer' → timerStore.attach(type, id);
+// 'manual' → writes uiStore.pickerResult for the dialog to consume.
+// Done tasks are hidden; no match → dashed "Create" row (via catalog store);
+// keyboard ↑↓ ↵ esc; list paginates at 50 with an "n more…" row.
+import type { ChainRef, RefType, SessionUser } from '#shared/types'
+
+const ui = useUiStore()
+const timer = useTimerStore()
+const catalog = useCatalogStore()
+const { user } = useUserSession()
+
+const open = computed({
+  get: () => ui.pickerOpen,
+  set: (v: boolean) => {
+    if (!v) ui.closePicker()
+  }
+})
+
+const PAGE = 50
+
+const tab = ref<RefType>('task')
+const search = ref('')
+const highlighted = ref(0)
+const limit = ref(PAGE)
+const creating = ref(false)
+
+const searchInput = useTemplateRef<{ inputRef?: HTMLInputElement }>('searchInput')
+const listEl = useTemplateRef<HTMLElement>('listEl')
+
+watch(() => ui.pickerOpen, (v) => {
+  if (!v) return
+  tab.value = ui.pickerTab
+  search.value = ''
+  highlighted.value = 0
+  limit.value = PAGE
+})
+
+watch([tab, search], () => {
+  highlighted.value = 0
+  limit.value = PAGE
+})
+
+watch(highlighted, async (i) => {
+  await nextTick()
+  listEl.value?.children[i]?.scrollIntoView?.({ block: 'nearest' })
+})
+
+const userRate = computed(() => (user.value as SessionUser | null)?.defaultRate ?? null)
+
+const tabs: { value: RefType, label: string }[] = [
+  { value: 'client', label: 'Client' },
+  { value: 'project', label: 'Project' },
+  { value: 'task', label: 'Task' }
+]
+
+interface PickerItem {
+  id: string
+  name: string
+  sub: string
+  meta: string
+  dot: string | null
+}
+
+const allItems = computed<PickerItem[]>(() => {
+  const q = search.value.trim().toLowerCase()
+  const match = (name: string) => !q || name.toLowerCase().includes(q)
+
+  if (tab.value === 'client') {
+    return catalog.clients.filter(c => match(c.name)).map(c => ({
+      id: c.id,
+      name: c.name,
+      sub: `${c.projectCount} project${c.projectCount === 1 ? '' : 's'}`,
+      meta: c.rate != null ? `$${c.rate}/h` : userRate.value != null ? `default $${userRate.value}/h` : '',
+      dot: c.color
+    }))
+  }
+
+  if (tab.value === 'project') {
+    return catalog.projects.filter(p => !p.archived && match(p.name)).map(p => ({
+      id: p.id,
+      name: p.name,
+      sub: p.clientName ?? 'No client',
+      meta: p.estimateMinutes ? `${formatEstimate(p.estimateMinutes)} est.` : '',
+      dot: p.clientColor
+    }))
+  }
+
+  // Tasks — completed ones are hidden
+  return catalog.openTasks.filter(t => match(t.name)).map(t => ({
+    id: t.id,
+    name: t.name,
+    sub: t.projectName ? `${t.projectName}${t.clientName ? ' · ' + t.clientName : ''}` : 'Standalone task',
+    meta: t.estimateMinutes ? `${formatEstimate(t.estimateMinutes)} est.` : '',
+    dot: (t.projectId && catalog.projects.find(p => p.id === t.projectId)?.clientColor) || null
+  }))
+})
+
+const visible = computed(() => allItems.value.slice(0, limit.value))
+const moreCount = computed(() => allItems.value.length - visible.value.length)
+const showCreate = computed(() => search.value.trim().length > 0 && allItems.value.length === 0)
+
+const placeholder = computed(() =>
+  tab.value === 'task' ? 'Search open tasks…' : tab.value === 'client' ? 'Search clients…' : 'Search projects…'
+)
+
+/** Display-only chain for pickerResult (server re-resolves per Rule 1). */
+function buildChain(refType: RefType, refId: string): ChainRef {
+  const chain: ChainRef = { refType, refId }
+  if (refType === 'task') {
+    const t = catalog.tasks.find(x => x.id === refId)
+    if (t) {
+      chain.taskId = t.id
+      chain.taskName = t.name
+      if (t.projectId) {
+        chain.projectId = t.projectId
+        chain.projectName = t.projectName ?? undefined
+        chain.clientName = t.clientName ?? undefined
+        chain.clientColor = catalog.projects.find(p => p.id === t.projectId)?.clientColor ?? undefined
+      }
+    }
+  } else if (refType === 'project') {
+    const p = catalog.projects.find(x => x.id === refId)
+    if (p) {
+      chain.projectId = p.id
+      chain.projectName = p.name
+      chain.clientId = p.clientId ?? undefined
+      chain.clientName = p.clientName ?? undefined
+      chain.clientColor = p.clientColor ?? undefined
+    }
+  } else {
+    const c = catalog.clients.find(x => x.id === refId)
+    if (c) {
+      chain.clientId = c.id
+      chain.clientName = c.name
+      chain.clientColor = c.color
+    }
+  }
+  return chain
+}
+
+function pick(refType: RefType, refId: string) {
+  if (ui.pickerTarget === 'timer') {
+    timer.attach(refType, refId)
+  } else {
+    ui.pickerResult = buildChain(refType, refId)
+  }
+  ui.closePicker()
+}
+
+async function createFromSearch() {
+  const name = search.value.trim()
+  if (!name || creating.value) return
+  creating.value = true
+  try {
+    if (tab.value === 'client') {
+      const dto = await catalog.createClient({ name })
+      pick('client', dto.id)
+    } else if (tab.value === 'project') {
+      const dto = await catalog.createProject({ name })
+      pick('project', dto.id)
+    } else {
+      const dto = await catalog.createTask({ name })
+      if (dto) pick('task', dto.id)
+    }
+  } catch {
+    // creation failed — keep the picker open so the user can retry
+  } finally {
+    creating.value = false
+  }
+}
+
+function onKeydown(e: KeyboardEvent) {
+  const count = visible.value.length
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (count) highlighted.value = (highlighted.value + 1) % count
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (count) highlighted.value = (highlighted.value - 1 + count) % count
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    const it = visible.value[highlighted.value]
+    if (it) pick(tab.value, it.id)
+    else if (showCreate.value) createFromSearch()
+  }
+}
+
+/** Keep the dialog from focusing the first tab button; focus the search instead. */
+function onOpenAutoFocus(e: Event) {
+  e.preventDefault()
+  nextTick(() => searchInput.value?.inputRef?.focus())
+}
+</script>
+
+<template>
+  <UModal
+    v-model:open="open"
+    :ui="{ content: 'top-[12vh] translate-y-0 max-w-[520px]' }"
+    :content="{ onOpenAutoFocus }"
+    aria-label="Pick a client, project or task"
+  >
+    <template #content>
+      <div class="flex flex-col gap-3 p-4">
+        <!-- Tabs -->
+        <div class="flex gap-1" role="tablist" aria-label="Pick type">
+          <UButton
+            v-for="t in tabs"
+            :key="t.value"
+            :label="t.label"
+            size="sm"
+            variant="outline"
+            :color="tab === t.value ? 'primary' : 'neutral'"
+            :class="tab === t.value ? '' : 'text-toned'"
+            role="tab"
+            :aria-selected="tab === t.value"
+            @click="tab = t.value"
+          />
+        </div>
+
+        <!-- Search -->
+        <UInput
+          ref="searchInput"
+          v-model="search"
+          icon="i-lucide-search"
+          :placeholder="placeholder"
+          size="lg"
+          class="w-full"
+          @keydown="onKeydown"
+        />
+
+        <!-- Results -->
+        <div ref="listEl" class="flex max-h-[340px] flex-col gap-px overflow-y-auto">
+          <button
+            v-for="(it, i) in visible"
+            :key="it.id"
+            type="button"
+            class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left"
+            :class="i === highlighted
+              ? 'bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'
+              : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'"
+            @mousemove="highlighted = i"
+            @click="pick(tab, it.id)"
+          >
+            <span class="size-2 shrink-0 rounded-full" :style="{ background: clientColorVar(it.dot) }" />
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm text-highlighted">{{ it.name }}</span>
+              <span v-if="it.sub" class="block truncate text-xs text-muted">{{ it.sub }}</span>
+            </span>
+            <span class="tnum shrink-0 text-xs text-muted">{{ it.meta }}</span>
+          </button>
+
+          <button
+            v-if="moreCount > 0"
+            type="button"
+            class="rounded-md px-2.5 py-2 text-left text-xs text-muted hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]"
+            @click="limit += PAGE"
+          >
+            {{ moreCount }} more…
+          </button>
+
+          <button
+            v-if="showCreate"
+            type="button"
+            class="flex items-center gap-3 rounded-md border border-dashed border-default px-2.5 py-[9px] text-left text-sm text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]"
+            :disabled="creating"
+            @click="createFromSearch"
+          >
+            <UIcon name="i-lucide-plus" class="size-3.5 shrink-0" />
+            <span class="truncate">Create “{{ search.trim() }}”</span>
+          </button>
+
+          <div v-if="!visible.length && !showCreate" class="px-2.5 py-3 text-[13px] text-muted">
+            Nothing here yet — type a name to create one.
+          </div>
+        </div>
+
+        <!-- Footer hint -->
+        <p class="text-[11px] text-dimmed">
+          Picking a task brings its project and client along. ↑↓ move · ↵ pick · esc close
+        </p>
+      </div>
+    </template>
+  </UModal>
+</template>
