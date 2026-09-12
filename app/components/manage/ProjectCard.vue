@@ -54,7 +54,7 @@ const amountLabel = computed(() =>
     <!-- Header (click to expand) -->
     <button
       type="button"
-      class="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_220px_90px_24px] items-center gap-[22px] px-[22px] py-3 text-left transition-colors hover:bg-accented/30"
+      class="flex w-full cursor-pointer flex-col gap-2.5 px-4 py-3 text-left transition-colors hover:bg-accented/30 sm:grid sm:grid-cols-[minmax(0,1fr)_220px_90px_24px] sm:items-center sm:gap-[22px] sm:px-[22px]"
       :aria-expanded="open"
       @click="open = !open"
     >
@@ -65,9 +65,14 @@ const amountLabel = computed(() =>
             :style="{ background: clientColorVar(project.clientColor, 'var(--ui-color-neutral-400)') }"
           />
           <span class="truncate text-[15px] font-medium text-highlighted">{{ project.name }}</span>
-          <UBadge color="neutral" variant="soft" size="sm" class="text-[10px]">
+          <UBadge color="neutral" variant="soft" size="sm" class="shrink-0 text-[10px]">
             {{ project.billableDefault ? 'billable' : 'internal' }}
           </UBadge>
+          <UIcon
+            name="i-lucide-chevron-down"
+            class="ml-auto size-4 shrink-0 opacity-60 transition-transform sm:hidden"
+            :class="open ? 'rotate-180' : ''"
+          />
         </div>
         <div class="ml-4 truncate text-xs text-muted">{{ subline }}</div>
       </div>
@@ -86,11 +91,11 @@ const amountLabel = computed(() =>
         </div>
       </div>
 
-      <div class="tnum text-right text-[13px] text-toned">{{ amountLabel }}</div>
+      <div class="tnum text-right text-[13px] text-toned" :class="amountLabel ? '' : 'max-sm:hidden'">{{ amountLabel }}</div>
 
       <UIcon
         name="i-lucide-chevron-down"
-        class="size-4 opacity-60 transition-transform"
+        class="hidden size-4 opacity-60 transition-transform sm:block"
         :class="open ? 'rotate-180' : ''"
       />
     </button>
