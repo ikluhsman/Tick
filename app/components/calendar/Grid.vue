@@ -1,10 +1,17 @@
 <script setup lang="ts">
 // Calendar grid — week (7 cols) or day (1 col) at 48px/hour. Base window
 // 7am–7pm; it extends to cover entries outside and the body scrolls (capped
-// at the 12h height). Pointer interactions: drag empty space → ghost block +
+// at the 12h height). Mouse interactions: drag empty space → ghost block +
 // emit('create') on release; drag a block → move (across days in week view);
 // drag its top/bottom 6px edge → resize; everything snaps to 5 minutes;
 // Esc cancels an active drag; click without dragging = start again.
+// Touch (unified pointer events, touch-action: manipulation so one-finger
+// scroll keeps working): long-press 300ms on empty space → drag-create (a
+// default 30-min ghost appears; dragging extends the end); long-press a
+// block → drag moves it, releasing also "arms" it with ≥44px resize handles
+// at its top/bottom edges (immediate drag, no second long-press); tap = start
+// again, as on desktop. While a touch drag is live, touchmove is prevented
+// (non-passive) so the browser never steals the gesture for scrolling.
 // The running timer renders as a live non-interactive block growing to now.
 import type { EntryDto } from '#shared/types'
 
@@ -12,6 +19,9 @@ const HOUR_PX = 48
 const SNAP = 5
 const EDGE_PX = 6
 const CLICK_SLOP_PX = 4
+const LONG_PRESS_MS = 300
+const TOUCH_SLOP_PX = 8
+const TOUCH_DEFAULT_MIN = 30
 const MAX_BODY_PX = 12 * HOUR_PX + 1
 
 const emit = defineEmits<{ create: [payload: { day: number, startMin: number, endMin: number }] }>()
@@ -25,11 +35,15 @@ const scrollEl = useTemplateRef<HTMLElement>('scrollEl')
 
 const now = ref(Date.now())
 let nowHandle: ReturnType<typeof setInterval> | null = null
+/** Coarse pointer (touch device) → render resize handles for the armed block. */
+const isCoarse = ref(false)
 onMounted(() => {
   nowHandle = setInterval(() => (now.value = Date.now()), 30_000)
+  isCoarse.value = window.matchMedia('(pointer: coarse)').matches
 })
 onBeforeUnmount(() => {
   if (nowHandle) clearInterval(nowHandle)
+  cancelPress()
   teardownDrag()
 })
 
@@ -111,10 +125,14 @@ interface DragState {
   originX: number
   originY: number
   moved: boolean
+  /** Touch-initiated drag: scroll is suppressed, create extends end-only. */
+  touch: boolean
 }
 
 const drag = ref<DragState | null>(null)
 const suppressClick = ref(false)
+/** Entry id whose touch resize handles are showing (last long-pressed block). */
+const armedId = ref<string | null>(null)
 
 const snap = (m: number) => Math.round(m / SNAP) * SNAP
 const clampMin = (m: number) => Math.min(hourBounds.value.h1 * 60, Math.max(hourBounds.value.h0 * 60, m))
@@ -132,12 +150,27 @@ function dayIdxAt(clientX: number): number {
   return Math.min(calendar.dayCount - 1, Math.max(0, Math.floor((clientX - rect.left - 52) / w)))
 }
 
+/** Non-passive touchmove preventer: keeps the browser from starting a scroll
+ *  (which would pointercancel the drag) while a touch drag is live. */
+function preventTouchMove(e: TouchEvent) {
+  e.preventDefault()
+}
+
+/** Long-press context menu (Android) would break the pointer stream. */
+function preventContextMenu(e: Event) {
+  e.preventDefault()
+}
+
 function beginDrag(state: DragState) {
   drag.value = state
   window.addEventListener('pointermove', onDragMove)
   window.addEventListener('pointerup', onDragUp)
   window.addEventListener('pointercancel', cancelDrag)
   window.addEventListener('keydown', onDragKey)
+  if (state.touch) {
+    window.addEventListener('touchmove', preventTouchMove, { passive: false })
+    window.addEventListener('contextmenu', preventContextMenu)
+  }
 }
 
 function teardownDrag() {
@@ -146,6 +179,50 @@ function teardownDrag() {
   window.removeEventListener('pointerup', onDragUp)
   window.removeEventListener('pointercancel', cancelDrag)
   window.removeEventListener('keydown', onDragKey)
+  window.removeEventListener('touchmove', preventTouchMove)
+  window.removeEventListener('contextmenu', preventContextMenu)
+}
+
+// ── Long-press arming (touch) ───────────────────────────────────────────────
+// A touch pointerdown only *arms* a drag: nothing is prevented, so a finger
+// that moves within 300ms scrolls normally (the browser's scroll fires
+// pointercancel → the press is cancelled). Holding still for 300ms begins
+// the drag from the pressed spot.
+let pendingPress: {
+  x: number
+  y: number
+  timer: ReturnType<typeof setTimeout>
+} | null = null
+
+function armPress(e: PointerEvent, begin: () => void) {
+  cancelPress()
+  pendingPress = {
+    x: e.clientX,
+    y: e.clientY,
+    timer: setTimeout(() => {
+      cancelPress()
+      begin()
+    }, LONG_PRESS_MS)
+  }
+  window.addEventListener('pointermove', onPressMove)
+  window.addEventListener('pointerup', cancelPress)
+  window.addEventListener('pointercancel', cancelPress)
+}
+
+function onPressMove(e: PointerEvent) {
+  if (!pendingPress) return
+  if (Math.abs(e.clientX - pendingPress.x) + Math.abs(e.clientY - pendingPress.y) > TOUCH_SLOP_PX) {
+    cancelPress()
+  }
+}
+
+function cancelPress() {
+  if (!pendingPress) return
+  clearTimeout(pendingPress.timer)
+  pendingPress = null
+  window.removeEventListener('pointermove', onPressMove)
+  window.removeEventListener('pointerup', cancelPress)
+  window.removeEventListener('pointercancel', cancelPress)
 }
 
 function cancelDrag() {
@@ -160,7 +237,30 @@ function onDragKey(e: KeyboardEvent) {
 }
 
 function onColumnDown(dayIdx: number, e: PointerEvent) {
-  if (e.button !== 0 || drag.value) return
+  if (drag.value) return
+  if (e.pointerType === 'touch') {
+    armedId.value = null // tap empty space clears the armed block
+    const { clientX, clientY } = e
+    armPress(e, () => {
+      // Long-press create: seed a default 30-min ghost so the press gives
+      // instant feedback; releasing without dragging still opens the dialog.
+      const m = snap(clampMin(minuteAt(clientY)))
+      beginDrag({
+        kind: 'create',
+        entry: null,
+        dayIdx,
+        startMin: m,
+        endMin: Math.min(hourBounds.value.h1 * 60, m + TOUCH_DEFAULT_MIN),
+        anchorMin: m,
+        originX: clientX,
+        originY: clientY,
+        moved: true,
+        touch: true
+      })
+    })
+    return
+  }
+  if (e.button !== 0) return
   e.preventDefault()
   const m = snap(clampMin(minuteAt(e.clientY)))
   beginDrag({
@@ -172,21 +272,49 @@ function onColumnDown(dayIdx: number, e: PointerEvent) {
     anchorMin: m,
     originX: e.clientX,
     originY: e.clientY,
-    moved: false
+    moved: false,
+    touch: false
   })
 }
 
+/** Minute bounds of an entry within its own day. */
+function entryMinutes(entry: EntryDto): { startMin: number, endMin: number } {
+  const startTs = new Date(entry.start).getTime()
+  const dayTs = dayStartOf(startTs)
+  const startMin = (startTs - dayTs) / 60_000
+  return { startMin, endMin: Math.min(1440, startMin + entry.durationSec / 60) }
+}
+
 function onBlockDown(entry: EntryDto, dayIdx: number, e: PointerEvent) {
-  if (e.button !== 0 || drag.value) return
+  if (drag.value) return
+  if (e.pointerType === 'touch') {
+    e.stopPropagation()
+    const { clientX, clientY } = e
+    armPress(e, () => {
+      // Long-press a block → move; releasing (moved or not) arms its handles.
+      const { startMin, endMin } = entryMinutes(entry)
+      beginDrag({
+        kind: 'move',
+        entry,
+        dayIdx,
+        startMin,
+        endMin,
+        anchorMin: minuteAt(clientY) - startMin,
+        originX: clientX,
+        originY: clientY,
+        moved: false,
+        touch: true
+      })
+    })
+    return
+  }
+  if (e.button !== 0) return
   e.preventDefault()
   e.stopPropagation()
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
   const rel = e.clientY - rect.top
   const kind: DragKind = rel <= EDGE_PX ? 'resize-top' : rel >= rect.height - EDGE_PX ? 'resize-bottom' : 'move'
-  const startTs = new Date(entry.start).getTime()
-  const dayTs = dayStartOf(startTs)
-  const startMin = (startTs - dayTs) / 60_000
-  const endMin = Math.min(1440, startMin + entry.durationSec / 60)
+  const { startMin, endMin } = entryMinutes(entry)
   beginDrag({
     kind,
     entry,
@@ -196,7 +324,29 @@ function onBlockDown(entry: EntryDto, dayIdx: number, e: PointerEvent) {
     anchorMin: minuteAt(e.clientY) - startMin,
     originX: e.clientX,
     originY: e.clientY,
-    moved: false
+    moved: false,
+    touch: false
+  })
+}
+
+/** Armed block's ≥44px touch handles: resize starts on contact (the handle
+ *  itself is the explicit intent — no second long-press needed). */
+function onHandleDown(entry: EntryDto, dayIdx: number, kind: 'resize-top' | 'resize-bottom', e: PointerEvent) {
+  if (drag.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  const { startMin, endMin } = entryMinutes(entry)
+  beginDrag({
+    kind,
+    entry,
+    dayIdx,
+    startMin,
+    endMin,
+    anchorMin: 0,
+    originX: e.clientX,
+    originY: e.clientY,
+    moved: true,
+    touch: true
   })
 }
 
@@ -207,8 +357,14 @@ function onDragMove(e: PointerEvent) {
   const m = minuteAt(e.clientY)
   if (d.kind === 'create') {
     const cur = snap(clampMin(m))
-    d.startMin = Math.min(d.anchorMin, cur)
-    d.endMin = Math.max(d.anchorMin, cur)
+    if (d.touch) {
+      // Touch create keeps its start anchored and drags the end out — the
+      // seeded 30-min block never collapses under finger jitter.
+      d.endMin = Math.max(d.anchorMin + SNAP, cur)
+    } else {
+      d.startMin = Math.min(d.anchorMin, cur)
+      d.endMin = Math.max(d.anchorMin, cur)
+    }
   } else if (d.kind === 'move') {
     const dur = d.endMin - d.startMin
     const s = Math.min((hourBounds.value.h1 * 60) - dur, Math.max(hourBounds.value.h0 * 60, snap(m - d.anchorMin)))
@@ -232,9 +388,16 @@ function onDragUp() {
     }
     return
   }
-  if (!d.moved || !d.entry) return
+  if (!d.entry) return
+  if (d.touch) {
+    // Releasing a long-pressed block arms its resize handles; suppress the
+    // trailing click so the long-press doesn't also "start again".
+    armedId.value = d.entry.id
+  }
+  if (!d.moved && !d.touch) return
   suppressClick.value = true
   setTimeout(() => (suppressClick.value = false), 0)
+  if (!d.moved) return
   const dayTs = calendar.days[d.dayIdx]!
   let start: number
   let end: number
@@ -437,7 +600,7 @@ function blockEdge(billable: boolean): string {
       <div
         ref="gridEl"
         class="relative grid select-none"
-        :style="{ gridTemplateColumns: cols, height: bodyH + 'px', touchAction: 'pan-y' }"
+        :style="{ gridTemplateColumns: cols, height: bodyH + 'px', touchAction: 'manipulation' }"
       >
         <!-- Hour gutter -->
         <div class="relative">
@@ -469,27 +632,51 @@ function blockEdge(billable: boolean): string {
           />
 
           <!-- Entry blocks -->
-          <button
-            v-for="b in dayBlocks[di]"
-            :key="b.id"
-            type="button"
-            :title="b.title || undefined"
-            class="absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-sm px-1.5 py-1 text-left transition-[filter] hover:brightness-[1.12]"
-            :class="b.dragging ? 'z-10 cursor-grabbing opacity-90 shadow-md' : 'cursor-grab'"
-            :style="{
-              top: b.top + 'px',
-              height: b.h + 'px',
-              background: blockBg(b.billable),
-              borderLeft: `2px solid ${blockEdge(b.billable)}`
-            }"
-            @pointerdown="onBlockDown(b.entry, di, $event)"
-            @click="startAgain(b.entry)"
-          >
-            <span class="pointer-events-none absolute inset-x-0 top-0 h-[6px] cursor-ns-resize" />
-            <span class="truncate text-[11px] font-medium leading-[1.25] text-highlighted">{{ b.name }}</span>
-            <span class="tnum truncate text-[10px] text-muted">{{ b.sub }}</span>
-            <span class="pointer-events-none absolute inset-x-0 bottom-0 h-[6px] cursor-ns-resize" />
-          </button>
+          <template v-for="b in dayBlocks[di]" :key="b.id">
+            <button
+              type="button"
+              :title="b.title || undefined"
+              class="absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-sm px-1.5 py-1 text-left transition-[filter] hover:brightness-[1.12]"
+              :class="[
+                b.dragging ? 'z-10 cursor-grabbing opacity-90 shadow-md' : 'cursor-grab',
+                isCoarse && armedId === b.id && !b.dragging ? 'ring ring-primary/60' : ''
+              ]"
+              :style="{
+                top: b.top + 'px',
+                height: b.h + 'px',
+                background: blockBg(b.billable),
+                borderLeft: `2px solid ${blockEdge(b.billable)}`
+              }"
+              @pointerdown="onBlockDown(b.entry, di, $event)"
+              @click="startAgain(b.entry)"
+            >
+              <span class="pointer-events-none absolute inset-x-0 top-0 h-[6px] cursor-ns-resize" />
+              <span class="truncate text-[11px] font-medium leading-[1.25] text-highlighted">{{ b.name }}</span>
+              <span class="tnum truncate text-[10px] text-muted">{{ b.sub }}</span>
+              <span class="pointer-events-none absolute inset-x-0 bottom-0 h-[6px] cursor-ns-resize" />
+            </button>
+
+            <!-- Touch resize handles (armed block only): 44px hit areas whose
+                 dot centers on the block edge; drag starts on contact -->
+            <template v-if="isCoarse && armedId === b.id && !b.dragging">
+              <span
+                class="absolute left-1/4 z-30 grid size-11 -translate-x-1/2 touch-none place-items-center"
+                :style="{ top: (b.top - 22) + 'px' }"
+                aria-hidden="true"
+                @pointerdown="onHandleDown(b.entry, di, 'resize-top', $event)"
+              >
+                <span class="size-3 rounded-full bg-default ring-2 ring-primary" />
+              </span>
+              <span
+                class="absolute right-1/4 z-30 grid size-11 translate-x-1/2 touch-none place-items-center"
+                :style="{ top: (b.top + b.h - 22) + 'px' }"
+                aria-hidden="true"
+                @pointerdown="onHandleDown(b.entry, di, 'resize-bottom', $event)"
+              >
+                <span class="size-3 rounded-full bg-default ring-2 ring-primary" />
+              </span>
+            </template>
+          </template>
 
           <!-- Running timer: live, non-interactive -->
           <div

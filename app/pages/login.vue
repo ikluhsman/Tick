@@ -71,10 +71,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           />
         </template>
         <template #footer>
-          New to Tick?
-          <NuxtLink to="/register" class="font-medium text-primary">
-            Create your workspace
-          </NuxtLink>
+          <div class="flex flex-col gap-1">
+            <div>
+              New to Tick?
+              <NuxtLink to="/register" class="font-medium text-primary">
+                Create your workspace
+              </NuxtLink>
+            </div>
+            <NuxtLink to="/forgot-password" class="text-sm text-muted hover:text-primary">
+              Forgot password?
+            </NuxtLink>
+          </div>
         </template>
       </UAuthForm>
   </UPageCard>

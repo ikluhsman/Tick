@@ -3,6 +3,7 @@
 import { z } from 'zod'
 
 export default defineEventHandler(async (event) => {
+  demoGuard(event) // 403 in demo mode
   const user = await requireAuth(event)
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Only owners and admins can manage members.' })

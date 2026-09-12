@@ -97,6 +97,18 @@ export const useReportsStore = defineStore('reports', () => {
     return `/api/export/csv?${q}`
   })
 
+  /** Server-rendered PDF of the current report (mirrors the summary query, incl. grouping). */
+  const pdfUrl = computed(() => {
+    const { from, to } = bounds.value
+    const q = new URLSearchParams({
+      from: from.toISOString(),
+      to: to.toISOString(),
+      billable: billable.value,
+      groupBy: groupBy.value
+    })
+    return `/api/export/pdf?${q}`
+  })
+
   async function fetchSummary() {
     const { from, to } = bounds.value
     pending.value = true
@@ -154,6 +166,7 @@ export const useReportsStore = defineStore('reports', () => {
     rangeLabel,
     dayCount,
     csvUrl,
+    pdfUrl,
     fetchSummary,
     setRange,
     setCustomRange,

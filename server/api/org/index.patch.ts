@@ -7,6 +7,7 @@ const bodySchema = z.object({
 })
 
 export default defineEventHandler(async (event): Promise<OrgInfoDto> => {
+  demoGuard(event) // 403 in demo mode
   const user = await requireAuth(event)
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Only owners and admins can rename the organization.' })

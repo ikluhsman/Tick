@@ -19,6 +19,7 @@ onMounted(() => {
   <div class="flex min-h-screen bg-default text-default">
     <ShellAppSidebar class="max-lg:hidden" />
     <main class="flex min-w-0 flex-1 flex-col max-lg:pb-[calc(150px+env(safe-area-inset-bottom))]">
+      <ShellDemoBanner />
       <ShellTimerBar class="max-lg:hidden" />
       <slot />
     </main>

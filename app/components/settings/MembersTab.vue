@@ -2,8 +2,10 @@
 // Settings → Members & roles: member table (role select, per-member rate
 // override, remove w/ confirm — the last owner is protected server-side and
 // disabled here) plus invites: POST /api/invites returns a copyable
-// /register?invite=TOKEN link. No email is sent (SMTP later).
+// /register?invite=TOKEN link and emails it too when SMTP is configured
+// (emailSent flag drives the "email sent" vs "share it yourself" state).
 import type { InviteDto, OrgMemberDto } from '#shared/types/settings'
+import type { InviteCreateDto } from '#shared/types/mail'
 
 type Role = OrgMemberDto['role']
 
@@ -121,7 +123,7 @@ const inviteEmail = ref('')
 const inviteRole = ref<Role>('member')
 const inviteBusy = ref(false)
 const inviteError = ref<string | null>(null)
-const createdInvite = ref<InviteDto | null>(null)
+const createdInvite = ref<InviteCreateDto | null>(null)
 
 const canInvite = computed(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail.value.trim()))
 
@@ -138,7 +140,7 @@ async function createInvite() {
   inviteBusy.value = true
   inviteError.value = null
   try {
-    const invite = await $fetch<InviteDto>('/api/invites', {
+    const invite = await $fetch<InviteCreateDto>('/api/invites', {
       method: 'POST',
       body: { email: inviteEmail.value.trim(), role: inviteRole.value }
     })
@@ -290,7 +292,7 @@ function apiError(err: unknown): string {
     <div v-if="canManage && invites.length" class="overflow-hidden rounded-lg border border-default bg-elevated shadow-sm">
       <div class="border-b border-default px-[22px] py-3">
         <h3 class="text-[15px] font-medium text-highlighted">Pending invites</h3>
-        <p class="text-xs text-muted">Share the link yourself — email delivery coming later.</p>
+        <p class="text-xs text-muted">Not accepted yet — the link stays copyable either way.</p>
       </div>
       <div
         v-for="i in invites"
@@ -358,10 +360,19 @@ function apiError(err: unknown): string {
         </div>
 
         <div v-else class="flex flex-col gap-3">
-          <p class="text-sm text-default">
-            Invite created for <span class="font-medium text-highlighted">{{ createdInvite.email }}</span>
-            as <span class="capitalize">{{ createdInvite.role }}</span>.
-          </p>
+          <div class="flex items-center gap-2">
+            <p class="min-w-0 flex-1 text-sm text-default">
+              Invite created for <span class="font-medium text-highlighted">{{ createdInvite.email }}</span>
+              as <span class="capitalize">{{ createdInvite.role }}</span>.
+            </p>
+            <UBadge
+              :color="createdInvite.emailSent ? 'primary' : 'neutral'"
+              variant="subtle"
+              size="sm"
+              :icon="createdInvite.emailSent ? 'i-lucide-mail-check' : 'i-lucide-mail-x'"
+              :label="createdInvite.emailSent ? 'Email sent' : 'No email sent'"
+            />
+          </div>
           <div class="flex items-center gap-2">
             <UInput
               :model-value="inviteLink(createdInvite.token)"
@@ -379,7 +390,10 @@ function apiError(err: unknown): string {
             />
           </div>
           <p class="text-xs text-muted">
-            Share this link — email delivery coming later. It expires in 7 days and works once.
+            {{ createdInvite.emailSent
+              ? 'The invite email is on its way — the link is here too if you want to share it directly.'
+              : 'Email isn\'t configured on this instance, so share this link yourself.' }}
+            It expires in 7 days and works once.
           </p>
         </div>
       </template>

@@ -1,8 +1,11 @@
-// POST /api/invites — create an invite (owner/admin only). No email is sent
-// (SMTP later); the UI shows a copyable /register?invite=TOKEN link instead.
+// POST /api/invites — create an invite (owner/admin only). When SMTP is
+// configured the invitee gets an email with the join link; either way the
+// response carries the token so the UI can always offer a copyable
+// /register?invite=TOKEN link. `emailSent` tells the UI which state to show.
 import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
-import type { InviteDto } from '~~/shared/types/settings'
+import { escapeMailHtml, isMailConfigured, renderMailButton, renderMailHtml, sendMail } from '../../utils/mail'
+import type { InviteCreateDto } from '~~/shared/types/mail'
 
 const bodySchema = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email').max(254),
@@ -11,7 +14,7 @@ const bodySchema = z.object({
 
 const EXPIRY_DAYS = 7
 
-export default defineEventHandler(async (event): Promise<InviteDto> => {
+export default defineEventHandler(async (event): Promise<InviteCreateDto> => {
   const user = await requireAuth(event)
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Only owners and admins can invite members.' })
@@ -40,12 +43,29 @@ export default defineEventHandler(async (event): Promise<InviteDto> => {
     })
     .returning()
 
+  let emailSent = false
+  if (isMailConfigured()) {
+    const link = `${getRequestURL(event).origin}/register?invite=${invite!.token}`
+    const result = await sendMail({
+      to: invite!.email,
+      subject: `${user.name} invited you to ${user.orgName} on Tick`,
+      html: renderMailHtml({
+        heading: `Join ${escapeMailHtml(user.orgName)} on Tick`,
+        bodyHtml: `<p style="margin:0;">${escapeMailHtml(user.name)} invited you to join <strong>${escapeMailHtml(user.orgName)}</strong> on Tick as ${invite!.role === 'admin' ? 'an' : 'a'} ${invite!.role} — a self-hosted time tracker.</p>${renderMailButton(link, 'Accept invite')}`,
+        footerText: `This invite expires in ${EXPIRY_DAYS} days and works once. If you weren’t expecting it, you can ignore this email.`
+      }),
+      text: `${user.name} invited you to join ${user.orgName} on Tick as ${invite!.role}.\n\nAccept the invite here:\n\n${link}\n\nThe invite expires in ${EXPIRY_DAYS} days and works once. If you weren't expecting it, ignore this email.`
+    })
+    emailSent = result.sent
+  }
+
   return {
     id: invite!.id,
     email: invite!.email,
-    role: invite!.role as InviteDto['role'],
+    role: invite!.role as InviteCreateDto['role'],
     token: invite!.token,
     expiresAt: invite!.expiresAt.toISOString(),
-    createdAt: invite!.createdAt.toISOString()
+    createdAt: invite!.createdAt.toISOString(),
+    emailSent
   }
 })

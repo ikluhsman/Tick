@@ -62,6 +62,17 @@ export default defineNuxtConfig({
     ]
   },
   runtimeConfig: {
-    databaseUrl: '' // NUXT_DATABASE_URL
+    databaseUrl: '', // NUXT_DATABASE_URL
+    // SMTP (all optional — mail degrades gracefully when unset, see server/utils/mail.ts)
+    smtpHost: '', // NUXT_SMTP_HOST
+    smtpPort: '', // NUXT_SMTP_PORT
+    smtpUser: '', // NUXT_SMTP_USER
+    smtpPass: '', // NUXT_SMTP_PASS
+    smtpSecure: '', // NUXT_SMTP_SECURE ('true' = implicit TLS, usually port 465)
+    mailFrom: '', // NUXT_MAIL_FROM (e.g. "Tick <tick@example.com>")
+    demoMode: false, // NUXT_DEMO_MODE — hourly reset plugin + demo guards
+    public: {
+      demoMode: false // NUXT_PUBLIC_DEMO_MODE — shows the demo banner
+    }
   }
 })

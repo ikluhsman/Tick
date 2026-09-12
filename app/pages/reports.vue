@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// Reports page — range + billable controls, CSV / Export PDF, stat cards,
-// hours-by-day stacked chart, regroupable breakdown table.
-// "Export PDF" is honest print-to-PDF: the button calls window.print() and the
-// @media print stylesheet below strips the shell down to a light, clean report.
+// Reports page — range + billable controls, CSV / Print / Export PDF, stat
+// cards, hours-by-day stacked chart, regroupable breakdown table.
+// "Export PDF" downloads a real server-rendered PDF (GET /api/export/pdf);
+// "Print" keeps the old path: window.print() over the @media print stylesheet
+// below, which strips the shell down to a light, clean report.
 import { CalendarDate, type DateValue } from '@internationalized/date'
 import type { ReportBillFilter, ReportGroupBy } from '#shared/types/reports'
 
@@ -76,7 +77,18 @@ function downloadCsv() {
 }
 
 function exportPdf() {
-  // Honest label: "PDF" = the browser's own print-to-PDF over the print styles.
+  // Content-Disposition: attachment — an anchor click downloads without
+  // navigating and keeps the server-supplied filename.
+  const a = document.createElement('a')
+  a.href = reports.pdfUrl
+  a.download = ''
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
+function printReport() {
+  // Secondary path: the browser's own print dialog over the print styles.
   window.print()
 }
 </script>
@@ -135,6 +147,13 @@ function exportPdf() {
           icon="i-lucide-download"
           label="CSV"
           @click="downloadCsv"
+        />
+        <UButton
+          color="neutral"
+          variant="outline"
+          icon="i-lucide-printer"
+          label="Print"
+          @click="printReport"
         />
         <UButton
           color="primary"

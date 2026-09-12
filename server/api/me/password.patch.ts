@@ -8,6 +8,7 @@ const bodySchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
+  demoGuard(event) // 403 in demo mode
   const user = await requireAuth(event)
   const body = await readValidatedBody(event, b => bodySchema.parse(b))
   const db = useDrizzle()
