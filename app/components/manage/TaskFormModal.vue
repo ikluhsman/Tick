@@ -92,7 +92,10 @@ async function remove() {
         color: 'primary',
         variant: 'outline',
         onClick: async () => {
-          await $fetch('/api/restore', { method: 'POST', body: { deleted: result.deleted } })
+          await $fetch('/api/restore', {
+            method: 'POST',
+            body: { deleted: result.deleted, relinked: result.relinked }
+          })
           await catalog.fetchAll()
           await useEntriesStore().refresh().catch(() => {})
         }

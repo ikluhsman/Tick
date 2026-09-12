@@ -17,6 +17,11 @@ export default defineEventHandler(async (event) => {
     })
     if (!target) throw createError({ statusCode: 404, message: 'Member not found' })
 
+    // Admins may remove members/admins but never owners.
+    if (user.role === 'admin' && target.role === 'owner') {
+      throw createError({ statusCode: 403, message: 'Only owners can remove owner accounts.' })
+    }
+
     if (target.role === 'owner') {
       const [owners] = await tx
         .select({ n: count() })

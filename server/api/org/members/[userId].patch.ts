@@ -23,6 +23,17 @@ export default defineEventHandler(async (event): Promise<OrgMemberDto> => {
     })
     if (!target) throw createError({ statusCode: 404, message: 'Member not found' })
 
+    // Admins may manage members/admins but never touch owners, and may not
+    // grant a role above their own (no owner escalation, no owner demotion).
+    if (user.role === 'admin') {
+      if (target.role === 'owner') {
+        throw createError({ statusCode: 403, message: 'Only owners can manage owner accounts.' })
+      }
+      if (body.role === 'owner') {
+        throw createError({ statusCode: 403, message: 'Only owners can grant the owner role.' })
+      }
+    }
+
     if (body.role !== undefined && body.role !== 'owner' && target.role === 'owner') {
       const [owners] = await tx
         .select({ n: count() })

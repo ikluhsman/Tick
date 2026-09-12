@@ -99,7 +99,10 @@ export const useThemeStore = defineStore('theme', () => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(t))
       } catch { /* storage unavailable */ }
     }
-    $fetch('/api/me/theme', { method: 'PATCH', body: t }).catch(() => {})
+    $fetch('/api/me/theme', { method: 'PATCH', body: { theme: t } }).catch((err) => {
+      // localStorage still holds the theme; log so a broken server persist isn't invisible
+      if (import.meta.dev) console.warn('[theme] persist to server failed:', err)
+    })
   }
 
   /** Merge a partial change (from the editor), re-derive the preset name, apply. */

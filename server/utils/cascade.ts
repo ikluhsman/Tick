@@ -9,6 +9,18 @@ import type { DB } from './drizzle'
 /** Works for both the root db handle and a transaction handle. */
 type Dbx = DB | Parameters<Parameters<DB['transaction']>[0]>[0]
 
+/** Cleared references remembered per row, so /api/restore can re-apply them on undo. */
+export interface RelinkSnapshot {
+  projects: { id: string, clientId: string }[]
+  tasks: { id: string, projectId: string }[]
+  entries: { id: string, refType: 'client' | 'project' | 'task', refId: string }[]
+}
+
+/** DeleteResult extension (frozen DTO untouched): adds the relink snapshot for undo. */
+export interface CascadeDeleteResult extends DeleteResult {
+  relinked: RelinkSnapshot
+}
+
 export interface ClientCascadeFlags {
   cascadeProjects: boolean
   cascadeTasks: boolean
@@ -157,7 +169,8 @@ async function softDeleteEntries(db: Dbx, orgId: string, ids: string[], now: Dat
 
 /**
  * Detach surviving (non-trashed, incl. running) entries whose DIRECT ref was
- * just deleted → ref cleared, time kept. Returns how many were detached.
+ * just deleted → ref cleared, time kept. Returns the prior refs (relink
+ * snapshot) so undo can put them back.
  */
 async function detachEntries(
   db: Dbx,
@@ -165,15 +178,31 @@ async function detachEntries(
   clientIds: string[],
   projectIds: string[],
   taskIds: string[]
-): Promise<number> {
+): Promise<RelinkSnapshot['entries']> {
   const cond = refCondition(clientIds, projectIds, taskIds)
-  if (!cond) return 0
-  const rows = await db
+  if (!cond) return []
+  // Snapshot the refs being cleared, then clear them (same tx, same condition).
+  const prior = await db
+    .select({
+      id: schema.timeEntries.id,
+      refType: schema.timeEntries.refType,
+      refId: schema.timeEntries.refId
+    })
+    .from(schema.timeEntries)
+    .where(and(eq(schema.timeEntries.orgId, orgId), isNull(schema.timeEntries.deletedAt), cond))
+  if (!prior.length) return []
+  await db
     .update(schema.timeEntries)
     .set({ refType: null, refId: null })
-    .where(and(eq(schema.timeEntries.orgId, orgId), isNull(schema.timeEntries.deletedAt), cond))
-    .returning({ id: schema.timeEntries.id })
-  return rows.length
+    .where(
+      and(
+        eq(schema.timeEntries.orgId, orgId),
+        inArray(schema.timeEntries.id, prior.map(r => r.id))
+      )
+    )
+  return prior.filter(
+    (r): r is RelinkSnapshot['entries'][number] => r.refType !== null && r.refId !== null
+  )
 }
 
 export async function cascadeDeleteClient(
@@ -181,7 +210,7 @@ export async function cascadeDeleteClient(
   orgId: string,
   clientId: string,
   flags: ClientCascadeFlags
-): Promise<DeleteResult> {
+): Promise<CascadeDeleteResult> {
   return db.transaction(async tx => {
     await requireLive(tx, schema.clients, orgId, clientId, 'Client')
     const sub = await collectClientSubtree(tx, orgId, clientId)
@@ -210,29 +239,35 @@ export async function cascadeDeleteClient(
     await softDeleteEntries(tx, orgId, deletedEntries, now)
 
     // Kept projects lose their client (rate falls back per Rule 2).
-    let detachedProjects = 0
+    let relinkProjects: RelinkSnapshot['projects'] = []
     if (!flags.cascadeProjects && sub.projectIds.length) {
       const rows = await tx
         .update(schema.projects)
         .set({ clientId: null })
         .where(and(eq(schema.projects.orgId, orgId), inArray(schema.projects.id, sub.projectIds)))
         .returning({ id: schema.projects.id })
-      detachedProjects = rows.length
+      relinkProjects = rows.map(r => ({ id: r.id, clientId })) // they all pointed at this client
     }
 
     // Kept tasks whose project was deleted become standalone.
-    let detachedTasks = 0
+    let relinkTasks: RelinkSnapshot['tasks'] = []
     if (flags.cascadeProjects && !flags.cascadeTasks && sub.taskIds.length) {
-      const rows = await tx
+      // Remember each task's project before clearing it.
+      const prior = await tx
+        .select({ id: schema.tasks.id, projectId: schema.tasks.projectId })
+        .from(schema.tasks)
+        .where(and(eq(schema.tasks.orgId, orgId), inArray(schema.tasks.id, sub.taskIds)))
+      await tx
         .update(schema.tasks)
         .set({ projectId: null })
         .where(and(eq(schema.tasks.orgId, orgId), inArray(schema.tasks.id, sub.taskIds)))
-        .returning({ id: schema.tasks.id })
-      detachedTasks = rows.length
+      relinkTasks = prior.filter(
+        (r): r is RelinkSnapshot['tasks'][number] => r.projectId !== null
+      )
     }
 
     // Kept entries (and the running timer) pointing directly at anything deleted.
-    const detachedEntries = await detachEntries(
+    const relinkEntries = await detachEntries(
       tx,
       orgId,
       [clientId],
@@ -247,7 +282,12 @@ export async function cascadeDeleteClient(
         tasks: deletedTasks,
         entries: deletedEntries
       },
-      detached: { projects: detachedProjects, tasks: detachedTasks, entries: detachedEntries }
+      detached: {
+        projects: relinkProjects.length,
+        tasks: relinkTasks.length,
+        entries: relinkEntries.length
+      },
+      relinked: { projects: relinkProjects, tasks: relinkTasks, entries: relinkEntries }
     }
   })
 }
@@ -257,7 +297,7 @@ export async function cascadeDeleteProject(
   orgId: string,
   projectId: string,
   flags: ProjectCascadeFlags
-): Promise<DeleteResult> {
+): Promise<CascadeDeleteResult> {
   return db.transaction(async tx => {
     await requireLive(tx, schema.projects, orgId, projectId, 'Project')
     const taskIds = await collectTaskIds(tx, orgId, [projectId])
@@ -280,21 +320,22 @@ export async function cascadeDeleteProject(
     await softDeleteEntries(tx, orgId, deletedEntries, now)
 
     // Kept tasks become standalone (their project is gone).
-    let detachedTasks = 0
+    let relinkTasks: RelinkSnapshot['tasks'] = []
     if (!flags.cascadeTasks && taskIds.length) {
       const rows = await tx
         .update(schema.tasks)
         .set({ projectId: null })
         .where(and(eq(schema.tasks.orgId, orgId), inArray(schema.tasks.id, taskIds)))
         .returning({ id: schema.tasks.id })
-      detachedTasks = rows.length
+      relinkTasks = rows.map(r => ({ id: r.id, projectId })) // they all pointed at this project
     }
 
-    const detachedEntries = await detachEntries(tx, orgId, [], [projectId], deletedTasks)
+    const relinkEntries = await detachEntries(tx, orgId, [], [projectId], deletedTasks)
 
     return {
       deleted: { clients: [], projects: [projectId], tasks: deletedTasks, entries: deletedEntries },
-      detached: { projects: 0, tasks: detachedTasks, entries: detachedEntries }
+      detached: { projects: 0, tasks: relinkTasks.length, entries: relinkEntries.length },
+      relinked: { projects: [], tasks: relinkTasks, entries: relinkEntries }
     }
   })
 }
@@ -304,14 +345,15 @@ export async function deleteTaskWithDetach(
   db: DB,
   orgId: string,
   taskId: string
-): Promise<DeleteResult> {
+): Promise<CascadeDeleteResult> {
   return db.transaction(async tx => {
     await requireLive(tx, schema.tasks, orgId, taskId, 'Task')
     await tx.update(schema.tasks).set({ deletedAt: new Date() }).where(eq(schema.tasks.id, taskId))
-    const detachedEntries = await detachEntries(tx, orgId, [], [], [taskId])
+    const relinkEntries = await detachEntries(tx, orgId, [], [], [taskId])
     return {
       deleted: { clients: [], projects: [], tasks: [taskId], entries: [] },
-      detached: { projects: 0, tasks: 0, entries: detachedEntries }
+      detached: { projects: 0, tasks: 0, entries: relinkEntries.length },
+      relinked: { projects: [], tasks: [], entries: relinkEntries }
     }
   })
 }

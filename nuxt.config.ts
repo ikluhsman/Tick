@@ -71,8 +71,16 @@ export default defineNuxtConfig({
     smtpSecure: '', // NUXT_SMTP_SECURE ('true' = implicit TLS, usually port 465)
     mailFrom: '', // NUXT_MAIL_FROM (e.g. "Tick <tick@example.com>")
     demoMode: false, // NUXT_DEMO_MODE — hourly reset plugin + demo guards
+    // NUXT_AUTH_RATE_LIMIT — max POSTs per IP per auth endpoint per minute
+    // ('' = default 10, '0' disables; see server/middleware/01.rate-limit.ts)
+    authRateLimit: '',
     public: {
-      demoMode: false // NUXT_PUBLIC_DEMO_MODE — shows the demo banner
+      demoMode: false, // NUXT_PUBLIC_DEMO_MODE — shows the demo banner
+      // NUXT_PUBLIC_REGISTRATION — 'open' (default, back-compat) | 'invite'
+      // (self-serve signup needs a valid invite token) | 'closed' (no
+      // self-serve signup at all). Enforced in register.post.ts; the
+      // /register page hides the form accordingly.
+      registration: 'open'
     }
   }
 })

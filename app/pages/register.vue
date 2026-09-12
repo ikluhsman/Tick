@@ -21,12 +21,27 @@ const { data: invite, error: inviteError } = await useAsyncData<InviteLookupDto 
   () => (inviteToken ? $fetch(`/api/invites/lookup/${inviteToken}`) : Promise.resolve(null))
 )
 
+// NUXT_PUBLIC_REGISTRATION: 'open' (default) | 'invite' | 'closed'.
+const registrationMode
+  = (useRuntimeConfig().public.registration || 'open') as 'open' | 'invite' | 'closed'
+const canRegister = computed(() =>
+  registrationMode === 'open' || (registrationMode === 'invite' && !!invite.value)
+)
+const closedMessage = computed(() => {
+  if (registrationMode === 'closed') return 'Self-serve registration is disabled on this server. Contact your administrator for an account.'
+  if (registrationMode === 'invite' && !canRegister.value) return 'Registration is invite-only on this server. Ask an admin for an invite link, or use one you already have.'
+  return null
+})
+
 const inviteProblem = computed(() => {
   if (!inviteToken || !inviteError.value) return null
   const status = (inviteError.value as { statusCode?: number }).statusCode
+  const fallback = registrationMode === 'open'
+    ? ' You can still create your own workspace below.'
+    : ''
   return status === 410
-    ? 'This invite has expired or was already used. You can still create your own workspace below.'
-    : 'That invite link is invalid. You can still create your own workspace below.'
+    ? `This invite has expired or was already used.${fallback}`
+    : `That invite link is invalid.${fallback}`
 })
 
 useHead({
@@ -86,7 +101,32 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
 <template>
   <UPageCard class="w-full">
+      <div v-if="!canRegister" class="flex flex-col gap-4">
+        <h1 class="text-xl font-medium">
+          Registration unavailable
+        </h1>
+        <UAlert
+          color="warning"
+          variant="subtle"
+          icon="i-lucide-user-lock"
+          :title="closedMessage ?? undefined"
+        />
+        <UAlert
+          v-if="inviteProblem"
+          color="warning"
+          variant="subtle"
+          icon="i-lucide-mail-x"
+          :title="inviteProblem"
+        />
+        <p class="text-sm text-muted">
+          Already have an account?
+          <NuxtLink to="/login" class="font-medium text-primary">
+            Sign in
+          </NuxtLink>
+        </p>
+      </div>
       <UAuthForm
+        v-else
         :schema="schema"
         :fields="fields"
         :loading="loading"

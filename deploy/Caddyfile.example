@@ -1,0 +1,32 @@
+# Tick — Caddy reverse-proxy example
+# Caddy provisions and renews public TLS certificates automatically (Let's
+# Encrypt/ZeroSSL) — no cert paths needed for a public hostname.
+
+tick.example.com {
+	# Internal host? Uncomment for a Caddy-managed local CA cert
+	# (or use `http://tick.internal.lan` as the site address for plain HTTP):
+	# tls internal
+
+	encode gzip
+
+	# CSV import uploads
+	request_body {
+		max_size 8MB
+	}
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Content-Security-Policy "frame-ancestors 'self'"
+		# HSTS — uncomment only once TLS is known-good (browsers cache it):
+		# Strict-Transport-Security "max-age=31536000"
+	}
+
+	# PWA update correctness: never cache the service worker or manifest.
+	header /sw.js Cache-Control "no-cache, no-store, must-revalidate"
+	header /manifest.webmanifest Cache-Control "no-cache, no-store, must-revalidate"
+
+	# Caddy sets Host/X-Forwarded-* automatically and is WebSocket-ready
+	# out of the box (future-proofing — Tick needs no WebSockets today).
+	reverse_proxy 127.0.0.1:3000
+}

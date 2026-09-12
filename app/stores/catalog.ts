@@ -16,6 +16,19 @@ export interface ProjectPayload {
   archived?: boolean
 }
 
+/**
+ * DeleteResult extension returned by the cascade delete endpoints (see
+ * server/utils/cascade.ts): the references each detach op cleared, so undo
+ * can POST them back via /api/restore. Frozen shared DTO is untouched.
+ */
+export interface CascadeDeleteResult extends DeleteResult {
+  relinked: {
+    projects: { id: string, clientId: string }[]
+    tasks: { id: string, projectId: string }[]
+    entries: { id: string, refType: 'client' | 'project' | 'task', refId: string }[]
+  }
+}
+
 export interface TaskPayload {
   name: string
   projectId?: string | null
@@ -75,7 +88,7 @@ export const useCatalogStore = defineStore('catalog', () => {
 
   /** DELETE /api/clients/:id with cascade flags (Rule 3) → DeleteResult for the undo toast. */
   async function removeClient(id: string, cascade: { cascadeProjects: boolean, cascadeTasks: boolean, cascadeEntries: boolean }) {
-    const result = await $fetch<DeleteResult>(`/api/clients/${id}`, { method: 'DELETE', body: cascade })
+    const result = await $fetch<CascadeDeleteResult>(`/api/clients/${id}`, { method: 'DELETE', body: cascade })
     await fetchAll()
     return result
   }
@@ -98,7 +111,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   }
 
   async function removeProject(id: string, cascade: { cascadeTasks: boolean, cascadeEntries: boolean }) {
-    const result = await $fetch<DeleteResult>(`/api/projects/${id}`, { method: 'DELETE', body: cascade })
+    const result = await $fetch<CascadeDeleteResult>(`/api/projects/${id}`, { method: 'DELETE', body: cascade })
     await fetchAll()
     return result
   }
@@ -121,7 +134,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   }
 
   async function removeTask(id: string) {
-    const result = await $fetch<DeleteResult>(`/api/tasks/${id}`, { method: 'DELETE' })
+    const result = await $fetch<CascadeDeleteResult>(`/api/tasks/${id}`, { method: 'DELETE' })
     await fetchAll()
     return result
   }
@@ -135,9 +148,9 @@ export const useCatalogStore = defineStore('catalog', () => {
     return dto
   }
 
-  /** Tag delete strips labels from entries only — never touches time. */
+  /** Tag delete strips labels from entries only — never touches time. Returns the pre-delete TagDto. */
   async function removeTag(id: string) {
-    const result = await $fetch<DeleteResult>(`/api/tags/${id}`, { method: 'DELETE' })
+    const result = await $fetch<TagDto>(`/api/tags/${id}`, { method: 'DELETE' })
     await fetchAll()
     return result
   }

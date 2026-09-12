@@ -22,6 +22,16 @@ function isUniqueViolation(err: unknown): boolean {
 
 export default defineEventHandler(async (event): Promise<SessionUser> => {
   const body = await readValidatedBody(event, b => bodySchema.parse(b))
+
+  // NUXT_PUBLIC_REGISTRATION: 'open' (default) | 'invite' | 'closed'.
+  const mode = useRuntimeConfig(event).public.registration || 'open'
+  if (mode === 'closed') {
+    throw createError({ statusCode: 403, message: 'Registration is disabled on this server.' })
+  }
+  if (mode === 'invite' && !body.inviteToken) {
+    throw createError({ statusCode: 403, message: 'Registration is invite-only on this server. Ask an admin for an invite link.' })
+  }
+
   const db = useDrizzle()
 
   const existing = await db.query.users.findFirst({

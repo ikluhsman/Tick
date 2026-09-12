@@ -1,0 +1,142 @@
+# Tick — nginx reverse-proxy example
+#
+# Drop this file into /etc/nginx/conf.d/tick.conf (or sites-available + symlink)
+# and adjust server_name + the TLS cert paths, then `nginx -t && systemctl reload nginx`.
+#
+# Assumes Tick listens on 127.0.0.1:3000 (Docker `-p 127.0.0.1:3000:3000`,
+# compose `TICK_PORT=3000`, or the native server's default NITRO_PORT).
+
+upstream tick {
+    server 127.0.0.1:3000;
+    keepalive 16;
+}
+
+# WebSocket upgrade map — future-proofing only; Tick needs no WebSockets today.
+# Harmless to keep: it only takes effect if a client sends an Upgrade header.
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# ---------------------------------------------------------------------------
+# Variant A — public host with TLS (HTTP redirects to HTTPS)
+# ---------------------------------------------------------------------------
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name tick.example.com;
+
+    # Keep this location if you use certbot's webroot renewal:
+    # location /.well-known/acme-challenge/ { root /var/www/certbot; }
+
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name tick.example.com;
+
+    # --- TLS certificates: uncomment ONE pair -----------------------------
+    # Let's Encrypt / certbot:
+    # ssl_certificate     /etc/letsencrypt/live/tick.example.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/tick.example.com/privkey.pem;
+    #
+    # Internal CA (e.g. step-ca, your own openssl CA):
+    # ssl_certificate     /etc/nginx/certs/tick.crt;   # server cert + intermediate chain
+    # ssl_certificate_key /etc/nginx/certs/tick.key;
+    # ----------------------------------------------------------------------
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    # --- Security headers -------------------------------------------------
+    # HSTS: uncomment only once TLS is known-good. Browsers cache this —
+    # a wrong/expired cert then hard-blocks the site for max-age seconds.
+    # add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    # Clickjacking protection. Tick has no embed use case; keep 'self'.
+    add_header Content-Security-Policy "frame-ancestors 'self'" always;
+
+    # CSV import uploads (Settings → Import) can exceed the 1m nginx default.
+    client_max_body_size 8m;
+
+    # --- Compression ------------------------------------------------------
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css application/json application/javascript
+               image/svg+xml application/manifest+json;
+
+    # --- Proxy defaults for this server ----------------------------------
+    proxy_http_version 1.1;
+    proxy_set_header Host              $host;
+    proxy_set_header X-Real-IP         $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    # WebSocket-ready (see map above) — no-op until Tick ever uses WS/SSE:
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    # Generous read timeout so slow report exports / imports don't get cut:
+    proxy_read_timeout 120s;
+
+    # PWA update correctness: the service worker and manifest must never be
+    # cached, or installed clients keep running stale app versions.
+    location = /sw.js {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        proxy_pass http://tick;
+    }
+    location = /manifest.webmanifest {
+        add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+        proxy_pass http://tick;
+    }
+
+    location / {
+        proxy_pass http://tick;
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Variant B — internal host, plain HTTP (no TLS)
+# For a LAN-only box where TLS is handled elsewhere or not wanted.
+# Comment out BOTH server blocks above and uncomment this one.
+# ---------------------------------------------------------------------------
+
+# server {
+#     listen 80;
+#     listen [::]:80;
+#     server_name tick.internal.lan;
+#
+#     add_header X-Content-Type-Options nosniff always;
+#     add_header Referrer-Policy strict-origin-when-cross-origin always;
+#     add_header Content-Security-Policy "frame-ancestors 'self'" always;
+#
+#     client_max_body_size 8m;
+#
+#     gzip on;
+#     gzip_vary on;
+#     gzip_types text/plain text/css application/json application/javascript
+#                image/svg+xml application/manifest+json;
+#
+#     proxy_http_version 1.1;
+#     proxy_set_header Host              $host;
+#     proxy_set_header X-Real-IP         $remote_addr;
+#     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+#     proxy_set_header X-Forwarded-Proto $scheme;
+#     proxy_set_header Upgrade    $http_upgrade;
+#     proxy_set_header Connection $connection_upgrade;
+#     proxy_read_timeout 120s;
+#
+#     location = /sw.js {
+#         add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+#         proxy_pass http://tick;
+#     }
+#     location = /manifest.webmanifest {
+#         add_header Cache-Control "no-cache, no-store, must-revalidate" always;
+#         proxy_pass http://tick;
+#     }
+#
+#     location / {
+#         proxy_pass http://tick;
+#     }
+# }

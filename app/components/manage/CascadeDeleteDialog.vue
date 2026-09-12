@@ -6,6 +6,8 @@
 // out what happens to anything unchecked (incl. the resulting fallback $/h).
 // Confirm → catalogStore delete with flags → undo toast → POST /api/restore.
 
+import type { CascadeDeleteResult } from '~/stores/catalog'
+
 type Level = 'projects' | 'tasks' | 'entries'
 
 const ui = useUiStore()
@@ -108,8 +110,12 @@ const outcome = computed(() => {
   return lines
 })
 
-async function undoRestore(result: DeleteResult) {
-  await $fetch('/api/restore', { method: 'POST', body: { deleted: result.deleted } })
+async function undoRestore(result: CascadeDeleteResult) {
+  // relinked re-applies the refs the delete cleared (kept project → client, etc.)
+  await $fetch('/api/restore', {
+    method: 'POST',
+    body: { deleted: result.deleted, relinked: result.relinked }
+  })
   await catalog.fetchAll()
   await entriesStore.refresh().catch(() => {})
 }

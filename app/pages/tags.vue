@@ -51,7 +51,7 @@ function jumpToTime(t: TagDto) {
 
 // Delete strips the label from entries, never the time — undo restores the snapshot
 async function removeTag(t: TagDto) {
-  const result = await catalog.removeTag(t.id)
+  await catalog.removeTag(t.id)
   toast.add({
     title: t.entryCount
       ? `Removed #${t.name} from ${t.entryCount} ${t.entryCount === 1 ? 'entry' : 'entries'}`
@@ -63,7 +63,8 @@ async function removeTag(t: TagDto) {
       color: 'primary',
       variant: 'outline',
       onClick: async () => {
-        await $fetch('/api/restore', { method: 'POST', body: { deleted: result.deleted } })
+        // The tag was soft-deleted (entry_tags rows kept), so restoring the id brings the labels back
+        await $fetch('/api/restore', { method: 'POST', body: { deleted: { tags: [t.id] } } })
         await catalog.fetchAll()
         await useEntriesStore().refresh().catch(() => {})
       }

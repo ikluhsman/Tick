@@ -19,10 +19,18 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const fmtDay = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const fmtTime = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
 
-/** RFC 4180 escaping: quote when the field holds a comma, quote or newline; double inner quotes. */
+/**
+ * RFC 4180 escaping: quote when the field holds a comma, quote or newline;
+ * double inner quotes. Text fields starting with = + - @ tab or CR are
+ * spreadsheet formula injection vectors (Excel/Sheets evaluate them on open,
+ * e.g. =HYPERLINK/DDE) — neutralize with a leading apostrophe and force
+ * quoting. Numeric/boolean fields are never neutralized.
+ */
 function csvField(v: string | number | boolean | null): string {
   const s = v == null ? '' : String(v)
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  const formulaRisk = typeof v === 'string' && /^[=+\-@\t\r]/.test(s)
+  const out = formulaRisk ? `'${s}` : s
+  return formulaRisk || /[",\n\r]/.test(out) ? `"${out.replace(/"/g, '""')}"` : out
 }
 
 export default defineEventHandler(async (event): Promise<string> => {

@@ -55,6 +55,10 @@ pm2 start ecosystem.config.cjs       # see the file for env docs
 
 The built server applies pending SQL migrations on startup (set `NUXT_AUTO_MIGRATE=false` to opt out). PM2 inherits your shell environment; for a persistent setup put the `NUXT_*` vars in your service manager's env file.
 
+## Reverse proxy
+
+For real deployments put nginx or Caddy in front of the app for TLS, compression and security headers. Ready-made configs live in [`deploy/`](deploy/) — [`nginx.conf.example`](deploy/nginx.conf.example) (public-TLS and internal plain-HTTP variants) and [`Caddyfile.example`](deploy/Caddyfile.example) (auto-TLS). Both pass the `X-Forwarded-*` headers Tick needs, allow 8 MB CSV imports, and keep the PWA service worker uncached so installed clients update promptly. See [`deploy/README.md`](deploy/README.md).
+
 ## Environment variables
 
 | Variable | Required | Default | Description |

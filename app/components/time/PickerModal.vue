@@ -318,10 +318,11 @@ function onOpenAutoFocus(e: Event) {
           <button
             v-if="moreCount > 0"
             type="button"
-            class="rounded-md px-2.5 py-2 text-left text-xs text-muted hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]"
+            class="flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-11"
             @click="limit += PAGE"
           >
-            {{ moreCount }} more…
+            <UIcon name="i-lucide-chevron-down" class="size-3.5 shrink-0" />
+            Show {{ moreCount }} more
           </button>
 
           <button

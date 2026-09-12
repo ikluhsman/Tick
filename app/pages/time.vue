@@ -9,6 +9,17 @@ useHead({ title: 'Time · Tick' })
 const entriesStore = useEntriesStore()
 const ui = useUiStore()
 const toast = useToast()
+const route = useRoute()
+
+// ?filter=#design (Tags page filter-jump) seeds the filter input; watch covers
+// repeat jumps while this page is already mounted.
+watch(
+  () => route.query.filter,
+  (f) => {
+    if (f != null) entriesStore.filter = String(f)
+  },
+  { immediate: true }
+)
 
 const DAY_MS = 86_400_000
 const UNDO_SECONDS = 8
@@ -206,10 +217,25 @@ async function onBulkDelete() {
       />
     </template>
 
-    <!-- Empty state -->
+    <!-- Empty state: filtered-to-nothing gets its own copy + a Clear filter action -->
     <div v-else class="rounded-lg bg-elevated p-[22px] text-center shadow-sm ring ring-default">
-      <h3 class="mb-1 text-lg font-medium text-highlighted">Nothing here yet</h3>
-      <p class="text-[13px] text-muted">Start the timer above, or add a manual entry.</p>
+      <template v-if="entriesStore.filter.trim()">
+        <h3 class="mb-1 text-lg font-medium text-highlighted">No entries match your filter</h3>
+        <p class="mb-3 text-[13px] text-muted">
+          Nothing matches “{{ entriesStore.filter.trim() }}” in the last 30 days.
+        </p>
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="sm"
+          label="Clear filter"
+          @click="entriesStore.filter = ''"
+        />
+      </template>
+      <template v-else>
+        <h3 class="mb-1 text-lg font-medium text-highlighted">Nothing here yet</h3>
+        <p class="text-[13px] text-muted">Start the timer above, or add a manual entry.</p>
+      </template>
     </div>
 
     <!-- Manual entry / edit dialog. The shared picker mounts in the default

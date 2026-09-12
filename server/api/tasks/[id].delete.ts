@@ -2,7 +2,7 @@
 // detached (time is never lost silently). Returns the undo snapshot.
 import { z } from 'zod'
 
-export default defineEventHandler(async (event): Promise<DeleteResult> => {
+export default defineEventHandler(async (event): Promise<CascadeDeleteResult> => {
   const user = await requireAuth(event)
   const id = z.uuid().parse(getRouterParam(event, 'id'))
   const db = useDrizzle()

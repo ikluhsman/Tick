@@ -20,6 +20,10 @@ export default defineEventHandler(async (event): Promise<InviteCreateDto> => {
     throw createError({ statusCode: 403, message: 'Only owners and admins can invite members.' })
   }
   const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  // No granting a role above your own: only owners can invite new owners.
+  if (body.role === 'owner' && user.role !== 'owner') {
+    throw createError({ statusCode: 403, message: 'Only owners can invite new owners.' })
+  }
   const db = useDrizzle()
 
   const alreadyMember = await db
