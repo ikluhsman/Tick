@@ -7,6 +7,14 @@ const ui = useUiStore()
 
 useHead({ title: 'Projects & tasks · Tick' })
 
+// SSR-hydrated catalog: fetched on the server (state rides the Pinia payload;
+// the layout's on-mount fetchAll() skips once via catalog.ssrFetched) and
+// refreshed on later client-side visits.
+await useAsyncData('catalog', async () => {
+  await catalog.fetchAll()
+  return true
+})
+
 const projects = computed(() => catalog.projects.filter(p => !p.archived))
 
 const summary = computed(() => {

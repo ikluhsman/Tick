@@ -7,6 +7,7 @@ Shared DTO types: `shared/types/index.ts` (auto-imported in app + server). Do no
 **Stack (installed):** Nuxt 4.5 · @nuxt/ui 4.11 · Pinia · GSAP · nuxt-auth-utils · drizzle-orm + postgres.js · zod · @vueuse/nuxt. Dev DB is live: see `.env`.
 
 **Hard rules**
+- Prefix shell commands with `rtk` wherever it proxies them (`rtk git status`, `rtk npm run build`, `rtk grep …`) — token-optimized CLI proxy, installed. Skip for custom scripts/psql/node one-offs; `rtk proxy <cmd>` = raw passthrough.
 - Never run `npm install` or edit `package.json` (QA agent excepted) — report missing deps in your final text instead. Never start a dev server (QA agent excepted, port 3790).
 - Passwords: `server/utils/password.ts` (owned by schema agent) exports `hashPassword(pw)` / `verifyPassword(pw, stored)` using node:crypto scrypt, format `salt:hex`. Auth + seed both use it — not nuxt-auth-utils' built-ins.
 - Nuxt UI components everywhere they fit; all colors via semantic tokens (`primary`, `neutral`, `--ui-*`). Never hard-code Nocturne hex values.

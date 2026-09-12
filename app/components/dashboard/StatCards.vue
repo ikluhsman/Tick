@@ -41,7 +41,8 @@ const stats = computed(() => {
 </script>
 
 <template>
-  <div class="grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-3">
+  <!-- Mobile: 2×2 (README §Mobile); wider screens auto-fit ≥170px -->
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))]">
     <UCard
       v-for="s in stats"
       :key="s.label"

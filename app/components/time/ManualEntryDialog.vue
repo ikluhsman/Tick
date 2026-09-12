@@ -202,8 +202,8 @@ function onOpenAutoFocus(e: Event) {
           />
         </UFormField>
 
-        <!-- Ref picker (button styled as input) + billable toggle -->
-        <div class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2.5">
+        <!-- Ref picker (button styled as input) + billable toggle — stacks <640px -->
+        <div class="grid grid-cols-1 items-end gap-2.5 sm:grid-cols-[minmax(0,1fr)_auto]">
           <UFormField label="Client, project or task">
             <button
               type="button"
@@ -240,9 +240,9 @@ function onOpenAutoFocus(e: Event) {
           </UButton>
         </div>
 
-        <!-- Date / Start / End / or Duration -->
-        <div class="grid grid-cols-[minmax(0,1.3fr)_1fr_1fr_1fr] gap-2.5">
-          <UFormField label="Date — type it any way">
+        <!-- Date / Start / End / or Duration — 2×2 <640px, one row above -->
+        <div class="grid grid-cols-3 gap-2.5 sm:grid-cols-[minmax(0,1.3fr)_1fr_1fr_1fr]">
+          <UFormField label="Date — type it any way" class="col-span-3 sm:col-span-1">
             <UInput v-model="dateInput" placeholder="2025-03-14, mar 14, last tue…" class="tnum w-full" />
           </UFormField>
           <UFormField label="Start">

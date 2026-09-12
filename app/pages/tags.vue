@@ -8,6 +8,14 @@ const toast = useToast()
 
 useHead({ title: 'Tags · Tick' })
 
+// SSR-hydrated catalog: fetched on the server (state rides the Pinia payload;
+// the layout's on-mount fetchAll() skips once via catalog.ssrFetched) and
+// refreshed on later client-side visits.
+await useAsyncData('catalog', async () => {
+  await catalog.fetchAll()
+  return true
+})
+
 const newTag = ref('')
 const adding = ref(false)
 

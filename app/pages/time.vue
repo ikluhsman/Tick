@@ -13,11 +13,14 @@ const toast = useToast()
 const DAY_MS = 86_400_000
 const UNDO_SECONDS = 8
 
-onMounted(() => {
+// SSR-hydrated list: fetch on the server (state rides the Pinia payload, so
+// hydration re-fetches nothing) and again on every later client-side visit.
+await useAsyncData('time-entries', async () => {
   const now = new Date()
   const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30)
   const to = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-  entriesStore.fetchRange(from.toISOString(), to.toISOString()).catch(() => {})
+  await entriesStore.fetchRange(from.toISOString(), to.toISOString())
+  return true
 })
 
 // ── Header subline: "{week total} this week · {billable} billable · {$} unbilled"
@@ -98,10 +101,14 @@ function undoToast(message: string, result: DeleteResult) {
       clearInterval(tick)
       return
     }
-    // update() overwrites duration, so keep passing what's left of the countdown
-    toast.update(id, { description: `Undo within ${left}s`, duration: left * 1000 })
+    // Countdown is plain text only. duration must be re-passed unchanged:
+    // update() hard-sets it from this patch, so omitting it would drop the
+    // toast to the provider default mid-count and passing a shrinking value
+    // pushes progress past 100 (ProgressRoot "Invalid prop" spam). A constant
+    // value never re-triggers reka's [open, duration] watch, so the 8s close
+    // timer started by add() keeps running untouched.
+    toast.update(id, { description: `Undo within ${left}s`, duration: UNDO_SECONDS * 1000 })
   }, 1000)
-  setTimeout(() => clearInterval(tick), UNDO_SECONDS * 1000 + 500)
 
   toast.add({
     id,
@@ -205,10 +212,9 @@ async function onBulkDelete() {
       <p class="text-[13px] text-muted">Start the timer above, or add a manual entry.</p>
     </div>
 
-    <!-- Dialogs (picker also serves the timer bar while on this page).
-         Order matters: modal slots carry no z-index, so teleport anchor order
-         decides stacking — the picker mounts last to layer above the dialog. -->
+    <!-- Manual entry / edit dialog. The shared picker mounts in the default
+         layout (after the page slot), so teleport order still layers it
+         above this dialog. -->
     <TimeManualEntryDialog />
-    <TimePickerModal />
   </div>
 </template>

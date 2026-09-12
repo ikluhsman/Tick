@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  --ui-radius: 0.5rem;
+}
+
+/* Tabular numerals for time / money figures, mirroring the app. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tick's type rule: headings never exceed weight 500. */
+h1, h2, h3, h4 {
+  font-weight: 500 !important;
+}

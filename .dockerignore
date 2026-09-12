@@ -1,0 +1,33 @@
+# Dependencies + build outputs (rebuilt inside the image)
+node_modules
+.nuxt
+.nitro
+.output
+.cache
+.data
+dist
+
+# VCS / editor
+.git
+.github
+.vscode
+.idea
+.DS_Store
+
+# Local env + logs (never bake secrets into the image)
+.env
+.env.*
+!.env.example
+logs
+*.log
+
+# Design handoff bundle + docs not needed at runtime
+handoff_design_Tick
+README.md
+CONTRACTS.md
+
+# Docker files themselves
+Dockerfile
+docker-compose.yml
+.dockerignore
+ecosystem.config.cjs

@@ -26,6 +26,11 @@ export interface ReassignPrev {
 }
 
 export const useEntriesStore = defineStore('entries', () => {
+  // SSR-safe fetch: forwards the request's cookies when a page fetches during
+  // server render (plain $fetch would hit the API unauthenticated). On the
+  // client this is just $fetch.
+  const requestFetch = useRequestFetch()
+
   const entries = ref<EntryDto[]>([])
   const selection = ref<Set<string>>(new Set())
   const filter = ref('')
@@ -68,7 +73,7 @@ export const useEntriesStore = defineStore('entries', () => {
   /** GET /api/entries?from&to (ISO). Excludes running + trashed server-side. */
   async function fetchRange(from: string, to: string) {
     lastRange.value = { from, to }
-    entries.value = await $fetch<EntryDto[]>('/api/entries', { query: { from, to } })
+    entries.value = await requestFetch<EntryDto[]>('/api/entries', { query: { from, to } })
     return entries.value
   }
 

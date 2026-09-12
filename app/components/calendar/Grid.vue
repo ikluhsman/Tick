@@ -1,0 +1,535 @@
+<script setup lang="ts">
+// Calendar grid — week (7 cols) or day (1 col) at 48px/hour. Base window
+// 7am–7pm; it extends to cover entries outside and the body scrolls (capped
+// at the 12h height). Pointer interactions: drag empty space → ghost block +
+// emit('create') on release; drag a block → move (across days in week view);
+// drag its top/bottom 6px edge → resize; everything snaps to 5 minutes;
+// Esc cancels an active drag; click without dragging = start again.
+// The running timer renders as a live non-interactive block growing to now.
+import type { EntryDto } from '#shared/types'
+
+const HOUR_PX = 48
+const SNAP = 5
+const EDGE_PX = 6
+const CLICK_SLOP_PX = 4
+const MAX_BODY_PX = 12 * HOUR_PX + 1
+
+const emit = defineEmits<{ create: [payload: { day: number, startMin: number, endMin: number }] }>()
+
+const calendar = useCalendarStore()
+const timer = useTimerStore()
+const toast = useToast()
+
+const gridEl = useTemplateRef<HTMLElement>('gridEl')
+const scrollEl = useTemplateRef<HTMLElement>('scrollEl')
+
+const now = ref(Date.now())
+let nowHandle: ReturnType<typeof setInterval> | null = null
+onMounted(() => {
+  nowHandle = setInterval(() => (now.value = Date.now()), 30_000)
+})
+onBeforeUnmount(() => {
+  if (nowHandle) clearInterval(nowHandle)
+  teardownDrag()
+})
+
+function dayStartOf(t: number): number {
+  const d = new Date(t)
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+}
+
+const cols = computed(() => `52px repeat(${calendar.dayCount}, minmax(0, 1fr))`)
+
+// ── Visible hour window: 7am–7pm, stretched to cover out-of-range entries ───
+const hourBounds = computed(() => {
+  let h0 = 7
+  let h1 = 19
+  const consider = (startTs: number, endTs: number) => {
+    const dayTs = dayStartOf(startTs)
+    if (!calendar.days.includes(dayTs)) return
+    h0 = Math.min(h0, Math.floor((startTs - dayTs) / 3_600_000))
+    h1 = Math.max(h1, Math.ceil(Math.min(endTs - dayTs, 86_400_000) / 3_600_000))
+  }
+  for (const e of calendar.entries) {
+    const s = new Date(e.start).getTime()
+    consider(s, s + e.durationSec * 1000)
+  }
+  if (timer.timer) {
+    const s = new Date(timer.timer.start).getTime()
+    consider(s, now.value)
+  }
+  return { h0: Math.max(0, h0), h1: Math.min(24, h1) }
+})
+
+const bodyH = computed(() => (hourBounds.value.h1 - hourBounds.value.h0) * HOUR_PX + 1)
+
+const hours = computed(() => {
+  const { h0, h1 } = hourBounds.value
+  return Array.from({ length: h1 - h0 + 1 }, (_, i) => {
+    const h = h0 + i
+    return { top: i * HOUR_PX, label: `${(h % 12) || 12}${h < 12 || h === 24 ? 'am' : 'pm'}` }
+  })
+})
+
+// Keep 7am at the top of the scroll window when the range or bounds change
+watch(
+  () => [calendar.rangeStart, calendar.view, hourBounds.value.h0],
+  async () => {
+    await nextTick()
+    scrollEl.value?.scrollTo({ top: (7 - hourBounds.value.h0) * HOUR_PX })
+  },
+  { immediate: true }
+)
+
+// ── Day headers ─────────────────────────────────────────────────────────────
+const headerDays = computed(() => calendar.days.map((dayTs) => {
+  const d = new Date(dayTs)
+  const totalSec = calendar.entries.reduce((acc, e) => {
+    return dayStartOf(new Date(e.start).getTime()) === dayTs ? acc + e.durationSec : acc
+  }, 0)
+  return {
+    dayTs,
+    wd: d.toLocaleDateString('en-US', { weekday: 'short' }),
+    num: d.getDate(),
+    total: totalSec ? formatDuration(totalSec) : '',
+    isToday: dayTs === dayStartOf(now.value),
+    isWeekend: d.getDay() === 0 || d.getDay() === 6
+  }
+}))
+
+// ── Drag state machine ──────────────────────────────────────────────────────
+type DragKind = 'create' | 'move' | 'resize-top' | 'resize-bottom'
+
+interface DragState {
+  kind: DragKind
+  entry: EntryDto | null
+  dayIdx: number
+  startMin: number
+  endMin: number
+  /** create: fixed anchor minute · move: pointer minute offset from block start */
+  anchorMin: number
+  originX: number
+  originY: number
+  moved: boolean
+}
+
+const drag = ref<DragState | null>(null)
+const suppressClick = ref(false)
+
+const snap = (m: number) => Math.round(m / SNAP) * SNAP
+const clampMin = (m: number) => Math.min(hourBounds.value.h1 * 60, Math.max(hourBounds.value.h0 * 60, m))
+
+/** Pointer Y → minute-of-day inside the (scrolled) grid body. */
+function minuteAt(clientY: number): number {
+  const rect = gridEl.value!.getBoundingClientRect()
+  return hourBounds.value.h0 * 60 + ((clientY - rect.top) / HOUR_PX) * 60
+}
+
+/** Pointer X → visible day index (clamped). */
+function dayIdxAt(clientX: number): number {
+  const rect = gridEl.value!.getBoundingClientRect()
+  const w = (rect.width - 52) / calendar.dayCount
+  return Math.min(calendar.dayCount - 1, Math.max(0, Math.floor((clientX - rect.left - 52) / w)))
+}
+
+function beginDrag(state: DragState) {
+  drag.value = state
+  window.addEventListener('pointermove', onDragMove)
+  window.addEventListener('pointerup', onDragUp)
+  window.addEventListener('pointercancel', cancelDrag)
+  window.addEventListener('keydown', onDragKey)
+}
+
+function teardownDrag() {
+  drag.value = null
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', onDragUp)
+  window.removeEventListener('pointercancel', cancelDrag)
+  window.removeEventListener('keydown', onDragKey)
+}
+
+function cancelDrag() {
+  teardownDrag()
+}
+
+function onDragKey(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    e.stopPropagation()
+    cancelDrag()
+  }
+}
+
+function onColumnDown(dayIdx: number, e: PointerEvent) {
+  if (e.button !== 0 || drag.value) return
+  e.preventDefault()
+  const m = snap(clampMin(minuteAt(e.clientY)))
+  beginDrag({
+    kind: 'create',
+    entry: null,
+    dayIdx,
+    startMin: m,
+    endMin: m,
+    anchorMin: m,
+    originX: e.clientX,
+    originY: e.clientY,
+    moved: false
+  })
+}
+
+function onBlockDown(entry: EntryDto, dayIdx: number, e: PointerEvent) {
+  if (e.button !== 0 || drag.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const rel = e.clientY - rect.top
+  const kind: DragKind = rel <= EDGE_PX ? 'resize-top' : rel >= rect.height - EDGE_PX ? 'resize-bottom' : 'move'
+  const startTs = new Date(entry.start).getTime()
+  const dayTs = dayStartOf(startTs)
+  const startMin = (startTs - dayTs) / 60_000
+  const endMin = Math.min(1440, startMin + entry.durationSec / 60)
+  beginDrag({
+    kind,
+    entry,
+    dayIdx,
+    startMin,
+    endMin,
+    anchorMin: minuteAt(e.clientY) - startMin,
+    originX: e.clientX,
+    originY: e.clientY,
+    moved: false
+  })
+}
+
+function onDragMove(e: PointerEvent) {
+  const d = drag.value
+  if (!d) return
+  if (Math.abs(e.clientX - d.originX) + Math.abs(e.clientY - d.originY) > CLICK_SLOP_PX) d.moved = true
+  const m = minuteAt(e.clientY)
+  if (d.kind === 'create') {
+    const cur = snap(clampMin(m))
+    d.startMin = Math.min(d.anchorMin, cur)
+    d.endMin = Math.max(d.anchorMin, cur)
+  } else if (d.kind === 'move') {
+    const dur = d.endMin - d.startMin
+    const s = Math.min((hourBounds.value.h1 * 60) - dur, Math.max(hourBounds.value.h0 * 60, snap(m - d.anchorMin)))
+    d.startMin = s
+    d.endMin = s + dur
+    if (calendar.view === 'week') d.dayIdx = dayIdxAt(e.clientX)
+  } else if (d.kind === 'resize-top') {
+    d.startMin = Math.min(d.endMin - SNAP, snap(clampMin(m)))
+  } else {
+    d.endMin = Math.max(d.startMin + SNAP, snap(clampMin(m)))
+  }
+}
+
+function onDragUp() {
+  const d = drag.value
+  teardownDrag()
+  if (!d) return
+  if (d.kind === 'create') {
+    if (d.moved && d.endMin - d.startMin >= SNAP) {
+      emit('create', { day: calendar.days[d.dayIdx]!, startMin: d.startMin, endMin: d.endMin })
+    }
+    return
+  }
+  if (!d.moved || !d.entry) return
+  suppressClick.value = true
+  setTimeout(() => (suppressClick.value = false), 0)
+  const dayTs = calendar.days[d.dayIdx]!
+  let start: number
+  let end: number
+  if (d.kind === 'move') {
+    // Preserve the exact duration; only the (snapped) start moves
+    const durMs = new Date(d.entry.end ?? d.entry.start).getTime() - new Date(d.entry.start).getTime()
+    start = dayTs + d.startMin * 60_000
+    end = start + durMs
+  } else {
+    start = dayTs + d.startMin * 60_000
+    end = dayTs + d.endMin * 60_000
+  }
+  calendar
+    .updateTimes(d.entry.id, new Date(start).toISOString(), new Date(end).toISOString())
+    .catch(() => {
+      toast.add({ title: 'Couldn’t save the change', description: 'The entry was put back.', color: 'neutral', icon: 'i-lucide-undo-2' })
+    })
+}
+
+// ── Click (no drag) = start again ───────────────────────────────────────────
+const busy = ref(false)
+
+async function startAgain(entry: EntryDto) {
+  if (suppressClick.value || busy.value) return
+  busy.value = true
+  try {
+    if (timer.running) {
+      const dto = await timer.stop()
+      if (dto && dayStartOf(new Date(dto.start).getTime()) >= calendar.rangeStart && new Date(dto.start).getTime() < calendar.rangeEnd) {
+        calendar.entries.push(dto)
+      }
+    }
+    await timer.start({
+      name: entry.name,
+      refType: entry.ref?.refType,
+      refId: entry.ref?.refId,
+      billable: entry.billable
+    })
+  } catch {
+    await timer.hydrate()
+  } finally {
+    busy.value = false
+  }
+}
+
+// ── Block layout ────────────────────────────────────────────────────────────
+interface Block {
+  id: string
+  entry: EntryDto
+  top: number
+  h: number
+  billable: boolean
+  name: string
+  sub: string
+  title: string
+  dragging: boolean
+}
+
+function topOf(min: number): number {
+  return (min - hourBounds.value.h0 * 60) * (HOUR_PX / 60) + 1
+}
+
+function heightOf(startMin: number, endMin: number): number {
+  return Math.max(22, (endMin - startMin) * (HOUR_PX / 60) - 2)
+}
+
+function subFor(e: EntryDto): string {
+  const r = e.ref
+  const first = r?.taskName ?? r?.projectName ?? r?.clientName
+  if (first) {
+    return r!.clientName && r!.clientName !== first ? `${first} · ${r!.clientName}` : first
+  }
+  return e.tags.length ? '#' + e.tags.join(' #') : 'No project'
+}
+
+const dayBlocks = computed<Block[][]>(() => {
+  const d = drag.value
+  const draggingId = d && d.kind !== 'create' && d.moved ? d.entry?.id : null
+  const byDay: Block[][] = calendar.days.map(() => [])
+
+  for (const e of calendar.entries) {
+    if (e.id === draggingId) continue
+    const startTs = new Date(e.start).getTime()
+    const di = calendar.days.indexOf(dayStartOf(startTs))
+    if (di < 0) continue
+    const startMin = (startTs - dayStartOf(startTs)) / 60_000
+    const endMin = Math.min(1440, startMin + e.durationSec / 60)
+    byDay[di]!.push({
+      id: e.id,
+      entry: e,
+      top: topOf(startMin),
+      h: heightOf(startMin, endMin),
+      billable: e.billable,
+      name: e.name,
+      sub: subFor(e),
+      title: `${e.name} · ${formatRange(e.start, e.end ?? e.start)} · ${formatDuration(e.durationSec)}`,
+      dragging: false
+    })
+  }
+
+  // The block being moved/resized paints at its drag position
+  if (d && draggingId && d.entry) {
+    const dayTs = calendar.days[d.dayIdx]!
+    byDay[d.dayIdx]!.push({
+      id: d.entry.id,
+      entry: d.entry,
+      top: topOf(d.startMin),
+      h: heightOf(d.startMin, d.endMin),
+      billable: d.entry.billable,
+      name: d.entry.name,
+      sub: formatRange(dayTs + d.startMin * 60_000, dayTs + d.endMin * 60_000),
+      title: '',
+      dragging: true
+    })
+  }
+  return byDay
+})
+
+/** Ghost block while drag-creating. */
+const ghost = computed(() => {
+  const d = drag.value
+  if (!d || d.kind !== 'create' || !d.moved || d.endMin <= d.startMin) return null
+  const dayTs = calendar.days[d.dayIdx]!
+  return {
+    dayIdx: d.dayIdx,
+    top: topOf(d.startMin),
+    h: heightOf(d.startMin, d.endMin),
+    label: formatRange(dayTs + d.startMin * 60_000, dayTs + d.endMin * 60_000)
+  }
+})
+
+/** Live block for the running timer (non-draggable, grows to now). */
+const runningBlock = computed(() => {
+  if (!timer.timer) return null
+  const startTs = new Date(timer.timer.start).getTime()
+  const dayTs = dayStartOf(startTs)
+  const di = calendar.days.indexOf(dayTs)
+  if (di < 0) return null
+  const startMin = (startTs - dayTs) / 60_000
+  const endTs = startTs + timer.elapsedSec * 1000
+  const endMin = Math.min(1440, (endTs - dayTs) / 60_000)
+  return {
+    dayIdx: di,
+    top: topOf(startMin),
+    h: heightOf(startMin, endMin),
+    billable: timer.timer.billable,
+    name: timer.timer.name || 'Untitled entry',
+    sub: `${formatTime(startTs)} – now`
+  }
+})
+
+/** Accent "now" line on today (only when inside the visible window). */
+const nowLine = computed(() => {
+  const di = calendar.days.indexOf(dayStartOf(now.value))
+  if (di < 0) return null
+  const d = new Date(now.value)
+  const min = d.getHours() * 60 + d.getMinutes()
+  if (min < hourBounds.value.h0 * 60 || min > hourBounds.value.h1 * 60) return null
+  return { dayIdx: di, top: topOf(min) }
+})
+
+function blockBg(billable: boolean): string {
+  return billable
+    ? 'color-mix(in srgb, var(--ui-primary) 16%, var(--ui-bg-elevated))'
+    : 'color-mix(in srgb, var(--ui-color-neutral-400) 14%, var(--ui-bg-elevated))'
+}
+
+function blockEdge(billable: boolean): string {
+  return billable ? 'var(--ui-primary)' : 'var(--ui-color-neutral-500)'
+}
+</script>
+
+<template>
+  <div class="overflow-hidden rounded-lg bg-elevated shadow-sm ring ring-default">
+    <!-- Day headers -->
+    <div class="grid border-b border-default" :style="{ gridTemplateColumns: cols }">
+      <div />
+      <div
+        v-for="d in headerDays"
+        :key="d.dayTs"
+        class="flex flex-col gap-0.5 px-2 pt-2.5 pb-2"
+        style="border-left: 1px solid color-mix(in srgb, var(--ui-text) 6%, transparent)"
+      >
+        <span
+          class="text-[11px] uppercase tracking-[.06em]"
+          :class="d.isToday ? 'text-primary' : 'text-muted'"
+        >{{ d.wd }}</span>
+        <span class="flex items-baseline gap-2">
+          <span
+            class="tnum -ml-1.5 grid size-7 place-items-center rounded-full text-lg font-medium"
+            :class="d.isToday ? 'text-primary ring ring-inset ring-primary' : 'text-highlighted'"
+          >{{ d.num }}</span>
+          <span class="tnum text-[11px] text-muted">{{ d.total }}</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Body (scrolls when the hour window outgrows 12h) -->
+    <div ref="scrollEl" class="overflow-y-auto" :style="{ maxHeight: MAX_BODY_PX + 'px' }">
+      <div
+        ref="gridEl"
+        class="relative grid select-none"
+        :style="{ gridTemplateColumns: cols, height: bodyH + 'px', touchAction: 'pan-y' }"
+      >
+        <!-- Hour gutter -->
+        <div class="relative">
+          <span
+            v-for="h in hours"
+            :key="h.label"
+            class="tnum absolute right-2 -translate-y-1/2 text-[10px] text-muted"
+            :style="{ top: h.top + 'px' }"
+          >{{ h.label }}</span>
+        </div>
+
+        <!-- Day columns -->
+        <div
+          v-for="(d, di) in headerDays"
+          :key="d.dayTs"
+          class="relative"
+          :style="{
+            borderLeft: '1px solid color-mix(in srgb, var(--ui-text) 6%, transparent)',
+            background: d.isWeekend ? 'color-mix(in srgb, var(--ui-text) 2%, transparent)' : 'transparent'
+          }"
+          @pointerdown="onColumnDown(di, $event)"
+        >
+          <!-- Hour rules -->
+          <span
+            v-for="h in hours"
+            :key="h.top"
+            class="pointer-events-none absolute inset-x-0 h-px"
+            :style="{ top: h.top + 'px', background: 'color-mix(in srgb, var(--ui-text) 5%, transparent)' }"
+          />
+
+          <!-- Entry blocks -->
+          <button
+            v-for="b in dayBlocks[di]"
+            :key="b.id"
+            type="button"
+            :title="b.title || undefined"
+            class="absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-sm px-1.5 py-1 text-left transition-[filter] hover:brightness-[1.12]"
+            :class="b.dragging ? 'z-10 cursor-grabbing opacity-90 shadow-md' : 'cursor-grab'"
+            :style="{
+              top: b.top + 'px',
+              height: b.h + 'px',
+              background: blockBg(b.billable),
+              borderLeft: `2px solid ${blockEdge(b.billable)}`
+            }"
+            @pointerdown="onBlockDown(b.entry, di, $event)"
+            @click="startAgain(b.entry)"
+          >
+            <span class="pointer-events-none absolute inset-x-0 top-0 h-[6px] cursor-ns-resize" />
+            <span class="truncate text-[11px] font-medium leading-[1.25] text-highlighted">{{ b.name }}</span>
+            <span class="tnum truncate text-[10px] text-muted">{{ b.sub }}</span>
+            <span class="pointer-events-none absolute inset-x-0 bottom-0 h-[6px] cursor-ns-resize" />
+          </button>
+
+          <!-- Running timer: live, non-interactive -->
+          <div
+            v-if="runningBlock && runningBlock.dayIdx === di"
+            class="pointer-events-none absolute inset-x-[3px] z-[5] flex flex-col gap-px overflow-hidden rounded-sm px-1.5 py-1"
+            :style="{
+              top: runningBlock.top + 'px',
+              height: runningBlock.h + 'px',
+              background: blockBg(runningBlock.billable),
+              borderLeft: '2px solid var(--ui-primary)',
+              boxShadow: '0 0 8px color-mix(in srgb, var(--ui-primary) 45%, transparent)'
+            }"
+          >
+            <span class="truncate text-[11px] font-medium leading-[1.25] text-highlighted">{{ runningBlock.name }}</span>
+            <span class="tnum truncate text-[10px] text-primary">{{ runningBlock.sub }}</span>
+          </div>
+
+          <!-- Drag-to-create ghost -->
+          <div
+            v-if="ghost && ghost.dayIdx === di"
+            class="pointer-events-none absolute inset-x-[3px] z-10 flex flex-col justify-start overflow-hidden rounded-sm px-1.5 py-1 ring ring-inset ring-primary/60"
+            :style="{
+              top: ghost.top + 'px',
+              height: ghost.h + 'px',
+              background: 'color-mix(in srgb, var(--ui-primary) 10%, transparent)'
+            }"
+          >
+            <span class="tnum text-[10px] font-medium text-primary">{{ ghost.label }}</span>
+          </div>
+
+          <!-- Now line -->
+          <span
+            v-if="nowLine && nowLine.dayIdx === di"
+            class="pointer-events-none absolute inset-x-0 z-20 h-px bg-primary"
+            :style="{ top: nowLine.top + 'px', boxShadow: '0 0 6px var(--ui-primary)' }"
+          >
+            <span class="absolute -left-[3px] -top-[2.5px] size-1.5 rounded-full bg-primary" />
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

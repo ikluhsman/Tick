@@ -1,22 +1,33 @@
 <script setup lang="ts">
-// Settings: tabbed area — only Appearance is built (theme editor);
-// Profile / Organization / Members & roles / Trash / Import are disabled
-// placeholders for a later swing. Header: Reset + "Copy app.config.ts".
+// Settings: tabbed area — Appearance (theme editor, default), Profile,
+// Organization, Members & roles, Trash, Import. The Reset / "Copy
+// app.config.ts" header buttons only make sense on Appearance.
 import type { TabsItem } from '@nuxt/ui'
+
+useHead({ title: 'Settings · Tick' })
 
 const theme = useThemeStore()
 const toast = useToast()
 
 const tabs: TabsItem[] = [
   { label: 'Appearance', value: 'appearance' },
-  { label: 'Profile', value: 'profile', disabled: true },
-  { label: 'Organization', value: 'organization', disabled: true },
-  { label: 'Members & roles', value: 'members', disabled: true },
-  { label: 'Trash', value: 'trash', disabled: true },
-  { label: 'Import', value: 'import', disabled: true }
+  { label: 'Profile', value: 'profile' },
+  { label: 'Organization', value: 'organization' },
+  { label: 'Members & roles', value: 'members' },
+  { label: 'Trash', value: 'trash' },
+  { label: 'Import', value: 'import' }
 ]
 
 const tab = ref('appearance')
+
+const sublines: Record<string, string> = {
+  appearance: 'Appearance applies live to the whole app and is saved per user.',
+  profile: 'Your account: name, email, default rate and password.',
+  organization: 'Workspace name and membership at a glance.',
+  members: 'Who has access, their roles and rate overrides.',
+  trash: 'Deleted items stay restorable for 30 days.',
+  import: 'Bring entries in from Toggl, Clockify or a CSV.'
+}
 
 async function copyConfig() {
   try {
@@ -52,9 +63,9 @@ function resetTheme() {
     <div class="flex flex-wrap items-end gap-4">
       <div class="min-w-[200px] flex-1">
         <h1 class="text-[28px] font-medium leading-tight text-highlighted">Settings</h1>
-        <p class="text-[13px] text-muted">Appearance applies live to the whole app and is saved per user.</p>
+        <p class="text-[13px] text-muted">{{ sublines[tab] }}</p>
       </div>
-      <div class="flex gap-2">
+      <div v-if="tab === 'appearance'" class="flex gap-2">
         <UButton color="neutral" variant="outline" @click="resetTheme">
           Reset
         </UButton>
@@ -64,7 +75,7 @@ function resetTheme() {
       </div>
     </div>
 
-    <!-- Tabs (only Appearance is built) -->
+    <!-- Tabs -->
     <UTabs
       v-model="tab"
       :items="tabs"
@@ -76,5 +87,10 @@ function resetTheme() {
     />
 
     <SettingsAppearanceEditor v-if="tab === 'appearance'" />
+    <SettingsProfileTab v-else-if="tab === 'profile'" />
+    <SettingsOrganizationTab v-else-if="tab === 'organization'" />
+    <SettingsMembersTab v-else-if="tab === 'members'" />
+    <SettingsTrashTab v-else-if="tab === 'trash'" />
+    <SettingsImportTab v-else-if="tab === 'import'" />
   </div>
 </template>

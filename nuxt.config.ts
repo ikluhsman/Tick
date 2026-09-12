@@ -2,8 +2,52 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt', 'nuxt-auth-utils'],
+  modules: ['@nuxt/ui', '@pinia/nuxt', '@vueuse/nuxt', 'nuxt-auth-utils', '@vite-pwa/nuxt'],
   css: ['~/assets/css/main.css'],
+  app: {
+    head: {
+      // viewport-fit=cover so env(safe-area-inset-*) works inside the standalone PWA
+      viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
+      link: [
+        { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }
+      ],
+      meta: [
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'apple-mobile-web-app-title', content: 'Tick' },
+        // Static PWA chrome color — Nocturne bg; manifest/meta hex is exempt from the no-hex rule
+        { name: 'theme-color', content: '#161826' }
+      ]
+    }
+  },
+  pwa: {
+    registerType: 'autoUpdate',
+    manifest: {
+      name: 'Tick',
+      short_name: 'Tick',
+      description: 'Self-hosted time tracking',
+      display: 'standalone',
+      start_url: '/',
+      // Static manifest colors (Nocturne bg) — exempt from the no-hex rule
+      theme_color: '#161826',
+      background_color: '#161826',
+      icons: [
+        { src: '/pwa-192x192.png', sizes: '192x192', type: 'image/png' },
+        { src: '/pwa-512x512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/pwa-maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+      ]
+    },
+    // Default generateSW: precache the built app shell only; API stays network-only
+    workbox: {
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+      navigateFallback: null
+    },
+    // Dev serves manifest + icons only; the service worker is a prod-build
+    // artifact (devOptions' generated dev SW 500s under the Nuxt vite setup).
+    devOptions: {
+      enabled: false
+    }
+  },
   colorMode: {
     preference: 'dark',
     fallback: 'dark'

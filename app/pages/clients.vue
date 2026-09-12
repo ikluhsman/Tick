@@ -9,6 +9,14 @@ const session = useUserSession()
 
 useHead({ title: 'Clients · Tick' })
 
+// SSR-hydrated catalog: fetched on the server (state rides the Pinia payload;
+// the layout's on-mount fetchAll() skips once via catalog.ssrFetched) and
+// refreshed on later client-side visits.
+await useAsyncData('catalog', async () => {
+  await catalog.fetchAll()
+  return true
+})
+
 const userRate = computed(() => (session.user.value as SessionUser | null)?.defaultRate ?? null)
 
 function initials(name: string) {

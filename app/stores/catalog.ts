@@ -24,26 +24,40 @@ export interface TaskPayload {
 }
 
 export const useCatalogStore = defineStore('catalog', () => {
+  // SSR-safe fetch: forwards the request's cookies when a catalog page fetches
+  // during server render. On the client this is just $fetch.
+  const requestFetch = useRequestFetch()
+
   const clients = ref<ClientDto[]>([])
   const projects = ref<ProjectDto[]>([])
   const tasks = ref<TaskDto[]>([])
   const tags = ref<TagDto[]>([])
   const loaded = ref(false)
+  /** True when the state in this store came from a server render (serialized
+   *  into the Pinia payload) and no client fetch has run yet. The layout's
+   *  on-mount fetchAll() consumes it so hydration doesn't refetch what SSR
+   *  just delivered; every later call refreshes normally. */
+  const ssrFetched = ref(false)
 
   const openTasks = computed(() => tasks.value.filter(t => !t.done))
 
   async function fetchAll() {
+    if (import.meta.client && ssrFetched.value) {
+      ssrFetched.value = false
+      return
+    }
     const [c, p, t, g] = await Promise.all([
-      $fetch<ClientDto[]>('/api/clients'),
-      $fetch<ProjectDto[]>('/api/projects'),
-      $fetch<TaskDto[]>('/api/tasks'),
-      $fetch<TagDto[]>('/api/tags')
+      requestFetch<ClientDto[]>('/api/clients'),
+      requestFetch<ProjectDto[]>('/api/projects'),
+      requestFetch<TaskDto[]>('/api/tasks'),
+      requestFetch<TagDto[]>('/api/tags')
     ])
     clients.value = c
     projects.value = p
     tasks.value = t
     tags.value = g
     loaded.value = true
+    if (import.meta.server) ssrFetched.value = true
   }
 
   // ── Clients ──────────────────────────────────────────────────────────────
@@ -134,6 +148,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     tasks,
     tags,
     loaded,
+    ssrFetched,
     openTasks,
     fetchAll,
     createClient,

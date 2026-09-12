@@ -236,15 +236,22 @@ function onOpenAutoFocus(e: Event) {
 
 <template>
   <!-- z-20 keeps the picker above the Manual-entry dialog (modal slots are
-       z-auto, so DOM order would otherwise decide); toasts sit at z-[100]. -->
+       z-auto, so DOM order would otherwise decide); toasts sit at z-[100].
+       <640px the dialog docks to the bottom edge as a sheet (grab handle,
+       full width, top corners only). -->
   <UModal
     v-model:open="open"
-    :ui="{ overlay: 'z-20', content: 'top-[12vh] translate-y-0 max-w-[520px] z-20' }"
+    :ui="{
+      overlay: 'z-20',
+      content: 'top-[12vh] translate-y-0 max-w-[520px] z-20 max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:translate-x-0 max-sm:w-full max-sm:max-w-full max-sm:rounded-b-none'
+    }"
     :content="{ onOpenAutoFocus }"
     aria-label="Pick a client, project or task"
   >
     <template #content>
-      <div class="flex flex-col gap-3 p-4">
+      <!-- Grab handle (bottom sheet only) -->
+      <div class="mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-accented sm:hidden" aria-hidden="true" />
+      <div class="flex flex-col gap-3 p-4 max-sm:pb-[max(16px,env(safe-area-inset-bottom))]">
         <!-- Tabs -->
         <div class="flex gap-1" role="tablist" aria-label="Pick type">
           <UButton
@@ -254,7 +261,7 @@ function onOpenAutoFocus(e: Event) {
             size="sm"
             variant="outline"
             :color="tab === t.value ? 'primary' : 'neutral'"
-            :class="tab === t.value ? '' : 'text-toned'"
+            :class="[tab === t.value ? '' : 'text-toned', 'max-sm:min-h-11 max-sm:px-4']"
             role="tab"
             :aria-selected="tab === t.value"
             @click="tab = t.value"
@@ -276,7 +283,7 @@ function onOpenAutoFocus(e: Event) {
         <button
           v-if="ui.pickerTarget === 'bulk'"
           type="button"
-          class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]"
+          class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
           :disabled="moving"
           @click="bulkMove(null, null, 'No client / project / task')"
         >
@@ -288,12 +295,12 @@ function onOpenAutoFocus(e: Event) {
         </button>
 
         <!-- Results -->
-        <div ref="listEl" class="flex max-h-[340px] flex-col gap-px overflow-y-auto">
+        <div ref="listEl" class="flex max-h-[340px] flex-col gap-px overflow-y-auto max-sm:max-h-[45vh]">
           <button
             v-for="(it, i) in visible"
             :key="it.id"
             type="button"
-            class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left"
+            class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left max-sm:min-h-12"
             :class="i === highlighted
               ? 'bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'
               : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'"
@@ -320,7 +327,7 @@ function onOpenAutoFocus(e: Event) {
           <button
             v-if="showCreate"
             type="button"
-            class="flex items-center gap-3 rounded-md border border-dashed border-default px-2.5 py-[9px] text-left text-sm text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]"
+            class="flex items-center gap-3 rounded-md border border-dashed border-default px-2.5 py-[9px] text-left text-sm text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
             :disabled="creating"
             @click="createFromSearch"
           >

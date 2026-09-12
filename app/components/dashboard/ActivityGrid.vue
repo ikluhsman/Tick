@@ -8,13 +8,17 @@ const props = defineProps<{ summary: DashboardSummary }>()
 
 type ActivityDay = DashboardSummary['activity'][number]
 
+/** Mobile shows the last 12 weeks so the dots fit without scrolling (README §Mobile). */
+const isDesktop = useMediaQuery('(min-width: 1024px)', { ssrWidth: 1280 })
+const weekCount = computed(() => (isDesktop.value ? 16 : 12))
+
 /** Oldest week first, 5 workdays per column. */
 const weeks = computed<ActivityDay[][]>(() => {
   const out: ActivityDay[][] = []
   for (let i = 0; i < props.summary.activity.length; i += 5) {
     out.push(props.summary.activity.slice(i, i + 5))
   }
-  return out
+  return out.slice(-weekCount.value)
 })
 
 const maxHours = computed(() =>
@@ -57,7 +61,7 @@ onMounted(() => {
   <UCard class="bg-elevated shadow-sm" :ui="{ body: 'p-4 sm:p-4' }">
     <div class="flex items-baseline gap-2.5">
       <h2 class="text-[15px] font-medium text-highlighted">Activity</h2>
-      <span class="text-[11px] text-dimmed">last 16 weeks · brighter means more time logged</span>
+      <span class="text-[11px] text-dimmed">last {{ weekCount }} weeks · brighter means more time logged</span>
     </div>
     <div class="mt-2 flex gap-2.5 overflow-x-auto">
       <!-- Row labels: M T W R F -->

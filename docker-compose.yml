@@ -1,0 +1,44 @@
+# Tick — app + Postgres.
+# Copy .env.example to .env first: NUXT_SESSION_PASSWORD is REQUIRED (32+ random
+# chars — generate with `openssl rand -base64 36`). Compose reads .env automatically.
+services:
+  app:
+    image: ghcr.io/OWNER/tick:latest # replace OWNER, or keep `build: .` for a local build
+    build: .
+    restart: unless-stopped
+    ports:
+      - '${TICK_PORT:-3000}:3000'
+    environment:
+      NUXT_DATABASE_URL: postgresql://tick:${POSTGRES_PASSWORD:-tick}@db:5432/tick
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:?set NUXT_SESSION_PASSWORD in .env (32+ chars, e.g. `openssl rand -base64 36`)}
+      NUXT_AUTO_MIGRATE: ${NUXT_AUTO_MIGRATE:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:3000/login']
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tick
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tick}
+      POSTGRES_DB: tick
+    volumes:
+      - tick-pgdata:/var/lib/postgresql/data
+    # Uncomment to reach Postgres from the host:
+    # ports:
+    #   - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tick -d tick']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  tick-pgdata:

@@ -1,10 +1,15 @@
 <script setup lang="ts">
 // One entry row on the Time page.
-// Grid: checkbox | name + chain | time range | $ toggle | duration + amount | actions.
-// Selection + billable talk to the entries store directly; delete bubbles up
-// so the page can show the undo toast (Rule 4); ▶ copies name/ref/billable
-// onto the timer and starts it; ✎ (and clicking the name) opens the
-// Manual-entry dialog in edit mode via ui.openEdit.
+// Desktop grid: checkbox | name + chain | time range | $ toggle | duration +
+// amount | actions. Selection + billable talk to the entries store directly;
+// delete bubbles up so the page can show the undo toast (Rule 4); ▶ copies
+// name/ref/billable onto the timer and starts it; ✎ (and clicking the name)
+// opens the Manual-entry dialog in edit mode via ui.openEdit.
+// Mobile (<1024px) the row collapses to name+chain | duration+range | ▶, and
+// touch swipes take over: swipe LEFT reveals a 72px Delete action, swipe
+// RIGHT starts the entry again. Gestures are touch-only (desktop hover
+// actions untouched) with a horizontal-intent threshold so vertical
+// scrolling never fights the swipe (touch-action: pan-y).
 import type { EntryDto } from '#shared/types'
 
 const props = withDefaults(
@@ -77,120 +82,229 @@ async function startAgain() {
     busy.value = false
   }
 }
+
+// ── Touch swipe (mobile): left = reveal Delete (72px), right = start again ──
+const DELETE_W = 72
+const MAX_PULL = 96
+const REVEAL_AT = 36 // px left before settling open
+const START_AT = 60 // px right to trigger start-again
+
+const offset = ref(0)
+const dragging = ref(false)
+
+let startX = 0
+let startY = 0
+let baseOffset = 0
+let tracking = false
+let horizontal = false
+
+function onPointerDown(e: PointerEvent) {
+  if (e.pointerType !== 'touch') return
+  tracking = true
+  horizontal = false
+  startX = e.clientX
+  startY = e.clientY
+  baseOffset = offset.value
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (!tracking) return
+  const dx = e.clientX - startX
+  const dy = e.clientY - startY
+  if (!horizontal) {
+    // Horizontal intent: clearly more sideways than vertical, past a threshold
+    if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) {
+      tracking = false // vertical scroll wins
+      return
+    }
+    if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.4) return
+    horizontal = true
+    dragging.value = true
+    ;(e.currentTarget as Element | null)?.setPointerCapture?.(e.pointerId)
+  }
+  offset.value = Math.max(-MAX_PULL, Math.min(MAX_PULL, baseOffset + dx))
+}
+
+function onPointerEnd() {
+  if (!tracking) return
+  tracking = false
+  if (!horizontal) return
+  dragging.value = false
+  if (offset.value <= -REVEAL_AT) {
+    offset.value = -DELETE_W // settle open on the Delete action
+  } else if (offset.value >= START_AT) {
+    offset.value = 0
+    startAgain()
+  } else {
+    offset.value = 0
+  }
+}
+
+/** Tap anywhere on a revealed row closes it (and swallows the click). */
+function onContentClickCapture(e: MouseEvent) {
+  if (offset.value !== 0) {
+    e.preventDefault()
+    e.stopPropagation()
+    offset.value = 0
+  }
+}
+
+function onDeleteAction() {
+  offset.value = 0
+  emit('delete')
+}
+
+const swipeActive = computed(() => dragging.value || offset.value !== 0)
 </script>
 
 <template>
   <div
-    class="group grid grid-cols-[30px_minmax(0,1fr)_auto_auto_auto_94px] items-center gap-[11px] py-[9px] pr-2 pl-1.5 transition-colors"
-    :class="selected ? 'bg-primary/10' : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_4%,transparent)]'"
+    class="relative overflow-hidden"
     :style="first ? undefined : { boxShadow: 'inset 0 1px 0 color-mix(in srgb, var(--ui-text) 6%, transparent)' }"
   >
-    <!-- Select -->
-    <UCheckbox
-      :model-value="selected"
-      aria-label="Select entry"
-      class="ml-1.5"
-      :ui="{ base: 'size-[18px] rounded-sm' }"
-      @update:model-value="entriesStore.toggleSelect(entry.id)"
-    />
-
-    <!-- Name + tags, chain beneath -->
-    <div class="flex min-w-0 flex-col gap-0.5">
-      <div class="flex min-w-0 items-center gap-2">
-        <button
-          type="button"
-          class="min-w-0 cursor-pointer truncate text-left text-sm text-highlighted hover:underline"
-          title="Edit entry"
-          @click="ui.openEdit(entry)"
-        >
-          {{ entry.name }}
-        </button>
-        <UBadge
-          v-for="t in entry.tags"
-          :key="t"
-          color="neutral"
-          variant="soft"
-          class="shrink-0 px-[7px] py-px text-[10px]"
-        >
-          #{{ t }}
-        </UBadge>
-      </div>
-      <div v-if="chainParts.length" class="flex flex-wrap items-center gap-1.5 text-xs text-muted">
-        <span
-          class="size-[7px] shrink-0 rounded-full"
-          :style="{ background: clientColorVar(entry.ref?.clientColor) }"
-        />
-        <template v-for="(part, i) in chainParts" :key="i">
-          <span class="whitespace-nowrap" :class="part.cls">{{ part.label }}</span>
-          <span v-if="i < chainParts.length - 1" class="opacity-40">·</span>
-        </template>
-      </div>
-    </div>
-
-    <!-- Time range -->
-    <span class="tnum whitespace-nowrap text-xs text-muted">
-      {{ formatRange(entry.start, entry.end ?? entry.start) }}
-    </span>
-
-    <!-- Billable toggle (26px square, outlined $) -->
-    <UTooltip :text="billTitle">
-      <UButton
-        square
-        variant="outline"
-        :color="entry.billable ? 'primary' : 'neutral'"
-        icon="i-lucide-dollar-sign"
-        :aria-pressed="entry.billable"
-        :aria-label="billTitle"
-        class="size-[26px] justify-center"
-        :class="entry.billable ? '' : 'text-dimmed'"
-        :ui="{ leadingIcon: 'size-[13px]' }"
-        @click="toggleBillable"
-      />
-    </UTooltip>
-
-    <!-- Duration + amount -->
-    <div class="min-w-[84px] text-right">
-      <div class="tnum text-sm font-medium text-highlighted">{{ formatDuration(entry.durationSec) }}</div>
-      <div v-if="showAmounts" class="tnum text-[11px] text-muted">
-        {{ entry.billable && entry.amount != null ? formatMoney(entry.amount) : '—' }}
-      </div>
-    </div>
-
-    <!-- Row actions -->
-    <div class="flex gap-0.5">
-      <UButton
-        icon="i-lucide-play"
-        color="neutral"
-        variant="ghost"
-        square
-        title="Start again"
-        aria-label="Start again"
-        class="size-[30px] justify-center"
-        :ui="{ leadingIcon: 'size-[13px]' }"
-        @click="startAgain"
-      />
-      <UButton
-        icon="i-lucide-pencil"
-        color="neutral"
-        variant="ghost"
-        square
-        title="Edit entry"
-        aria-label="Edit entry"
-        class="size-[30px] justify-center"
-        :ui="{ leadingIcon: 'size-[13px]' }"
-        @click="ui.openEdit(entry)"
-      />
-      <UButton
-        icon="i-lucide-trash-2"
-        color="neutral"
-        variant="ghost"
-        square
-        title="Delete (undo available)"
+    <!-- Swipe action layers (touch reveal only) -->
+    <template v-if="swipeActive">
+      <!-- Right side: Delete (72px, accent-900 per mock) -->
+      <button
+        type="button"
+        class="absolute inset-y-0 right-0 flex w-[72px] flex-col items-center justify-center gap-1 bg-primary-900 text-[11px] font-medium text-primary-100 lg:hidden"
         aria-label="Delete entry"
-        class="size-[30px] justify-center text-dimmed hover:text-primary"
-        :ui="{ leadingIcon: 'size-3.5' }"
-        @click="emit('delete')"
+        @click="onDeleteAction"
+      >
+        <UIcon name="i-lucide-trash-2" class="size-4" />
+        Delete
+      </button>
+      <!-- Left side: start-again hint -->
+      <div class="absolute inset-y-0 left-0 flex w-[96px] items-center justify-start pl-5 text-primary lg:hidden" aria-hidden="true">
+        <UIcon name="i-lucide-play" class="size-4" />
+      </div>
+    </template>
+
+    <!-- Row content (translates under the swipe) -->
+    <div
+      class="group grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-[11px] py-[9px] pr-2 pl-3.5 lg:grid-cols-[30px_minmax(0,1fr)_auto_auto_auto_94px] lg:pl-1.5"
+      :class="[
+        selected ? 'bg-primary/10' : swipeActive ? 'bg-elevated' : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_4%,transparent)]',
+        dragging ? '' : 'transition-transform duration-200'
+      ]"
+      :style="{ transform: offset ? `translateX(${offset}px)` : undefined, touchAction: 'pan-y' }"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerEnd"
+      @pointercancel="onPointerEnd"
+      @click.capture="onContentClickCapture"
+    >
+      <!-- Select (desktop only) -->
+      <UCheckbox
+        :model-value="selected"
+        aria-label="Select entry"
+        class="ml-1.5 max-lg:hidden"
+        :ui="{ base: 'size-[18px] rounded-sm' }"
+        @update:model-value="entriesStore.toggleSelect(entry.id)"
       />
+
+      <!-- Name + tags, chain beneath -->
+      <div class="flex min-w-0 flex-col gap-0.5">
+        <div class="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            class="min-w-0 cursor-pointer truncate text-left text-sm text-highlighted hover:underline"
+            title="Edit entry"
+            @click="ui.openEdit(entry)"
+          >
+            {{ entry.name }}
+          </button>
+          <UBadge
+            v-for="t in entry.tags"
+            :key="t"
+            color="neutral"
+            variant="soft"
+            class="shrink-0 px-[7px] py-px text-[10px]"
+          >
+            #{{ t }}
+          </UBadge>
+        </div>
+        <!-- Chain: wraps on desktop, single clipped line on mobile (per mock) -->
+        <div v-if="chainParts.length" class="flex items-center gap-1.5 text-xs text-muted max-lg:overflow-hidden lg:flex-wrap">
+          <span
+            class="size-[7px] shrink-0 rounded-full"
+            :style="{ background: clientColorVar(entry.ref?.clientColor) }"
+          />
+          <template v-for="(part, i) in chainParts" :key="i">
+            <span class="whitespace-nowrap" :class="part.cls">{{ part.label }}</span>
+            <span v-if="i < chainParts.length - 1" class="opacity-40">·</span>
+          </template>
+        </div>
+      </div>
+
+      <!-- Time range (desktop; mobile shows it under the duration) -->
+      <span class="tnum whitespace-nowrap text-xs text-muted max-lg:hidden">
+        {{ formatRange(entry.start, entry.end ?? entry.start) }}
+      </span>
+
+      <!-- Billable toggle (26px square, outlined $) — desktop only -->
+      <UTooltip :text="billTitle" class="max-lg:hidden">
+        <UButton
+          square
+          variant="outline"
+          :color="entry.billable ? 'primary' : 'neutral'"
+          icon="i-lucide-dollar-sign"
+          :aria-pressed="entry.billable"
+          :aria-label="billTitle"
+          class="size-[26px] justify-center"
+          :class="entry.billable ? '' : 'text-dimmed'"
+          :ui="{ leadingIcon: 'size-[13px]' }"
+          @click="toggleBillable"
+        />
+      </UTooltip>
+
+      <!-- Duration + amount (desktop) / duration + range (mobile) -->
+      <div class="min-w-[84px] text-right">
+        <div class="tnum text-sm font-medium text-highlighted">{{ formatDuration(entry.durationSec) }}</div>
+        <div v-if="showAmounts" class="tnum text-[11px] text-muted max-lg:hidden">
+          {{ entry.billable && entry.amount != null ? formatMoney(entry.amount) : '—' }}
+        </div>
+        <div class="tnum text-[11px] text-muted lg:hidden">
+          {{ formatRange(entry.start, entry.end ?? entry.start) }}
+        </div>
+      </div>
+
+      <!-- Row actions (mobile keeps only ▶ at a 44px target) -->
+      <div class="flex gap-0.5">
+        <UButton
+          icon="i-lucide-play"
+          color="neutral"
+          variant="ghost"
+          square
+          title="Start again"
+          aria-label="Start again"
+          class="size-[30px] justify-center max-lg:size-11"
+          :ui="{ leadingIcon: 'size-[13px]' }"
+          @click="startAgain"
+        />
+        <UButton
+          icon="i-lucide-pencil"
+          color="neutral"
+          variant="ghost"
+          square
+          title="Edit entry"
+          aria-label="Edit entry"
+          class="size-[30px] justify-center max-lg:hidden"
+          :ui="{ leadingIcon: 'size-[13px]' }"
+          @click="ui.openEdit(entry)"
+        />
+        <UButton
+          icon="i-lucide-trash-2"
+          color="neutral"
+          variant="ghost"
+          square
+          title="Delete (undo available)"
+          aria-label="Delete entry"
+          class="size-[30px] justify-center text-dimmed hover:text-primary max-lg:hidden"
+          :ui="{ leadingIcon: 'size-3.5' }"
+          @click="emit('delete')"
+        />
+      </div>
     </div>
   </div>
 </template>
