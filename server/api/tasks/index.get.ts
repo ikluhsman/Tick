@@ -4,5 +4,5 @@ export default defineEventHandler(async (event): Promise<TaskDto[]> => {
   const db = useDrizzle()
   const ctxQ = loadRateContext(db, user.orgId)
   const [ctx, agg] = await Promise.all([ctxQ, loadOrgAggregates(db, user.orgId, ctxQ)])
-  return buildTaskDtos(ctx, agg)
+  return buildTaskDtos(ctx, agg, user.id)
 })
