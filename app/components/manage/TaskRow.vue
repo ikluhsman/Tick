@@ -60,14 +60,15 @@ async function start() {
       <UIcon v-if="task.done" name="i-lucide-check" class="size-2.5" />
     </button>
 
-    <!-- Name: struck through when done; click to edit -->
+    <!-- Name: struck through when done; click to edit. Own rate (if any) shows right after it. -->
     <button
       type="button"
-      class="min-w-0 cursor-pointer truncate text-left text-[13px] decoration-dotted underline-offset-2 hover:underline"
+      class="flex min-w-0 items-baseline gap-1.5 text-left text-[13px] decoration-dotted underline-offset-2 hover:underline"
       :class="task.done ? 'text-muted line-through' : 'text-default'"
       @click="emit('edit')"
     >
-      {{ task.name }}
+      <span class="truncate">{{ task.name }}</span>
+      <span v-if="task.rate != null" class="tnum shrink-0 text-xs text-muted">${{ task.rate }}/h</span>
     </button>
 
     <span class="text-xs text-muted">{{ entriesLabel }}</span>

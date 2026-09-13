@@ -32,6 +32,7 @@ export interface CascadeDeleteResult extends DeleteResult {
 export interface TaskPayload {
   name: string
   projectId?: string | null
+  rate?: number | null
   estimateMinutes?: number | null
   done?: boolean
 }

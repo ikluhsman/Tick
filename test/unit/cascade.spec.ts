@@ -36,8 +36,10 @@ const createdUsers: string[] = []
 
 beforeAll(() => {
   // Hard stop: this spec writes, so it must never point at the dev database.
-  if (!/\/tick_test(\?|$)/.test(TEST_DB_URL)) {
-    throw new Error(`Refusing to run cascade tests against ${TEST_DB_URL} — expected …/tick_test`)
+  // Accepts `tick_test` itself and per-worktree variants like `tick_test_i16`
+  // (parallel agents each get their own suffixed database).
+  if (!/\/tick_test(_\w+)?(\?|$)/.test(TEST_DB_URL)) {
+    throw new Error(`Refusing to run cascade tests against ${TEST_DB_URL} — expected …/tick_test or …/tick_test_<suffix>`)
   }
   // `createError` is a Nitro auto-import; cascade.ts calls it for 404s.
   vi.stubGlobal('createError', (opts: { statusCode?: number, message?: string }) =>

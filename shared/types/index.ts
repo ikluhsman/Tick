@@ -69,6 +69,11 @@ export interface TaskDto {
   projectId: string | null
   projectName: string | null
   clientName: string | null
+  /** The task's own rate, null when it inherits (Rule 2) */
+  rate: number | null
+  /** Rate in effect + where it came from */
+  resolvedRate: number | null
+  rateSource: 'task' | 'project' | 'client' | 'member' | 'user' | 'none'
   estimateMinutes: number | null
   done: boolean
   entryCount: number

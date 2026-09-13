@@ -101,6 +101,7 @@ export const tasks = pgTable(
       .references(() => orgs.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     projectId: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    rate: numeric('rate', { precision: 10, scale: 2, mode: 'number' }),
     estimateMinutes: integer('estimate_minutes'),
     done: boolean('done').notNull().default(false),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),

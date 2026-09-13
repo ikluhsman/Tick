@@ -88,16 +88,16 @@ const outcome = computed(() => {
   const k = checks.value
   const lines: string[] = []
   const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+  const fallback = userRate.value != null ? `the $${userRate.value}/h default rate` : 'your default rate'
 
   if (kind.value === 'client' && !k.projects && c.projects) {
-    const fallback = userRate.value != null ? `the $${userRate.value}/h default rate` : 'your default rate'
     lines.push(`${plural(c.projects, 'project', 'projects')} kept — client cleared, so they’ll fall back to ${fallback}.`)
   }
   if (!k.tasks && c.tasks) {
     if (kind.value === 'client') {
       lines.push(`${plural(c.tasks, 'task', 'tasks')} kept ${k.projects ? 'as standalone tasks' : 'under their projects'}.`)
     } else {
-      lines.push(`${plural(c.tasks, 'task', 'tasks')} kept — they become standalone tasks.`)
+      lines.push(`${plural(c.tasks, 'task', 'tasks')} kept — they become standalone tasks, falling back to ${fallback} unless they have their own rate.`)
     }
   }
   if (!k.entries && c.entries) {

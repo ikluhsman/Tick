@@ -329,18 +329,29 @@ export function buildProjectDtos(
     .sort(byName)
 }
 
-export function buildTaskDtos(ctx: RateContext, agg: CatalogAggregates): TaskDto[] {
+export function buildTaskDtos(ctx: RateContext, agg: CatalogAggregates, userId: string): TaskDto[] {
+  const fallback = ctx.userRates.get(userId)
   return [...ctx.tasks.values()]
     .map(t => {
       const project = t.projectId ? ctx.projects.get(t.projectId) : undefined
       const client = project?.clientId ? ctx.clients.get(project.clientId) : undefined
       const a = agg.tasks.get(t.id)
+      const { rate, source } = pickRate({
+        taskRate: t.rate,
+        projectRate: project?.rate,
+        clientRate: client?.rate,
+        memberRate: fallback?.memberRate,
+        defaultRate: fallback?.defaultRate
+      })
       return {
         id: t.id,
         name: t.name,
         projectId: project?.id ?? null,
         projectName: project?.name ?? null,
         clientName: client?.name ?? null,
+        rate: t.rate,
+        resolvedRate: rate,
+        rateSource: source as TaskDto['rateSource'],
         estimateMinutes: t.estimateMinutes,
         done: t.done,
         entryCount: a?.count ?? 0,

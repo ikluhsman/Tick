@@ -4,6 +4,7 @@ import { z } from 'zod'
 const bodySchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
   projectId: z.uuid().nullish(),
+  rate: z.number().nonnegative().nullish(),
   estimateMinutes: z.number().int().positive().nullish(),
   done: z.boolean().optional()
 })
@@ -32,6 +33,7 @@ export default defineEventHandler(async (event): Promise<TaskDto> => {
   const patch: Partial<typeof schema.tasks.$inferInsert> = {}
   if (body.name !== undefined) patch.name = body.name
   if (body.projectId !== undefined) patch.projectId = body.projectId
+  if (body.rate !== undefined) patch.rate = body.rate
   if (body.estimateMinutes !== undefined) patch.estimateMinutes = body.estimateMinutes
   if (body.done !== undefined) patch.done = body.done
 
@@ -47,7 +49,7 @@ export default defineEventHandler(async (event): Promise<TaskDto> => {
 
   const ctx = await loadRateContext(db, user.orgId)
   const agg = await loadOrgAggregates(db, user.orgId, ctx)
-  const dto = buildTaskDtos(ctx, agg).find(t => t.id === id)
+  const dto = buildTaskDtos(ctx, agg, user.id).find(t => t.id === id)
   if (!dto) throw createError({ statusCode: 404, message: 'Task not found' })
   return dto
 })

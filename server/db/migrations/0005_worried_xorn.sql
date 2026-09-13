@@ -1,0 +1,1 @@
+ALTER TABLE "tasks" ADD COLUMN "rate" numeric(10, 2);

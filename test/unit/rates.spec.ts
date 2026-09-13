@@ -17,6 +17,7 @@ import {
 describe('pickRate — first non-null wins', () => {
   const full = {
     rateOverride: 200,
+    taskRate: 150,
     projectRate: 95,
     clientRate: 110,
     memberRate: 90,
@@ -27,20 +28,26 @@ describe('pickRate — first non-null wins', () => {
     expect(pickRate(full)).toEqual({ rate: 200, source: 'override' })
   })
 
-  it('falls to the project rate when there is no override', () => {
-    expect(pickRate({ ...full, rateOverride: null })).toEqual({ rate: 95, source: 'project' })
+  it('falls to the task rate when there is no override', () => {
+    expect(pickRate({ ...full, rateOverride: null })).toEqual({ rate: 150, source: 'task' })
   })
 
-  it('falls to the client rate when override and project are null', () => {
-    expect(pickRate({ ...full, rateOverride: null, projectRate: null })).toEqual({
-      rate: 110,
-      source: 'client'
+  it('falls to the project rate when override and task are null', () => {
+    expect(pickRate({ ...full, rateOverride: null, taskRate: null })).toEqual({
+      rate: 95,
+      source: 'project'
     })
   })
 
-  it('falls to the org member rate when override, project and client are null', () => {
+  it('falls to the client rate when override, task and project are null', () => {
     expect(
-      pickRate({ ...full, rateOverride: null, projectRate: null, clientRate: null })
+      pickRate({ ...full, rateOverride: null, taskRate: null, projectRate: null })
+    ).toEqual({ rate: 110, source: 'client' })
+  })
+
+  it('falls to the org member rate when override, task, project and client are null', () => {
+    expect(
+      pickRate({ ...full, rateOverride: null, taskRate: null, projectRate: null, clientRate: null })
     ).toEqual({ rate: 90, source: 'member' })
   })
 
@@ -52,6 +59,7 @@ describe('pickRate — first non-null wins', () => {
     expect(
       pickRate({
         rateOverride: null,
+        taskRate: null,
         projectRate: null,
         clientRate: null,
         memberRate: null,
@@ -65,7 +73,7 @@ describe('pickRate — first non-null wins', () => {
   })
 
   it('treats undefined the same as null at every rung', () => {
-    expect(pickRate({ rateOverride: undefined, projectRate: undefined, clientRate: 110 })).toEqual({
+    expect(pickRate({ rateOverride: undefined, taskRate: undefined, projectRate: undefined, clientRate: 110 })).toEqual({
       rate: 110,
       source: 'client'
     })
@@ -74,11 +82,13 @@ describe('pickRate — first non-null wins', () => {
   it('keeps a zero rate — 0 is a real rate, not "unset"', () => {
     expect(pickRate({ projectRate: 0, clientRate: 110 })).toEqual({ rate: 0, source: 'project' })
     expect(pickRate({ rateOverride: 0, projectRate: 95 })).toEqual({ rate: 0, source: 'override' })
+    expect(pickRate({ taskRate: 0, projectRate: 95 })).toEqual({ rate: 0, source: 'task' })
   })
 
-  it('walks the whole ladder one rung at a time', () => {
+  it('walks the whole ladder one rung at a time — override > task > project > client > member > user', () => {
     const ladder: { opts: Parameters<typeof pickRate>[0], source: string, rate: number | null }[] = [
       { opts: { rateOverride: 200 }, source: 'override', rate: 200 },
+      { opts: { taskRate: 150 }, source: 'task', rate: 150 },
       { opts: { projectRate: 95 }, source: 'project', rate: 95 },
       { opts: { clientRate: 110 }, source: 'client', rate: 110 },
       { opts: { memberRate: 90 }, source: 'member', rate: 90 },
@@ -113,7 +123,7 @@ describe('walkChain — Rule 1 chain resolution', () => {
     expect(walkChain('tag', task.id, ctx)).toBeNull()
   })
 
-  it('walks task → project → client and carries both rates', () => {
+  it('walks task → project → client and carries all three rates', () => {
     const { ctx, client, project, task } = fixture()
     expect(walkChain('task', task.id, ctx)).toEqual({
       taskId: task.id,
@@ -122,18 +132,20 @@ describe('walkChain — Rule 1 chain resolution', () => {
       projectName: 'Intake form',
       clientId: client.id,
       clientName: 'Northwind Legal',
+      taskRate: null,
       projectRate: 95,
       clientRate: 110,
       billableDefault: true
     })
   })
 
-  it('walks project → client for a direct project ref (no task fields)', () => {
+  it('walks project → client for a direct project ref (no task fields, no task rate)', () => {
     const { ctx, client, project } = fixture()
     const chain = walkChain('project', project.id, ctx)!
     expect(chain.taskId).toBeUndefined()
     expect(chain.projectId).toBe(project.id)
     expect(chain.clientId).toBe(client.id)
+    expect(chain.taskRate).toBeNull()
     expect(chain.projectRate).toBe(95)
     expect(chain.clientRate).toBe(110)
   })
@@ -143,8 +155,33 @@ describe('walkChain — Rule 1 chain resolution', () => {
     expect(walkChain('client', client.id, ctx)).toEqual({
       clientId: client.id,
       clientName: 'Northwind Legal',
+      taskRate: null,
       projectRate: null,
       clientRate: 110,
+      billableDefault: true
+    })
+  })
+
+  it('carries the task’s own rate alongside the project and client rates', () => {
+    const client = makeClient({ name: 'Northwind Legal', rate: 110 })
+    const project = makeProject({ name: 'Intake form', clientId: client.id, rate: 95 })
+    const task = makeTask({ name: 'Validation', projectId: project.id, rate: 150 })
+    const ctx = makeRateContext({ clients: [client], projects: [project], tasks: [task] })
+    const chain = walkChain('task', task.id, ctx)!
+    expect(chain.taskRate).toBe(150)
+    expect(chain.projectRate).toBe(95)
+    expect(chain.clientRate).toBe(110)
+  })
+
+  it('keeps the task’s own rate when its project is dangling (trashed)', () => {
+    const task = makeTask({ name: 'Orphan with a rate', projectId: 'project-that-was-trashed', rate: 200 })
+    const ctx = makeRateContext({ tasks: [task] })
+    expect(walkChain('task', task.id, ctx)).toEqual({
+      taskId: task.id,
+      taskName: 'Orphan with a rate',
+      taskRate: 200,
+      projectRate: null,
+      clientRate: null,
       billableDefault: true
     })
   })
@@ -170,6 +207,7 @@ describe('walkChain — Rule 1 chain resolution', () => {
     expect(walkChain('task', task.id, ctx)).toEqual({
       taskId: task.id,
       taskName: 'Orphan task',
+      taskRate: null,
       projectRate: null,
       clientRate: null,
       billableDefault: true
@@ -177,11 +215,12 @@ describe('walkChain — Rule 1 chain resolution', () => {
   })
 
   it('handles a standalone task (no project) without inventing a chain', () => {
-    const task = makeTask({ projectId: null })
+    const task = makeTask({ projectId: null, rate: 60 })
     const ctx = makeRateContext({ tasks: [task] })
     const chain = walkChain('task', task.id, ctx)!
     expect(chain.taskId).toBe(task.id)
     expect(chain.projectId).toBeUndefined()
+    expect(chain.taskRate).toBe(60)
     expect(chain.projectRate).toBeNull()
     expect(chain.clientRate).toBeNull()
   })
@@ -216,11 +255,15 @@ describe('resolveEntryRate — the full ladder against a context', () => {
   const task = makeTask({ projectId: project.id })
   const ratelessTask = makeTask({ projectId: rateless.id })
   const orphanTask = makeTask({ projectId: orphan.id })
+  /** Has its own rate AND sits under a rated project — the task rung must win. */
+  const ratedTask = makeTask({ name: 'Design pass', projectId: project.id, rate: 150 })
+  /** Standalone (no project) with its own rate. */
+  const standaloneRatedTask = makeTask({ name: 'Consulting call', projectId: null, rate: 60 })
 
   const ctx = makeRateContext({
     clients: [client],
     projects: [project, rateless, orphan],
-    tasks: [task, ratelessTask, orphanTask],
+    tasks: [task, ratelessTask, orphanTask, ratedTask, standaloneRatedTask],
     userRates: { [userId]: { memberRate: 90, defaultRate: 85 } }
   })
 
@@ -230,11 +273,33 @@ describe('resolveEntryRate — the full ladder against a context', () => {
     ).toEqual({ rate: 200, source: 'override' })
   })
 
-  it('project rate wins through a task ref', () => {
+  it('project rate wins through a task ref with no rate of its own', () => {
     expect(resolveEntryRate(makeEntry({ userId, refType: 'task', refId: task.id }), ctx)).toEqual({
       rate: 95,
       source: 'project'
     })
+  })
+
+  it('a task’s own rate wins over its project’s rate', () => {
+    expect(resolveEntryRate(makeEntry({ userId, refType: 'task', refId: ratedTask.id }), ctx)).toEqual({
+      rate: 150,
+      source: 'task'
+    })
+  })
+
+  it('a standalone task’s own rate resolves with no project/client chain at all', () => {
+    expect(
+      resolveEntryRate(makeEntry({ userId, refType: 'task', refId: standaloneRatedTask.id }), ctx)
+    ).toEqual({ rate: 60, source: 'task' })
+  })
+
+  it('entry override still beats a task rate', () => {
+    expect(
+      resolveEntryRate(
+        makeEntry({ userId, refType: 'task', refId: ratedTask.id, rateOverride: 300 }),
+        ctx
+      )
+    ).toEqual({ rate: 300, source: 'override' })
   })
 
   it('client rate wins when the project has none', () => {
