@@ -91,8 +91,9 @@ export interface ReportParams {
 
 /**
  * Base CTE shared by every report query: chain (Rule 1) + rate (Rule 2)
- * resolved per entry; trashed catalog rows read as detached, matching
- * walkChain()/resolveEntryRate().
+ * resolved per entry — entry.rate_override → task.rate → project.rate →
+ * client.rate → org_member.rate → user.default_rate; trashed catalog rows
+ * read as detached, matching walkChain()/resolveEntryRate().
  */
 function baseEntriesSql(orgId: string, from: Date, to: Date, billable: ReportBillFilter) {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -110,7 +111,7 @@ function baseEntriesSql(orgId: string, from: Date, to: Date, billable: ReportBil
       e.id,
       e.billable,
       extract(epoch from (e."end" - e.start))::float as sec,
-      coalesce(e.rate_override, p.rate, c.rate, m.rate, u.default_rate) as rate,
+      coalesce(e.rate_override, t.rate, p.rate, c.rate, m.rate, u.default_rate) as rate,
       t.id as task_id, t.name as task_name,
       p.id as project_id, p.name as project_name,
       c.id as client_id, c.name as client_name,

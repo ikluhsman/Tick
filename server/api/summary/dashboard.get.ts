@@ -60,13 +60,13 @@ export default defineEventHandler(async (event): Promise<DashboardSummary> => {
     .groupBy(dayExpr)
 
   // Unbilled = sum of billable entry amounts, rate per Rule 2:
-  // rate_override → project.rate → client.rate → org_member.rate → user.default_rate,
+  // rate_override → task.rate → project.rate → client.rate → org_member.rate → user.default_rate,
   // chain walked from the deepest ref (Rule 1), trashed catalog rows excluded.
   const unbilledQ = db.execute(sql`
     select
       coalesce(sum(
         extract(epoch from (e."end" - e.start)) / 3600.0
-        * coalesce(e.rate_override, p.rate, c.rate, m.rate, u.default_rate)
+        * coalesce(e.rate_override, t.rate, p.rate, c.rate, m.rate, u.default_rate)
       ), 0)::float as amount,
       count(distinct c.id)::int as clients
     from time_entries e

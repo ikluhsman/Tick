@@ -1,11 +1,11 @@
 // Rule 2 — rate inheritance, first non-null wins:
-//   entry.rate_override → project.rate → client.rate → org_member.rate → user.default_rate
+//   entry.rate_override → task.rate → project.rate → client.rate → org_member.rate → user.default_rate
 // Chain (Rule 1) resolves at read time: task → task.project → project.client.
 // `loadRateContext` pulls the org catalog + per-user fallbacks once so lists avoid N+1.
 import { and, eq, isNull, schema } from './drizzle'
 import type { DB } from './drizzle'
 
-export type RateSource = 'override' | 'project' | 'client' | 'member' | 'user' | 'none'
+export type RateSource = 'override' | 'task' | 'project' | 'client' | 'member' | 'user' | 'none'
 
 export interface CtxClient {
   id: string
@@ -28,6 +28,7 @@ export interface CtxTask {
   id: string
   name: string
   projectId: string | null
+  rate: number | null
   estimateMinutes: number | null
   done: boolean
 }
@@ -65,6 +66,7 @@ export async function loadRateContext(db: DB, orgId: string): Promise<RateContex
         id: schema.tasks.id,
         name: schema.tasks.name,
         projectId: schema.tasks.projectId,
+        rate: schema.tasks.rate,
         estimateMinutes: schema.tasks.estimateMinutes,
         done: schema.tasks.done
       })
@@ -98,6 +100,7 @@ export interface ChainInfo {
   projectName?: string
   clientId?: string
   clientName?: string
+  taskRate: number | null
   projectRate: number | null
   clientRate: number | null
   /** project.billable_default when a project resolves, else true (Rule 2) */
@@ -114,7 +117,7 @@ export function walkChain(
   ctx: RateContext
 ): ChainInfo | null {
   if (!refType || !refId) return null
-  const info: ChainInfo = { projectRate: null, clientRate: null, billableDefault: true }
+  const info: ChainInfo = { taskRate: null, projectRate: null, clientRate: null, billableDefault: true }
   let projectId: string | null = null
 
   if (refType === 'task') {
@@ -122,6 +125,7 @@ export function walkChain(
     if (!task) return null
     info.taskId = task.id
     info.taskName = task.name
+    info.taskRate = task.rate
     projectId = task.projectId
   } else if (refType === 'project') {
     projectId = refId
@@ -164,12 +168,14 @@ export function walkChain(
 /** Pure Rule 2 pick: first non-null wins. */
 export function pickRate(opts: {
   rateOverride?: number | null
+  taskRate?: number | null
   projectRate?: number | null
   clientRate?: number | null
   memberRate?: number | null
   defaultRate?: number | null
 }): { rate: number | null; source: RateSource } {
   if (opts.rateOverride != null) return { rate: opts.rateOverride, source: 'override' }
+  if (opts.taskRate != null) return { rate: opts.taskRate, source: 'task' }
   if (opts.projectRate != null) return { rate: opts.projectRate, source: 'project' }
   if (opts.clientRate != null) return { rate: opts.clientRate, source: 'client' }
   if (opts.memberRate != null) return { rate: opts.memberRate, source: 'member' }
@@ -191,6 +197,7 @@ export function resolveEntryRate(
   const fallback = ctx.userRates.get(entry.userId)
   return pickRate({
     rateOverride: entry.rateOverride,
+    taskRate: chain?.taskRate,
     projectRate: chain?.projectRate,
     clientRate: chain?.clientRate,
     memberRate: fallback?.memberRate,
