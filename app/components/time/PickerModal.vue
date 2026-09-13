@@ -106,7 +106,10 @@ const allItems = computed<PickerItem[]>(() => {
     id: t.id,
     name: t.name,
     sub: t.projectName ? `${t.projectName}${t.clientName ? ' · ' + t.clientName : ''}` : 'Standalone task',
-    meta: t.estimateMinutes ? `${formatEstimate(t.estimateMinutes)} est.` : '',
+    meta: [
+      t.rate != null ? `$${t.rate}/h` : null,
+      t.estimateMinutes ? `${formatEstimate(t.estimateMinutes)} est.` : null
+    ].filter(Boolean).join(' · '),
     dot: (t.projectId && catalog.projects.find(p => p.id === t.projectId)?.clientColor) || null
   }))
 })

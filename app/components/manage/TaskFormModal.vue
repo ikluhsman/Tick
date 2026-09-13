@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// Task form (README "Projects & tasks" forms): name, project picker, free-text
-// estimate, completed. Edit mode adds Delete (soft delete + undo toast, Rule 4).
+// Task form (README "Projects & tasks" forms): name, project picker, rate,
+// free-text estimate, completed. Edit mode adds Delete (soft delete + undo
+// toast, Rule 4).
 
 import type { TaskPayload } from '~/stores/catalog'
 
@@ -15,9 +16,11 @@ const open = defineModel<boolean>('open', { default: false })
 const catalog = useCatalogStore()
 const toast = useToast()
 const ui = useUiStore()
+const session = useUserSession()
 
 const name = ref('')
 const projectId = ref<string | null>(null)
+const rateRaw = ref('')
 const estimateRaw = ref('')
 const done = ref(false)
 const busy = ref(false)
@@ -27,6 +30,7 @@ watch(open, (v) => {
   const t = props.task
   name.value = t?.name ?? ''
   projectId.value = t?.projectId ?? props.presetProjectId ?? null
+  rateRaw.value = t?.rate != null ? String(t.rate) : ''
   estimateRaw.value = t?.estimateMinutes ? formatEstimate(t.estimateMinutes) : ''
   done.value = t?.done ?? false
 })
@@ -37,6 +41,34 @@ const projectItems = computed(() => [
     .filter(p => !p.archived)
     .map(p => ({ label: p.name, value: p.id as string | null }))
 ])
+
+// Rate — optional; placeholder shows what an empty field inherits (Rule 2),
+// from the currently selected project's already-resolved rate, or the user's
+// default rate when standalone.
+const userRate = computed(() => (session.user.value as SessionUser | null)?.defaultRate ?? null)
+
+const selectedProject = computed(() =>
+  projectId.value ? catalog.projects.find(p => p.id === projectId.value) ?? null : null
+)
+
+const inheritedRate = computed(() => {
+  const p = selectedProject.value
+  if (p) {
+    if (p.resolvedRate == null || p.rateSource === 'none') return ''
+    if (p.rateSource === 'project') return `$${p.resolvedRate}/h from project`
+    if (p.rateSource === 'client') return `$${p.resolvedRate}/h from client`
+    return `$${p.resolvedRate}/h default`
+  }
+  return userRate.value != null ? `$${userRate.value}/h default` : ''
+})
+
+/** null = empty, undefined = invalid */
+const rateNum = computed<number | null | undefined>(() => {
+  const t = rateRaw.value.trim().replace(/^\$/, '')
+  if (!t) return null
+  const n = Number(t)
+  return Number.isFinite(n) && n >= 0 ? n : undefined
+})
 
 /** null = empty, undefined = unparseable */
 const estimateMinutes = computed<number | null | undefined>(() => {
@@ -56,7 +88,9 @@ const estimateHelp = computed(() => {
   return `≈ ${formatEstimate(estimateMinutes.value)} estimated`
 })
 
-const canSubmit = computed(() => !!name.value.trim() && estimateMinutes.value !== undefined)
+const canSubmit = computed(() =>
+  !!name.value.trim() && rateNum.value !== undefined && estimateMinutes.value !== undefined
+)
 
 async function submit() {
   if (!canSubmit.value || busy.value) return
@@ -65,6 +99,7 @@ async function submit() {
     const payload: TaskPayload = {
       name: name.value.trim(),
       projectId: projectId.value,
+      rate: rateNum.value as number | null,
       estimateMinutes: estimateMinutes.value as number | null,
       done: done.value
     }
@@ -136,9 +171,27 @@ async function remove() {
           />
         </UFormField>
 
-        <UFormField label="Estimate" :error="estimateError" :help="estimateHelp">
-          <UInput v-model="estimateRaw" placeholder="2h 30m" class="w-full tnum" />
-        </UFormField>
+        <div class="grid grid-cols-2 gap-3">
+          <UFormField label="Rate" :help="inheritedRate ? `Empty inherits ${inheritedRate}` : undefined">
+            <UInput
+              v-model="rateRaw"
+              inputmode="decimal"
+              :placeholder="inheritedRate || 'Hourly rate'"
+              class="w-full tnum"
+            >
+              <template #leading>
+                <span class="text-sm text-muted">$</span>
+              </template>
+              <template #trailing>
+                <span class="text-sm text-muted">/h</span>
+              </template>
+            </UInput>
+          </UFormField>
+
+          <UFormField label="Estimate" :error="estimateError" :help="estimateHelp">
+            <UInput v-model="estimateRaw" placeholder="2h 30m" class="w-full tnum" />
+          </UFormField>
+        </div>
 
         <USwitch v-model="done" label="Completed" />
       </div>
