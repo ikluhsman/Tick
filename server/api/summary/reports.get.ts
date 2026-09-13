@@ -7,6 +7,6 @@ import { buildReportSummary, reportQuerySchema } from '../../utils/pdf/report-da
 
 export default defineEventHandler(async (event): Promise<ReportSummary> => {
   const user = await requireAuth(event)
-  const params = await getValidatedQuery(event, q => reportQuerySchema.parse(q))
+  const params = getSanitizedQuery(event, reportQuerySchema)
   return buildReportSummary(useDrizzle(), user.orgId, params)
 })

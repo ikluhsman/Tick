@@ -6,7 +6,7 @@ const bodySchema = z.object({ name: z.string().trim().min(1).max(100) })
 
 export default defineEventHandler(async (event): Promise<TagDto> => {
   const user = await requireAuth(event)
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   const name = normalizeTagName(body.name)

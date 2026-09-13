@@ -1,9 +1,8 @@
 // DELETE /api/entries/:id — Rule 4: soft-delete to trash, undo via /api/restore.
-import { z } from 'zod'
 
 export default defineEventHandler(async (event): Promise<DeleteResult> => {
   const user = await requireAuth(event)
-  const id = z.uuid().parse(getRouterParam(event, 'id'))
+  const id = uuidRouterParam(event, 'id')
   const db = useDrizzle()
 
   const rows = await db

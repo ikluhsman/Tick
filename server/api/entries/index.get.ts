@@ -11,7 +11,7 @@ const querySchema = z.object({ from: isoDate, to: isoDate })
 
 export default defineEventHandler(async (event): Promise<EntryDto[]> => {
   const user = await requireAuth(event)
-  const { from, to } = await getValidatedQuery(event, q => querySchema.parse(q))
+  const { from, to } = getSanitizedQuery(event, querySchema)
   const db = useDrizzle()
 
   const rows = await db

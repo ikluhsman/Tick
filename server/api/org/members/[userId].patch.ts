@@ -13,8 +13,8 @@ export default defineEventHandler(async (event): Promise<OrgMemberDto> => {
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Only owners and admins can manage members.' })
   }
-  const userId = z.uuid().parse(getRouterParam(event, 'userId'))
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  const userId = uuidRouterParam(event, 'userId')
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   const updated = await db.transaction(async (tx) => {

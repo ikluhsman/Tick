@@ -18,7 +18,7 @@ const bodySchema = z
 export default defineEventHandler(
   async (event): Promise<DeleteResult | { count: number } | EntryDto[]> => {
     const user = await requireAuth(event)
-    const body = await readValidatedBody(event, b => bodySchema.parse(b))
+    const body = await readSanitizedBody(event, bodySchema)
     const db = useDrizzle()
 
     const own = and(

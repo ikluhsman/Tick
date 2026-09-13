@@ -25,7 +25,7 @@ const CHUNK = 500
 export default defineEventHandler(async (event): Promise<ImportCommitResult> => {
   demoGuard(event) // 403 in demo mode (preview stays open; committing writes rows)
   const user = await requireAuth(event)
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  const body = await readSanitizedBody(event, bodySchema)
   if (body.csv.length > IMPORT_MAX_BYTES) {
     throw createError({ statusCode: 413, message: 'CSV exceeds the 5MB import limit' })
   }

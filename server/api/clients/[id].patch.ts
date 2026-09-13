@@ -8,8 +8,8 @@ const bodySchema = z.object({
 
 export default defineEventHandler(async (event): Promise<ClientDto> => {
   const user = await requireAuth(event)
-  const id = z.uuid().parse(getRouterParam(event, 'id'))
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  const id = uuidRouterParam(event, 'id')
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   const patch: Partial<typeof schema.clients.$inferInsert> = {}

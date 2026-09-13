@@ -1,5 +1,4 @@
 // DELETE /api/invites/:id — revoke a pending invite (owner/admin only).
-import { z } from 'zod'
 
 export default defineEventHandler(async (event) => {
   demoGuard(event) // 403 in demo mode
@@ -7,7 +6,7 @@ export default defineEventHandler(async (event) => {
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Only owners and admins can revoke invites.' })
   }
-  const id = z.uuid().parse(getRouterParam(event, 'id'))
+  const id = uuidRouterParam(event, 'id')
 
   const rows = await useDrizzle()
     .delete(schema.invites)

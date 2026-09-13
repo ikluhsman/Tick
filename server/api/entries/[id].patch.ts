@@ -24,8 +24,8 @@ const bodySchema = z
 
 export default defineEventHandler(async (event): Promise<EntryDto> => {
   const user = await requireAuth(event)
-  const id = z.uuid().parse(getRouterParam(event, 'id'))
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  const id = uuidRouterParam(event, 'id')
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   const [existing] = await db

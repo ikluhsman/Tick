@@ -5,7 +5,7 @@ import type { InviteLookupDto } from '~~/shared/types/settings'
 
 export default defineEventHandler(async (event): Promise<InviteLookupDto> => {
   // Sanitized validation: unauth-reachable, must not echo zod internals.
-  const token = sanitizedParse(z.string().min(1).max(200), getRouterParam(event, 'token'))
+  const token = sanitizedRouterParam(event, 'token', z.string().min(1).max(200))
   const db = useDrizzle()
 
   const [row] = await db

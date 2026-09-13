@@ -27,7 +27,7 @@ const bodySchema = z.object({
 export default defineEventHandler(
   async (event): Promise<{ restored: Record<'clients' | 'projects' | 'tasks' | 'entries' | 'tags', number> }> => {
     const user = await requireAuth(event)
-    const { deleted, relinked } = await readValidatedBody(event, b => bodySchema.parse(b))
+    const { deleted, relinked } = await readSanitizedBody(event, bodySchema)
     const db = useDrizzle()
 
     const restored = { clients: 0, projects: 0, tasks: 0, entries: 0, tags: 0 }

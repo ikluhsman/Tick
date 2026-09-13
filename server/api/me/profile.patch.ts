@@ -12,7 +12,7 @@ const DUPLICATE_MESSAGE = 'An account with that email already exists.'
 
 export default defineEventHandler(async (event): Promise<SessionUser> => {
   const user = await requireAuth(event)
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   if (body.email) {

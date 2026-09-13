@@ -1,11 +1,10 @@
 // DELETE /api/tags/:id — strips the label from entries, never touches time.
 // Implemented as a soft delete: entry_tags rows stay put, trashed tags are
 // filtered from every read, so restoring the tag brings the labels back.
-import { z } from 'zod'
 
 export default defineEventHandler(async (event): Promise<TagDto> => {
   const user = await requireAuth(event)
-  const id = z.uuid().parse(getRouterParam(event, 'id'))
+  const id = uuidRouterParam(event, 'id')
   const db = useDrizzle()
 
   // Snapshot stats before the delete (for the undo toast).

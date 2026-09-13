@@ -35,7 +35,7 @@ function csvField(v: string | number | boolean | null): string {
 
 export default defineEventHandler(async (event): Promise<string> => {
   const user = await requireAuth(event)
-  const { from, to, billable } = await getValidatedQuery(event, q => querySchema.parse(q))
+  const { from, to, billable } = getSanitizedQuery(event, querySchema)
   const db = useDrizzle()
 
   const e = schema.timeEntries

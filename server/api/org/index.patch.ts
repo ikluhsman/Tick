@@ -12,7 +12,7 @@ export default defineEventHandler(async (event): Promise<OrgInfoDto> => {
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Only owners and admins can rename the organization.' })
   }
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   const [org] = await db

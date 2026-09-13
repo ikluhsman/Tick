@@ -1,6 +1,5 @@
 // DELETE /api/org/members/:userId — remove a member from the org.
 // Owner/admin only. The last owner can never be removed (409).
-import { z } from 'zod'
 
 export default defineEventHandler(async (event) => {
   demoGuard(event) // 403 in demo mode
@@ -8,7 +7,7 @@ export default defineEventHandler(async (event) => {
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Only owners and admins can manage members.' })
   }
-  const userId = z.uuid().parse(getRouterParam(event, 'userId'))
+  const userId = uuidRouterParam(event, 'userId')
   const db = useDrizzle()
 
   await db.transaction(async (tx) => {
