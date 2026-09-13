@@ -240,11 +240,10 @@ test.describe('mobile shell', { tag: '@mobile' }, () => {
     expect(barAfterLastRow).toBe(true)
   })
 
-  test('Select mode: a focused row near the bottom scrolls fully clear of the bulk-action bar', async ({ page, api }) => {
-    // WCAG 2.2 SC 2.4.11 Focus Not Obscured: the bar (+ the dock beneath it)
-    // must never sit over a keyboard-focused row. There is no scroll-padding
-    // reserved for either while the bar isn't showing, so this only matters
-    // once Select mode has a live selection.
+  test('Select mode: tabbing through the rows never leaves focus under the bulk-action bar', async ({ page, api }) => {
+    // WCAG 2.2 SC 2.4.11 Focus Not Obscured. Only step-by-step Tab traversal
+    // exposes an obscured row: focus() on a far-away element scrolls it to the
+    // middle of the viewport whatever scroll-padding-bottom is.
     const names: string[] = []
     for (let i = 0; i < 20; i++) {
       const n = name(`E2E mobile obscure ${i}`)
@@ -254,26 +253,51 @@ test.describe('mobile shell', { tag: '@mobile' }, () => {
 
     await page.goto('/time')
     const today = group(page, 'Today')
-    const bottomRow = entryRow(today, names[0]!)
     await expect(entryRow(today, names[19]!)).toBeVisible()
 
     await page.getByRole('button', { name: 'Select', exact: true }).click()
-    await bottomRow.scrollIntoViewIfNeeded()
-    await bottomRow.getByRole('checkbox', { name: 'Select entry' }).click()
+    await entryRow(today, names[19]!).getByRole('checkbox', { name: 'Select entry' }).click()
     const bar = bulkActionsBar(page)
     await expect(bar).toBeVisible()
 
-    // Focus the bottom row's own name button — the browser's default
-    // scroll-into-view-on-focus is what scroll-padding-bottom steers.
-    await bottomRow.locator('[data-entry-name]').focus()
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.getByRole('button', { name: 'Done', exact: true }).focus()
 
-    const [rowBox, barBox] = await Promise.all([bottomRow.boundingBox(), bar.boundingBox()])
-    expect(rowBox).not.toBeNull()
-    expect(barBox).not.toBeNull()
-    // Fully above the bar's top edge, not merely overlapping less than before.
-    expect(rowBox!.y + rowBox!.height).toBeLessThanOrEqual(barBox!.y)
-    // And still actually on-screen (not scrolled past the top instead).
-    expect(rowBox!.y).toBeGreaterThanOrEqual(0)
+    const obscured: string[] = []
+    let rowStops = 0
+    let reachedBar = false
+    for (let step = 0; step < 1000; step++) {
+      await page.keyboard.press('Tab')
+      const state = await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null
+        const barEl = [...document.querySelectorAll<HTMLElement>('[role="region"][aria-label="Bulk actions"]')]
+          .find(b => b.getClientRects().length > 0)
+        if (!el || !barEl) return null
+        const r = el.getBoundingClientRect()
+        return {
+          inBar: barEl.contains(el),
+          inRow: !!el.closest('[data-entry-id]'),
+          label: el.getAttribute('aria-label') || el.textContent?.trim().slice(0, 40) || el.tagName,
+          bottom: r.bottom,
+          top: r.top,
+          barTop: barEl.getBoundingClientRect().top
+        }
+      })
+      if (!state) break
+      if (state.inBar) {
+        reachedBar = true
+        break
+      }
+      if (!state.inRow) continue
+      rowStops++
+      if (state.bottom > state.barTop || state.top < 0) {
+        obscured.push(`${state.label}: top ${state.top.toFixed(0)}, bottom ${state.bottom.toFixed(0)}, bar top ${state.barTop.toFixed(0)}`)
+      }
+    }
+
+    expect(reachedBar, 'Tab traversal never reached the bulk-action bar').toBe(true)
+    expect(rowStops).toBeGreaterThan(names.length)
+    expect(obscured, `focused rows hidden under the bar:\n${obscured.join('\n')}`).toEqual([])
   })
 
   test('bulk-action bar stays reachable and on-screen once the list scrolls', async ({ page, api }) => {

@@ -71,6 +71,19 @@ function onCloseAutoFocus(e: Event) {
 // dock + safe-area + 8px gap" in JS — automatically covers the dock below
 // it too, and stays right if either one's height ever changes, including the
 // bar wrapping to a second line of buttons on a narrow phone.
+//
+// The root also carries `.tick-rise` (translateY(8px) → none, 0.18s, main.css)
+// on every mount — this bar is `v-if`'d in and out with the selection, so
+// that's every time a selection starts. `getBoundingClientRect()` reports the
+// *painted* position, transform included: read during the rise, `rect.top`
+// is still ~8px low (translated down, not yet at rest), which under-counts
+// how much of the viewport is obscured by exactly that much — measured on
+// this host as a scroll-padding value ~8px short of what focused rows
+// actually needed to clear the bar. `animationend` fires once the transform
+// is gone (even under prefers-reduced-motion, which collapses the duration
+// but not the event — main.css), so re-syncing there gets the settled value.
+// The immediate on-mount call is kept too, as a same-tick best effort for the
+// (brief, mid-animation) window before `animationend` lands.
 let ro: ResizeObserver | undefined
 
 function syncScrollPadding() {
@@ -85,9 +98,15 @@ function syncScrollPadding() {
   document.documentElement.style.setProperty('--tick-obscured-bottom', `${obscured}px`)
 }
 
+function onRiseEnd(e: AnimationEvent) {
+  if (e.target !== rootEl.value || e.animationName !== 'tick-rise') return
+  syncScrollPadding()
+}
+
 onMounted(() => {
   if (!props.mobile) return
   syncScrollPadding()
+  rootEl.value!.addEventListener('animationend', onRiseEnd)
   ro = new ResizeObserver(syncScrollPadding)
   ro.observe(rootEl.value!)
   window.addEventListener('resize', syncScrollPadding, { passive: true })
@@ -96,6 +115,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (!props.mobile) return
   ro?.disconnect()
+  rootEl.value?.removeEventListener('animationend', onRiseEnd)
   window.removeEventListener('resize', syncScrollPadding)
   document.documentElement.style.removeProperty('--tick-obscured-bottom')
 })

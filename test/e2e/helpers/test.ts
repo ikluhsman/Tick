@@ -1,5 +1,6 @@
-// Base test extended with an `api` fixture, and a `page` fixture that never
-// hands a spec control back until the app has actually hydrated.
+// Base test extended with an `api` fixture, and a `page` fixture that gives
+// every page a never-decreasing Date.now() and never hands a spec control
+// back until the app has hydrated.
 //
 // The session cookie is Secure (h3's default in a production build). A browser
 // accepts that over http://127.0.0.1 because localhost is a trustworthy origin,
@@ -8,16 +9,23 @@
 // the browser context's cookie jar, so setup/cleanup calls carry the same
 // session the test is driving.
 //
-// Every spec in this suite imports `test`/`expect` from here (not from
-// `@playwright/test` directly) — this is the one place that wraps
-// `page.goto`/`page.reload`. Both are full document loads, and a full
-// document load is the only thing that starts a new hydration cycle: a
-// click-triggered SPA route change (a NuxtLink, a `router.push` after
-// stopping the timer, tab-bar navigation) happens entirely after the page
-// has already hydrated, since the click that triggered it required a live
-// Vue listener to fire in the first place. So wrapping just these two covers
-// every navigation a spec can be sitting on when it fires its next action —
-// no per-spec waits needed.
+// Every spec imports `test`/`expect` from here, not from `@playwright/test`:
+// this is the one place that wraps page.goto/page.reload. Those are the only
+// navigations that start a new hydration cycle — an SPA route change is
+// triggered by a click, which already needed a hydrated listener.
+//
+// Date.now(): the wall clock on some hosts (WSL2 in particular) steps
+// backwards by seconds at a time. Vue stamps each listener with Date.now()
+// when it attaches; the first Vue listener an event reaches records the
+// event's Date.now(), and any later listener whose stamp is >= that value
+// skips the event. So after a backwards step, a click on a freshly attached
+// listener (e.g. a row button under EntryRow's @click.capture) is silently
+// dropped. Clamping to the last value is not enough — a frozen clock still
+// equals the stamp — so Date.now() is derived from performance.now().
+// `new Date()` stays on the real clock, so on such a host Date.now() runs
+// ahead of it by every backwards step since the page loaded: assert on
+// elapsed-time displays (the timer clock) soon after navigation, not after a
+// page has been open for minutes.
 import { test as base, type APIRequestContext } from '@playwright/test'
 import { waitForHydration } from './hydration'
 
@@ -26,6 +34,12 @@ export const test = base.extend<{ api: APIRequestContext }>({
     await use(page.request)
   },
   page: async ({ page }, use) => {
+    // Init scripts re-run before the page's own code on every navigation.
+    await page.addInitScript(() => {
+      const origin = Date.now() - performance.now()
+      Date.now = () => Math.floor(origin + performance.now())
+    })
+
     const goto = page.goto.bind(page)
     page.goto = (async (url, options) => {
       const response = await goto(url, options)

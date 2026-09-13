@@ -32,7 +32,13 @@ npx playwright test --ui              # interactive (needs a headed browser)
 
 `E2E_FORCE_BUILD=1` forces a rebuild, `E2E_SERVER_LOG=1` shows the build/server
 output, `E2E_PORT` / `E2E_BASE_URL` / `E2E_CHROMIUM` / `E2E_DATABASE_URL`
-override the defaults.
+override the defaults. `E2E_DATABASE_URL` drives both halves of the run:
+`global-setup.ts` reads it directly, and `playwright.config.ts`'s
+`webServer.env` forwards the same value to `serve.mjs` as `NUXT_DATABASE_URL`
+— so the database seeded and the database served are the same one. The
+exception is a local run that reuses a server already listening on
+`E2E_PORT` (`reuseExistingServer` is on outside CI): that server keeps
+whatever database it was started with, so stop it when switching databases.
 
 Chromium is the headless shell already installed on this machine; the path is
 set in `playwright.config.ts` (`launchOptions.executablePath`).
