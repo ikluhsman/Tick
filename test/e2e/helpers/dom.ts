@@ -1,0 +1,60 @@
+// Shared locators. Everything anchors on a role, a label or a heading —
+// the shell renders the desktop timer bar and the mobile dock at the same
+// time (one of them CSS-hidden), so widgets that exist twice are narrowed
+// with `filter({ visible: true })` rather than by breakpoint-specific classes.
+import type { Locator, Page } from '@playwright/test'
+
+/** The visible one of the two timer description inputs. */
+export function timerInput(page: Page): Locator {
+  return page.getByLabel('What are you working on?').filter({ visible: true })
+}
+
+/** The visible start/stop button — its accessible name IS the timer state. */
+export function timerToggle(page: Page): Locator {
+  return page.getByRole('button', { name: /^(Start|Stop)$/ }).filter({ visible: true })
+}
+
+/** hh:mm:ss readout — the element immediately before the start/stop button. */
+export function timerClock(page: Page): Locator {
+  return timerToggle(page).locator('xpath=preceding-sibling::*[1]')
+}
+
+/** The visible "+" that opens the client/project/task picker. */
+export function timerPlus(page: Page): Locator {
+  return page.getByRole('button', { name: 'Add client, project or task' }).filter({ visible: true })
+}
+
+/** Chain chip next to the timer description, e.g. "Website redesign · Acme Co". */
+export function timerChain(page: Page): Locator {
+  return page.getByRole('button', { name: 'Remove client, project or task' })
+    .filter({ visible: true })
+    .locator('xpath=preceding-sibling::span[1]')
+}
+
+/** The picker dialog — the one carrying the Client / Project / Task tablist. */
+export function picker(page: Page): Locator {
+  return page.getByRole('dialog').filter({
+    has: page.getByRole('tablist', { name: 'Pick type' })
+  })
+}
+
+/** A day / project group card on /time, addressed by its heading. */
+export function group(page: Page, label: string): Locator {
+  return page.locator('section').filter({
+    has: page.getByRole('heading', { name: label, exact: true })
+  })
+}
+
+/**
+ * Every entry row, in rendered order. `div.group` is TimeEntryRow's row grid
+ * (app/components/time/EntryRow.vue) and the only `group` class in the app.
+ */
+export function rows(scope: Page | Locator): Locator {
+  return scope.locator('div.group')
+}
+
+/** One entry row, addressed by the entry's name. */
+export function entryRow(scope: Page | Locator, name: string): Locator {
+  const page = 'page' in scope ? scope.page() : scope
+  return rows(scope).filter({ has: page.getByRole('button', { name, exact: true }) })
+}
