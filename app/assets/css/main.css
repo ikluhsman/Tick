@@ -44,19 +44,31 @@
    own lightness, not the app's dark/light mode — a mode-keyed class (even
    a dark:-aware one) is wrong for some hue/mode pairing (e.g. amber in dark
    mode, violet in light mode). The element sets `--client-bg` inline
-   (`clientColorVar(...)`); this flips ink to white/black based on the
-   swatch's actual computed OKLCH lightness.
-   First declaration is the fallback for browsers without relative color
-   syntax (plain dark ink). The second overrides it there: white when the
-   swatch's lightness is below T, black at or above it. T=0.583 sits in the
-   middle of the widest window (measured against every primary × every
-   neutral this app supports, both modes) that clears 4.5:1 everywhere —
-   see test/e2e/client-color-contrast.spec.ts. Re-measure if
-   CLIENT_COLOR_PALETTE's shade steps (currently -400/-600) ever change. */
+   (`clientColorVar(...)`); the @supports rule below flips ink to white/black
+   based on the swatch's actual computed OKLCH lightness.
+   A plain `color: X; color: var(...)` pair is NOT a real fallback: a
+   declaration containing var() is accepted at parse time and always wins the
+   cascade, so an engine that can't resolve the relative-color function would
+   never fall through to the plain value — it hits "invalid at computed-value
+   time" instead, which computes to `unset` (inherit), not the earlier line.
+   @supports actually gates it: engines without relative-color support (still
+   in the wild — see caniuse "css-relative-colors", roughly Chrome <119,
+   Safari <18, Firefox <128) get ONLY the plain neutral-950 ink below, a
+   degraded state that is not contrast-guaranteed on every swatch. Everything
+   else gets the lightness-flipped ink: white when the swatch's lightness is
+   below T, black at or above it. T=0.583 sits in the middle of the widest
+   window (measured against every primary × every neutral this app supports,
+   both modes) that clears 4.5:1 everywhere — see
+   test/e2e/client-color-contrast.spec.ts. Re-measure if CLIENT_COLOR_PALETTE's
+   shade steps (currently -400/-600) ever change. */
 .tick-on-swatch {
   background: var(--client-bg);
   color: var(--ui-color-neutral-950);
-  color: oklch(from var(--client-bg) clamp(0, (0.583 - l) * 1000, 1) 0 0);
+}
+@supports (color: oklch(from red calc(1 - l) 0 h)) {
+  .tick-on-swatch {
+    color: oklch(from var(--client-bg) clamp(0, (0.583 - l) * 1000, 1) 0 h);
+  }
 }
 
 /* Menus / dialogs / toasts enter with translateY(8px) → 0, opacity 0 → 1 */
