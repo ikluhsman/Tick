@@ -225,12 +225,18 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
           >
             {{ entry.name }}
           </button>
+          <!-- Select mode adds a leading checkbox column on mobile, and
+               shrink-0 tags would otherwise take that space from the name
+               (already truncated) rather than giving any up themselves,
+               shrinking names to 3-4 characters — exactly the identifying
+               info Select mode needs. Tags stay visible everywhere else. -->
           <UBadge
             v-for="t in entry.tags"
             :key="t"
             color="neutral"
             variant="soft"
             class="shrink-0 px-[7px] py-px text-[10px]"
+            :class="selectMode ? 'max-lg:hidden' : ''"
           >
             #{{ t }}
           </UBadge>
