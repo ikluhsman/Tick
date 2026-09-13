@@ -2,7 +2,7 @@
 // and a bulk "Move to…" reassign.
 import { expect, test } from './helpers/test'
 import { createEntry, clearRunningTimer, deleteEntriesNamed } from './helpers/api'
-import { entryRow, group, picker } from './helpers/dom'
+import { bulkActionsBar, entryRow, group, picker } from './helpers/dom'
 import { SEED, startsWith, uniqueName } from './helpers/fixtures'
 
 /** Every name this file creates, so afterEach can sweep them all. */
@@ -138,7 +138,9 @@ test('bulk selecting two rows and "Move to…" reassigns both', async ({ page, a
   const today = group(page, 'Today')
   await entryRow(today, first).getByRole('checkbox', { name: 'Select entry' }).click()
   await entryRow(today, second).getByRole('checkbox', { name: 'Select entry' }).click()
-  await expect(page.getByText('2 selected')).toBeVisible()
+  // Scoped to the bar: time.vue also keeps an always-mounted live region
+  // with the same text, so an unscoped getByText matches both.
+  await expect(bulkActionsBar(page).getByText('2 selected')).toBeVisible()
 
   await page.getByRole('button', { name: 'Move to…' }).click()
   await expect(picker(page)).toBeVisible()

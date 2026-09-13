@@ -2,7 +2,7 @@
 // bottom sheet. Runs in the `mobile` project only — 390×844 with touch.
 import { expect, test } from './helpers/test'
 import { clearRunningTimer, createEntry, deleteEntriesNamed, listEntries } from './helpers/api'
-import { entryRow, group, picker, timerClock, timerInput, timerPlus, timerToggle } from './helpers/dom'
+import { bulkActionsBar, entryRow, group, picker, timerClock, timerInput, timerPlus, timerToggle } from './helpers/dom'
 import { uniqueName } from './helpers/fixtures'
 
 const VIEWPORT = { width: 390, height: 844 }
@@ -111,13 +111,15 @@ test.describe('mobile shell', { tag: '@mobile' }, () => {
 
     await entryRow(today, first).getByRole('checkbox', { name: 'Select entry' }).click()
     await entryRow(today, second).getByRole('checkbox', { name: 'Select entry' }).click()
-    await expect(page.getByText('2 selected')).toBeVisible()
+    // Scoped to the bar: time.vue also keeps an always-mounted live region
+    // with the same text, so an unscoped getByText matches both.
+    await expect(bulkActionsBar(page).getByText('2 selected')).toBeVisible()
 
     // Mobile rows show no billable indicator at all (that's the point — the
     // per-row $ toggle stays desktop-only); verify the bulk action landed
     // through the API instead, same as the bulk bar itself would confirm it.
     await page.getByRole('button', { name: 'Mark billable' }).click()
-    await expect(page.getByText('2 selected')).toBeHidden()
+    await expect(bulkActionsBar(page)).toBeHidden()
     const afterBillable = await listEntries(api)
     for (const n of [first, second]) {
       expect(afterBillable.find(e => e.name === n)?.billable, `${n} billable after bulk mark`).toBe(true)
@@ -125,11 +127,70 @@ test.describe('mobile shell', { tag: '@mobile' }, () => {
 
     // Toggling off drops any selection and hides the checkboxes again.
     await entryRow(today, first).getByRole('checkbox', { name: 'Select entry' }).click()
-    await expect(page.getByText('1 selected')).toBeVisible()
+    await expect(bulkActionsBar(page).getByText('1 selected')).toBeVisible()
     await doneBtn.click()
     await expect(selectBtn).toBeVisible()
-    await expect(page.getByText('1 selected')).toBeHidden()
+    await expect(bulkActionsBar(page)).toBeHidden()
     await expect(entryRow(today, first).getByRole('checkbox', { name: 'Select entry' })).toBeHidden()
+  })
+
+  test('selection-count live region is always mounted, unlike the bar\'s own visual count', async ({ page, api }) => {
+    const first = name('E2E mobile live region')
+    await createEntry(api, { name: first, billable: false, ...slot(6) })
+
+    await page.goto('/time')
+    const today = group(page, 'Today')
+    await expect(entryRow(today, first)).toBeVisible()
+
+    // Present from page load — not only once the bar mounts, which is what
+    // a <span role="status"> living inside the v-if'd bar would require,
+    // and which meant the very first "n selected" was usually never
+    // announced.
+    const live = page.locator('[role="status"][aria-live="polite"].sr-only')
+    await expect(live).toBeAttached()
+    await expect(live).toHaveText('')
+
+    await page.getByRole('button', { name: 'Select', exact: true }).click()
+    await entryRow(today, first).getByRole('checkbox', { name: 'Select entry' }).click()
+    await expect(live).toHaveText('1 selected')
+
+    await entryRow(today, first).getByRole('checkbox', { name: 'Select entry' }).click()
+    await expect(live).toHaveText('Selection cleared')
+  })
+
+  test('focus after a bulk action in Select mode lands on the Select/Done toggle, not an off-screen row', async ({ page, api }) => {
+    // Enough rows to push well past the fold, same setup as the reachability
+    // test above — the row selected sits well below the header.
+    const names: string[] = []
+    for (let i = 0; i < 20; i++) {
+      const n = name(`E2E mobile focus ${i}`)
+      names.push(n)
+      await createEntry(api, { name: n, billable: false, ...slot(i) })
+    }
+
+    await page.goto('/time')
+    const today = group(page, 'Today')
+    await expect(entryRow(today, names[19]!)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Select', exact: true }).click()
+
+    const lastRow = entryRow(today, names[0]!)
+    await lastRow.scrollIntoViewIfNeeded()
+    await lastRow.getByRole('checkbox', { name: 'Select entry' }).click()
+
+    const bar = bulkActionsBar(page)
+    await expect(bar).toBeVisible()
+    await bar.getByRole('button', { name: 'Clear' }).click()
+    await expect(bar).toBeHidden()
+
+    // Landing on the header's Select/Done toggle (still reading "Done" —
+    // Clear doesn't turn Select mode off) beats the first entry in the
+    // whole list: that row sits off-screen after scrolling down to select
+    // a row near the bottom, so a sighted keyboard user would lose their
+    // focus ring entirely.
+    const doneBtn = page.getByRole('button', { name: 'Done', exact: true })
+    await expect(doneBtn).toBeFocused()
+    await expect(doneBtn).toBeInViewport()
   })
 
   test('bulk-action bar stays reachable and on-screen once the list scrolls', async ({ page, api }) => {

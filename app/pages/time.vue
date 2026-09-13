@@ -26,10 +26,42 @@ onBeforeUnmount(() => {
   entriesStore.clearSelection()
 })
 
+// Always-mounted polite live region for selection-count changes. The bar's
+// own visual "n selected" text is a child of the v-if'd bar, so a screen
+// reader that hasn't attached to it yet by the time it mounts misses the
+// first announcement; this one exists before the count ever changes.
+const selectionAnnouncement = ref('')
+watch(() => entriesStore.selection.size, (n, prev) => {
+  if (n === prev) return
+  selectionAnnouncement.value = n === 0 ? 'Selection cleared' : `${n} selected`
+})
+
+/**
+ * Where to land focus once a bulk action (Clear, Mark billable, Move to…,
+ * bulk Delete) empties the selection and the bar unmounts. In Select mode
+ * the Select/Done toggle is a fixed, known landmark in the header; outside
+ * it (desktop, where the checkbox column is always visible) fall back to
+ * the first row, which is what main did before Select mode existed. No
+ * `preventScroll` here — unlike the guard below, everything that reaches
+ * this point is a deliberate action, so scrolling the new target into view
+ * is wanted: it's what keeps the focus ring visible instead of landing
+ * off-screen and looking like nothing happened.
+ */
+function focusAfterBarAction() {
+  nextTick(() => {
+    if (document.activeElement && document.activeElement !== document.body) return
+    const toggle = selectMode.value ? document.querySelector<HTMLElement>('[data-select-toggle]') : null
+    const target = (toggle && toggle.offsetParent !== null ? toggle : null)
+      ?? document.querySelector<HTMLElement>('[data-entry-name]')
+      ?? document.getElementById('main')
+    target?.focus()
+  })
+}
+
 // Whenever the selection empties out from under a focused control inside the
 // selection bar (Clear, Mark billable, Move to…) — not just the page's own
 // bulk-delete path below, which already handles its own focus — land focus
-// back on the list instead of letting it fall to <body>.
+// back on the page instead of letting it fall to <body>.
 //
 // Two guards, both load-bearing:
 // - `singleDeleteInFlight`: a single row's own Delete button (EntryRow) can
@@ -48,11 +80,8 @@ onBeforeUnmount(() => {
 watch(() => entriesStore.hasSelection, (has, had) => {
   if (has || !had || singleDeleteInFlight) return
   const wasInBar = !!document.activeElement?.closest('[data-selection-bar]')
-  nextTick(() => {
-    if (!wasInBar) return
-    if (document.activeElement && document.activeElement !== document.body) return
-    ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus({ preventScroll: true })
-  })
+  if (!wasInBar) return
+  focusAfterBarAction()
 })
 
 // ?filter=#design (Tags page filter-jump) seeds the filter input; watch covers
@@ -258,11 +287,8 @@ async function onBulkDelete() {
   const count = entriesStore.selection.size
   try {
     const result = await entriesStore.bulkDelete()
-    // The selection bar (and its Delete trigger) is gone — land on the list
-    nextTick(() => {
-      if (document.activeElement && document.activeElement !== document.body) return
-      ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus({ preventScroll: true })
-    })
+    // The selection bar (and its Delete trigger) is gone — land back on the page
+    focusAfterBarAction()
     if (result) undoToast(`Moved ${count} ${count === 1 ? 'entry' : 'entries'} to trash`, result)
   } catch {
     // selection stays for retry
@@ -326,10 +352,16 @@ async function onBulkDelete() {
           class="lg:hidden"
           :class="selectMode ? '' : 'text-muted'"
           :label="selectMode ? 'Done' : 'Select'"
+          data-select-toggle
           @click="toggleSelectMode"
         />
       </div>
     </div>
+
+    <!-- Always mounted (unlike the bar's own visual count) so the very first
+         "n selected" is never missed by a screen reader that hasn't attached
+         to the bar yet. -->
+    <div class="sr-only" role="status" aria-live="polite">{{ selectionAnnouncement }}</div>
 
     <!-- Selection bar -->
     <TimeSelectionBar v-if="entriesStore.hasSelection" @delete="onBulkDelete" />

@@ -38,6 +38,17 @@ export function picker(page: Page): Locator {
   })
 }
 
+/**
+ * The mobile bulk-action bar (SelectionBar). Its "n selected" span is visual
+ * only — time.vue also keeps an always-mounted live region with the same
+ * text, so an unscoped `getByText('n selected')` matches both and throws a
+ * strict-mode violation while the bar is mounted. Scope to the bar for the
+ * visible count.
+ */
+export function bulkActionsBar(page: Page): Locator {
+  return page.getByRole('region', { name: 'Bulk actions' })
+}
+
 /** A day / project group card on /time, addressed by its heading. */
 export function group(page: Page, label: string): Locator {
   return page.locator('section').filter({

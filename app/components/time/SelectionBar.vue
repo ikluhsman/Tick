@@ -68,7 +68,10 @@ function onCloseAutoFocus(e: Event) {
     data-selection-bar
     class="tick-rise flex flex-wrap items-center gap-2.5 rounded-md bg-primary/10 py-1.5 pr-1.5 pl-3.5 ring-1 ring-primary/25 max-lg:fixed max-lg:inset-x-4 max-lg:bottom-[calc(150px+env(safe-area-inset-bottom)+8px)] max-lg:z-30 max-lg:bg-default max-lg:shadow-lg"
   >
-    <span class="flex-1 text-[13px] text-primary max-lg:basis-full" role="status">{{ count }} selected</span>
+    <!-- Visual only — time.vue owns an always-mounted live region for count
+         changes, since this span mounts together with the bar itself and
+         would miss the first "n selected". -->
+    <span class="flex-1 text-[13px] text-primary max-lg:basis-full">{{ count }} selected</span>
     <UButton color="primary" variant="ghost" size="sm" label="Clear" @click="entriesStore.clearSelection()" />
     <UButton color="neutral" variant="outline" size="sm" label="Mark billable" @click="markBillable" />
     <UButton
