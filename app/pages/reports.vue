@@ -194,6 +194,11 @@ function printReport() {
           :totals="reports.summary.totals"
           :group-label="groupLabel"
         />
+        <!-- Tag rows fan out: an entry with two tags is counted under both, so
+             the rows can exceed the total. Every other grouping partitions. -->
+        <p v-if="reports.groupBy === 'tag'" class="px-1 text-[11px] text-dimmed">
+          An entry with several tags is counted under each of them, so tag rows can add up to more than the total.
+        </p>
       </div>
     </template>
 
