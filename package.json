@@ -11,7 +11,10 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx server/db/seed.ts",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@nuxt/ui": "^4.11.1",
@@ -31,12 +34,16 @@
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.131",
+    "@nuxt/test-utils": "^4.3.2",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.20.2",
     "@types/nodemailer": "^8.0.1",
     "@vite-pwa/nuxt": "^1.1.1",
     "drizzle-kit": "^0.31.10",
+    "happy-dom": "^20.14.5",
     "tsx": "^4.23.13",
     "typescript": "~5.9.2",
+    "vitest": "^5.0.0",
     "vue-tsc": "^3.3.11"
   }
 }

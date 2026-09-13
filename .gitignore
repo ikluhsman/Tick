@@ -173,3 +173,6 @@ handoff_design_*/
 
 # VS Code: keep launch.json, drop the debug browser profile
 .vscode/.chrome-profile/
+
+# Vitest JSON report written by the rtk vitest proxy
+.vitest/
