@@ -20,7 +20,7 @@
 // plus "every neutral × a fixed primary" gives the same coverage as the
 // full 17×9 cross product without 150+ extra no-op combinations.
 import type { Page } from '@playwright/test'
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/test'
 
 // Mirrors app/stores/theme.ts's THEME_PRIMARIES / THEME_NEUTRALS —
 // duplicated because e2e specs run outside Nuxt's `~` alias resolver, so
