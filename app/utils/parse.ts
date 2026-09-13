@@ -2,12 +2,20 @@
 // Pure functions, unit-testable. Dates come back at local midnight; times and
 // durations come back in minutes so callers can compose them.
 
-const DAY_MS = 86_400_000
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 const WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
 function atMidnight(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+/**
+ * Calendar-day arithmetic. Must not be done in milliseconds: a DST day is 23
+ * or 25 hours long, so `t - 86_400_000` can skip a day (or land at 23:00) on
+ * the spring-forward boundary.
+ */
+function addDays(d: Date, n: number): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
 }
 
 /** new Date(y, m, d) that rejects rollovers (Feb 30 → null instead of Mar 2). */
@@ -27,7 +35,7 @@ export function parseDate(input: string, ref: Date = new Date()): Date | null {
   const s = (input ?? '').trim().toLowerCase()
   const today = atMidnight(ref)
   if (!s || s === 'today') return today
-  if (s === 'yesterday') return new Date(today.getTime() - DAY_MS)
+  if (s === 'yesterday') return addDays(today, -1)
 
   let m: RegExpMatchArray | null
 
@@ -36,7 +44,7 @@ export function parseDate(input: string, ref: Date = new Date()): Date | null {
     const wd = WEEKDAYS.indexOf(m[1]!)
     let d = today
     do {
-      d = new Date(d.getTime() - DAY_MS)
+      d = addDays(d, -1)
     } while (d.getDay() !== wd)
     return d
   }
@@ -101,14 +109,14 @@ export function parseDuration(input: string): number | null {
   let m: RegExpMatchArray | null
   // bare number or "1.5h" → hours
   if ((m = s.match(/^(\d+(?:\.\d+)?)\s*h?$/))) return Math.round(+m[1]! * 60)
-  const h = s.match(/(\d+(?:\.\d+)?)\s*h/)
-  const mm = s.match(/(\d+)\s*m/)
-  if (!h && !mm) {
-    // "1:30" → h:mm
-    if ((m = s.match(/^(\d{1,2}):(\d{2})$/))) return +m[1]! * 60 + +m[2]!
-    return null
+  // "1:30" → h:mm
+  if ((m = s.match(/^(\d{1,2}):(\d{2})$/))) return +m[1]! * 60 + +m[2]!
+  // "2h 30m" / "2h" / "45m" — the whole string must be h/m tokens and nothing
+  // else, so junk ("-5m", "abc 5m") errors out instead of being half-read.
+  if ((m = s.match(/^(?:(\d+(?:\.\d+)?)\s*h)?\s*(?:(\d+)\s*m)?$/)) && (m[1] || m[2])) {
+    return Math.round((m[1] ? +m[1]! * 60 : 0) + (m[2] ? +m[2]! : 0))
   }
-  return Math.round((h ? +h[1]! * 60 : 0) + (mm ? +mm[1]! : 0))
+  return null
 }
 
 /** Project/task estimates use the same grammar as durations ("40h", "2h 30m"). Minutes or null. */
