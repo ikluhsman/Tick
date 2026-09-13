@@ -20,13 +20,18 @@ useSeoMeta({
 
 <template>
   <UApp>
-    <UHeader>
+    <UHeader :ui="{ title: 'items-center gap-2.5' }">
+      <!--
+        UHeader already wraps the #title slot in its own <ULink :to="to"> (default "/"),
+        so this slot must contain NO link of its own. A NuxtLink here emitted nested
+        <a> tags; the HTML parser is required to auto-close the outer anchor at the
+        inner <a>, so the parsed server DOM had these nodes as *siblings* of the title
+        anchor while the client vdom expects them as *children* — the hydration mismatch.
+      -->
       <template #title>
-        <NuxtLink to="/" class="flex items-center gap-2.5">
-          <TickLogo :size="30" glow />
-          <span class="text-lg font-medium text-highlighted">Tick</span>
-          <span class="text-lg font-normal text-muted">docs</span>
-        </NuxtLink>
+        <TickLogo :size="30" glow />
+        <span class="text-lg font-medium text-highlighted">Tick</span>
+        <span class="text-lg font-normal text-muted">docs</span>
       </template>
 
       <template #right>

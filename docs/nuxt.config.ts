@@ -10,8 +10,6 @@ export default defineNuxtConfig({
     fallback: 'dark',
     // Cookie, not localStorage, so SSR knows the visitor's saved mode and
     // renders the right <html> class on the first byte (same as the main app).
-    // Note: this site still logs a hydration mismatch from somewhere else —
-    // unrelated to the stored mode, still unidentified.
     storage: 'cookie'
   },
   fonts: {
