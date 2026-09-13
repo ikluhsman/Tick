@@ -22,7 +22,9 @@ export default defineEventHandler((event) => {
   const max = raw === '' ? DEFAULT_MAX : Math.max(0, Number.parseInt(raw, 10) || 0)
   if (max === 0) return // explicitly disabled
 
-  const now = Date.now()
+  // Monotonic clock: a wall-clock step or slew (NTP, a VM resyncing its
+  // clock) must not stretch or shrink the window that Retry-After promised.
+  const now = performance.now()
   if (now - lastSweep > WINDOW_MS) {
     lastSweep = now
     for (const [key, times] of buckets) {
