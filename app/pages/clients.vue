@@ -65,8 +65,8 @@ function openClientForm(client: ClientDto | null) {
           <div class="flex min-w-0 items-center gap-2.5" role="cell">
             <span
               aria-hidden="true"
-              class="grid size-[26px] shrink-0 place-items-center rounded-full text-[10px] font-semibold text-inverted"
-              :style="{ background: clientColorVar(c.color) }"
+              class="tick-on-swatch grid size-[26px] shrink-0 place-items-center rounded-full text-[10px] font-semibold"
+              :style="{ '--client-bg': clientColorVar(c.color) }"
             >
               {{ initials(c.name) }}
             </span>

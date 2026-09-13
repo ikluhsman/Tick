@@ -53,8 +53,8 @@ test('starts, ticks, attaches a project, stops into the top of Today', async ({ 
   await timerPlus(page).click()
   await page.getByRole('menuitem', { name: 'Project' }).click()
   await expect(picker(page)).toBeVisible()
-  await picker(page).getByRole('textbox').fill(SEED.projectNoRate.name)
-  await picker(page).getByRole('button', { name: startsWith(SEED.projectNoRate.name) }).click()
+  await picker(page).getByRole('combobox').fill(SEED.projectNoRate.name)
+  await picker(page).getByRole('option', { name: startsWith(SEED.projectNoRate.name) }).click()
   await expect(picker(page)).toBeHidden()
   await expect(timerChain(page)).toHaveText(`${SEED.projectNoRate.name} · ${SEED.projectNoRate.client}`)
 

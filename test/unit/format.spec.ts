@@ -206,3 +206,10 @@ describe('clientColorVar', () => {
     expect(clientColorVar(null, 'var(--custom)')).toBe('var(--custom)')
   })
 })
+
+// The avatar-initials ink (app/pages/clients.vue) used to be a JS function
+// (`clientColorInk`) keyed off color-mode, but that's the wrong variable —
+// the swatch's hue (17 primaries × 9 neutrals, user-chosen) decides the ink,
+// not the app's mode. It's now a CSS-only relative-color computation
+// (`.tick-on-swatch` in app/assets/css/main.css) with no JS unit to test;
+// see test/e2e/client-color-contrast.spec.ts for its coverage.

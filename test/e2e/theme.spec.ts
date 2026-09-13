@@ -22,14 +22,6 @@ function cssVar(page: import('@playwright/test').Page, name: string) {
   return page.evaluate(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(), name)
 }
 
-/** Resolves once Vue has mounted the app — hydration warnings are out by then. */
-async function hydrated(page: import('@playwright/test').Page) {
-  await page.waitForFunction(() => {
-    const root = document.querySelector('#__nuxt') as (HTMLElement & { __vue_app__?: unknown }) | null
-    return !!root?.__vue_app__
-  })
-}
-
 test.afterEach(async ({ page }) => {
   // Leave the account on the default theme so a re-run starts clean.
   await page.goto('/settings')
@@ -46,8 +38,9 @@ test('a preset survives a reload and the reload hydrates without a mismatch', as
     if (HYDRATION_MISMATCH.test(String(e))) consoleErrors.push(String(e))
   })
 
+  // page.goto (helpers/test.ts) already waits for real hydration — not merely
+  // for the app to have mounted, which is too early: see test/e2e/helpers/hydration.ts.
   await page.goto('/settings')
-  await hydrated(page)
   await expect(page.locator('html')).toHaveClass(/dark/)
 
   // ── Apply the preset: light mode, its own radius and font, applied live ──
@@ -60,7 +53,6 @@ test('a preset survives a reload and the reload hydrates without a mismatch', as
 
   // ── Reload: the server must render the saved theme on the first byte ─────
   await page.reload()
-  await hydrated(page)
 
   await expect(page.locator('html')).toHaveClass(/light/)
   await expect(page.getByRole('button', { name: DAYLIGHT.card })).toHaveAttribute('aria-pressed', 'true')

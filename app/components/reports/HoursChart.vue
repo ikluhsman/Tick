@@ -127,7 +127,7 @@ watch(() => props.days, () => nextTick(growIn))
           text-anchor="middle"
           class="tnum"
           font-size="10"
-          fill="var(--ui-text-dimmed)"
+          fill="var(--ui-text-muted)"
         >{{ c.total }}</text>
         <g data-col>
           <rect
@@ -148,7 +148,7 @@ watch(() => props.days, () => nextTick(growIn))
           :y="TOP + CHART_H + 16"
           text-anchor="middle"
           font-size="11"
-          :fill="c.isToday ? 'var(--ui-primary)' : 'var(--ui-text-dimmed)'"
+          :fill="c.isToday ? 'var(--ui-primary)' : 'var(--ui-text-muted)'"
         >{{ c.label }}</text>
       </g>
     </svg>

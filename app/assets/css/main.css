@@ -10,6 +10,24 @@
   --ui-radius: 0.5rem;
 }
 
+/* Set/cleared by SelectionBar.vue's `mobile` copy (app/components/time/SelectionBar.vue)
+   only while it is genuinely visible — measured from its own top edge, so
+   this covers the mobile dock sitting below it too, and stays right however
+   tall the bar itself renders (it can wrap to a second line of buttons on a
+   narrow phone). A keyboard-focused row must scroll fully above the fixed
+   bar+dock (WCAG 2.4.11 Focus Not Obscured), not just into the layout
+   viewport. The `min-width: 1024px` guard is a static backstop for the rare
+   case a resize event lands between the bar leaving the layout and its own
+   resize handler clearing the var. */
+html {
+  scroll-padding-bottom: var(--tick-obscured-bottom, 0px);
+}
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-bottom: 0px !important;
+  }
+}
+
 /* Light mode, one palette step darker than Nuxt UI's defaults so text and
    primary clear WCAG AA (4.5:1) on white and on elevated cards — the stock
    primary-500 on white is ~2.7:1. Unlayered, so it beats Nuxt UI's
@@ -35,6 +53,40 @@
 /* Tabular numerals wherever time or money appears */
 .tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/* Ink for text painted on a client-color swatch (avatar initials —
+   app/pages/clients.vue). CLIENT_COLOR_PALETTE (server/utils/entry-dto.ts)
+   draws from the user's chosen primary (17 Tailwind colors) and neutral (9)
+   in EITHER color mode, so the ink a swatch needs depends on that swatch's
+   own lightness, not the app's dark/light mode — a mode-keyed class (even
+   a dark:-aware one) is wrong for some hue/mode pairing (e.g. amber in dark
+   mode, violet in light mode). The element sets `--client-bg` inline
+   (`clientColorVar(...)`); the @supports rule below flips ink to white/black
+   based on the swatch's actual computed OKLCH lightness.
+   A plain `color: X; color: var(...)` pair is NOT a real fallback: a
+   declaration containing var() is accepted at parse time and always wins the
+   cascade, so an engine that can't resolve the relative-color function would
+   never fall through to the plain value — it hits "invalid at computed-value
+   time" instead, which computes to `unset` (inherit), not the earlier line.
+   @supports actually gates it: engines without relative-color support (still
+   in the wild — see caniuse "css-relative-colors", roughly Chrome <119,
+   Safari <18, Firefox <128) get ONLY the plain neutral-950 ink below, a
+   degraded state that is not contrast-guaranteed on every swatch. Everything
+   else gets the lightness-flipped ink: white when the swatch's lightness is
+   below T, black at or above it. T=0.583 sits in the middle of the widest
+   window (measured against every primary × every neutral this app supports,
+   both modes) that clears 4.5:1 everywhere — see
+   test/e2e/client-color-contrast.spec.ts. Re-measure if CLIENT_COLOR_PALETTE's
+   shade steps (currently -400/-600) ever change. */
+.tick-on-swatch {
+  background: var(--client-bg);
+  color: var(--ui-color-neutral-950);
+}
+@supports (color: oklch(from red calc(1 - l) 0 h)) {
+  .tick-on-swatch {
+    color: oklch(from var(--client-bg) clamp(0, (0.583 - l) * 1000, 1) 0 h);
+  }
 }
 
 /* Menus / dialogs / toasts enter with translateY(8px) → 0, opacity 0 → 1 */

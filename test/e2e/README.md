@@ -32,7 +32,13 @@ npx playwright test --ui              # interactive (needs a headed browser)
 
 `E2E_FORCE_BUILD=1` forces a rebuild, `E2E_SERVER_LOG=1` shows the build/server
 output, `E2E_PORT` / `E2E_BASE_URL` / `E2E_CHROMIUM` / `E2E_DATABASE_URL`
-override the defaults.
+override the defaults. `E2E_DATABASE_URL` drives both halves of the run:
+`global-setup.ts` reads it directly, and `playwright.config.ts`'s
+`webServer.env` forwards the same value to `serve.mjs` as `NUXT_DATABASE_URL`
+— so the database seeded and the database served are the same one. The
+exception is a local run that reuses a server already listening on
+`E2E_PORT` (`reuseExistingServer` is on outside CI): that server keeps
+whatever database it was started with, so stop it when switching databases.
 
 Chromium is the headless shell already installed on this machine; the path is
 set in `playwright.config.ts` (`launchOptions.executablePath`).
@@ -79,7 +85,46 @@ Both are test-environment concessions, and nothing under test asserts on them:
 | Project | Viewport | Runs |
 | --- | --- | --- |
 | `desktop` | 1440×900 | everything except `@mobile` |
-| `mobile` | 390×844, `hasTouch` | only tests tagged `@mobile` (`mobile.spec.ts`) |
+| `mobile` | 390×844, `hasTouch` | only tests tagged `@mobile` (`mobile.spec.ts`, and the `a11y.spec.ts` mobile subset) |
+
+## Accessibility (`a11y.spec.ts`)
+
+`@axe-core/playwright` scans every main page (logged out: `/login`, `/register`;
+logged in: dashboard, Time, Calendar, Reports, Projects, Clients, Tags,
+Settings) plus the picker and manual-entry dialogs, asserting zero
+`wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` violations. Logged-in pages run once
+per shipped color-mode default — **Nocturne** (dark) and **Daylight**
+(light) — switched via the real Settings → Appearance preset buttons (not a
+hand-rolled cookie). Every test that switches to a non-default preset restores
+Nocturne in its own `afterEach`: the preset persists server-side
+(`users.theme`) for the rest of the run, so leaving it dirty would carry into
+whichever spec runs next. This doesn't need a run-to-run cleanup step —
+global setup's reseed clears `users.theme` between separate
+`npm run test:e2e` invocations. A small `@mobile`-tagged subset (`/`, `/time`
+incl. Select mode on + the bulk-action bar, `/clients`, the picker bottom
+sheet) also runs in the `mobile` project.
+
+**Reading a failure**: the assertion message lists every violation with its
+axe rule id, impact (`minor`/`moderate`/`serious`/`critical`), the rule's
+`help` text, and each failing node's target CSS selector — enough to find the
+element without re-running anything. There are no disabled rules; a violation
+that turns out to live inside a Nuxt UI internal you can't fix would get a
+`.exclude()` on that exact selector with a comment explaining why (none exist
+as of this writing — check `a11y.spec.ts` itself for the current list).
+
+### Client avatar swatch ink (`client-color-contrast.spec.ts`)
+
+The /clients avatar initials paint their ink with a CSS-only relative-color
+computation (`.tick-on-swatch`, app/assets/css/main.css) instead of a JS
+function, because the right ink depends on whichever primary (17 choices) and
+neutral (9 choices) the user picked — not just the two shipped presets — and
+CSS can't be unit-tested. This spec drives every primary and every neutral
+through the real Settings → Appearance editor, in both color modes, and
+asserts ≥4.5:1 via `getComputedStyle` on a live probe element (not a full axe
+run — much faster, and deterministic in a way reading real seeded-client
+avatars wouldn't be, since seeded client ids are DB-generated per seed run).
+Restores the default theme in its own `afterEach` for the same reason as the
+a11y spec above.
 
 ## Selector conventions
 
@@ -96,4 +141,6 @@ Roles, labels and headings first (`helpers/dom.ts`). Two notes:
 Other suites on this machine also use `tick_test`. They work in their own orgs,
 and `db:seed` only resets the "Hollow Studio" org and `mara@example.com`, so the
 two coexist — but running another suite that reseeds *at the same time* as this
-one will disturb it. A full run takes well under a minute.
+one will disturb it. A full run (both projects, 54 tests as of this writing)
+takes about 2 minutes once the build is cached; add ~10-15s the first time,
+for the build and `db:push`/`db:seed`.

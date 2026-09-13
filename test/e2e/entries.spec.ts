@@ -2,7 +2,7 @@
 // and a bulk "Move to…" reassign.
 import { expect, test } from './helpers/test'
 import { createEntry, clearRunningTimer, deleteEntriesNamed } from './helpers/api'
-import { entryRow, group, picker } from './helpers/dom'
+import { bulkActionsBar, entryRow, group, picker } from './helpers/dom'
 import { SEED, startsWith, uniqueName } from './helpers/fixtures'
 
 /** Every name this file creates, so afterEach can sweep them all. */
@@ -102,6 +102,32 @@ test('deleting an entry shows the undo toast and undo restores the row', async (
   await expect(entryRow(today, entryName)).toBeVisible()
 })
 
+test('deleting the sole selected row via its own Delete button restores focus to a neighbour', async ({ page, api }) => {
+  // Selecting exactly this row, then deleting it, flips hasSelection back to
+  // false from under a row that isn't the selection bar — the page's
+  // neighbour-focus restore must win the race against the (unrelated)
+  // hasSelection watcher, which would otherwise steal focus to the top row.
+  const early = name('E2E focus early')
+  const middle = name('E2E focus middle')
+  const late = name('E2E focus late')
+  await createEntry(api, { name: early, billable: true, ...slot(0, 5) })
+  await createEntry(api, { name: middle, billable: true, ...slot(0, 6) })
+  await createEntry(api, { name: late, billable: true, ...slot(0, 7) })
+
+  await page.goto('/time')
+  const today = group(page, 'Today')
+  const middleRow = entryRow(today, middle)
+  await expect(middleRow).toBeVisible()
+
+  await middleRow.getByRole('checkbox', { name: 'Select entry' }).click()
+  await middleRow.getByRole('button', { name: 'Delete entry' }).click()
+  await expect(middleRow).toHaveCount(0)
+
+  // "early" is the next row after "middle" in start-time-descending order —
+  // the correct neighbour, not "late" (the top of the whole list).
+  await expect(entryRow(today, early).getByRole('button', { name: early, exact: true })).toBeFocused()
+})
+
 test('bulk selecting two rows and "Move to…" reassigns both', async ({ page, api }) => {
   const first = name('E2E bulk one')
   const second = name('E2E bulk two')
@@ -112,12 +138,14 @@ test('bulk selecting two rows and "Move to…" reassigns both', async ({ page, a
   const today = group(page, 'Today')
   await entryRow(today, first).getByRole('checkbox', { name: 'Select entry' }).click()
   await entryRow(today, second).getByRole('checkbox', { name: 'Select entry' }).click()
-  await expect(page.getByText('2 selected')).toBeVisible()
+  // Scoped to the bar: time.vue also keeps an always-mounted live region
+  // with the same text, so an unscoped getByText matches both.
+  await expect(bulkActionsBar(page).getByText('2 selected')).toBeVisible()
 
   await page.getByRole('button', { name: 'Move to…' }).click()
   await expect(picker(page)).toBeVisible()
-  await picker(page).getByRole('textbox').fill(SEED.projectBrand.name)
-  await picker(page).getByRole('button', { name: startsWith(SEED.projectBrand.name) }).click()
+  await picker(page).getByRole('combobox').fill(SEED.projectBrand.name)
+  await picker(page).getByRole('option', { name: startsWith(SEED.projectBrand.name) }).click()
   await expect(picker(page)).toBeHidden()
   await expect(page.getByText(`2 entries moved to ${SEED.projectBrand.name}`, { exact: true })).toBeVisible()
 
@@ -125,4 +153,28 @@ test('bulk selecting two rows and "Move to…" reassigns both', async ({ page, a
     await expect(row).toContainText(SEED.projectBrand.name)
     await expect(row).toContainText(SEED.projectBrand.client)
   }
+})
+
+test('desktop (≥1024px): the bulk-action bar stays in-flow above the list, unchanged by the mobile bar/order fix', async ({ page, api }) => {
+  // mobile.spec.ts's "tab order" test covers <1024px, where a second copy of
+  // TimeSelectionBar now renders after the groups (lg:hidden) so Tab order
+  // is rows → bar there. This is the other side of that same change: the
+  // desktop copy (max-lg:hidden) must still be the in-flow, non-fixed bar
+  // sitting above the rows that it always was.
+  const entryName = name('E2E desktop bar position')
+  await createEntry(api, { name: entryName, billable: true, ...slot(0, 8) })
+
+  await page.goto('/time')
+  const today = group(page, 'Today')
+  await entryRow(today, entryName).getByRole('checkbox', { name: 'Select entry' }).click()
+
+  const bar = bulkActionsBar(page)
+  await expect(bar).toBeVisible()
+  expect(await bar.evaluate(el => getComputedStyle(el).position)).toBe('static')
+
+  const [barBox, rowBox] = await Promise.all([bar.boundingBox(), entryRow(today, entryName).boundingBox()])
+  expect(barBox).not.toBeNull()
+  expect(rowBox).not.toBeNull()
+  // Above the row, not overlapping it — i.e. still part of the normal flow.
+  expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(rowBox!.y)
 })

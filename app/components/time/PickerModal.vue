@@ -224,14 +224,6 @@ async function createFromSearch() {
   }
 }
 
-/** Polite status text for the row the arrow keys just moved to. */
-function announceHighlighted() {
-  const it = visible.value[highlighted.value]
-  if (!it) return
-  const parts = [it.name, it.sub, it.meta].filter(Boolean).join(', ')
-  announcement.value = `${parts} — ${highlighted.value + 1} of ${allItems.value.length}`
-}
-
 // Result count after typing (not on every arrow move)
 watch([search, tab], () => {
   if (!ui.pickerOpen) return
@@ -246,17 +238,61 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     if (count) highlighted.value = (highlighted.value + 1) % count
-    announceHighlighted()
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     if (count) highlighted.value = (highlighted.value - 1 + count) % count
-    announceHighlighted()
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const it = visible.value[highlighted.value]
     if (it) pick(tab.value, it.id)
     else if (showCreate.value) createFromSearch()
   }
+}
+
+// ── ARIA combobox/listbox wiring ─────────────────────────────────────────
+// Each option gets a stable id (`picker-option-<catalog id>`); the input
+// references the highlighted one via aria-activedescendant so screen readers
+// announce it as arrow keys move — which is also why the old polite
+// `announceHighlighted()` status line was dropped above: with
+// aria-activedescendant wired up, announcing the same text again on every
+// arrow press would just be a duplicate. The result-count announcement above
+// (after typing/switching tabs) stays, since activedescendant says nothing
+// about how many results there are.
+function optionId(id: string): string {
+  return `picker-option-${id}`
+}
+
+const activeDescendant = computed(() => {
+  const it = visible.value[highlighted.value]
+  return it ? optionId(it.id) : undefined
+})
+
+const listboxLabel = computed(() => {
+  const noun = tab.value === 'task' ? 'Tasks' : tab.value === 'client' ? 'Clients' : 'Projects'
+  return `${noun} matching search`
+})
+
+// ── Tablist keyboard model (APG Tabs, automatic activation) ─────────────────
+// Roving tabindex: only the active tab is in the Tab sequence (wired via
+// `:tabindex` below); Left/Right (wrapping) and Home/End move both the
+// selection and focus together, since switching tabs here just re-filters
+// the same panel and costs nothing to activate immediately.
+function onTabsKeydown(e: KeyboardEvent) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+  e.preventDefault()
+  const i = tabs.findIndex(t => t.value === tab.value)
+  const last = tabs.length - 1
+  const next = e.key === 'Home'
+    ? 0
+    : e.key === 'End'
+      ? last
+      : e.key === 'ArrowRight'
+        ? (i + 1) % tabs.length
+        : (i - 1 + tabs.length) % tabs.length
+  tab.value = tabs[next]!.value
+  nextTick(() => {
+    (e.currentTarget as HTMLElement)?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus()
+  })
 }
 
 /** Keep the dialog from focusing the first tab button; focus the search instead. */
@@ -299,10 +335,19 @@ function onCloseAutoFocus(e: Event) {
       <!-- Grab handle (bottom sheet only) -->
       <div class="mx-auto mt-2 h-1 w-9 shrink-0 rounded-full bg-accented sm:hidden" aria-hidden="true" />
       <div class="flex flex-col gap-3 p-4 max-sm:pb-[max(16px,env(safe-area-inset-bottom))]">
-        <!-- Tabs -->
-        <div class="flex gap-1" role="tablist" aria-label="Pick type">
+        <!-- Tabs: a real tabpanel below (id="picker-panel") is what
+             aria-controls points at — the panel holds the search input, the
+             bulk-clear row and the results, all of which change with `tab`.
+             The combobox's own aria-controls points at the results listbox
+             separately; a tablist with no tabpanel at all (as if aria-controls
+             referenced the listbox here too) leaves screen readers announcing
+             "tab, 1 of 3" with nothing to go to. Roving tabindex (only the
+             active tab is a Tab stop) plus onTabsKeydown's Left/Right/Home/End
+             give it the rest of the APG Tabs keyboard model. -->
+        <div class="flex gap-1" role="tablist" aria-label="Pick type" @keydown="onTabsKeydown">
           <UButton
             v-for="t in tabs"
+            :id="`picker-tab-${t.value}`"
             :key="t.value"
             :label="t.label"
             size="sm"
@@ -311,91 +356,113 @@ function onCloseAutoFocus(e: Event) {
             :class="[tab === t.value ? '' : 'text-toned', 'max-sm:min-h-11 max-sm:px-4']"
             role="tab"
             :aria-selected="tab === t.value"
-            aria-controls="picker-results"
+            :tabindex="tab === t.value ? 0 : -1"
+            aria-controls="picker-panel"
             @click="tab = t.value"
           />
         </div>
 
-        <!-- Search -->
-        <UInput
-          ref="searchInput"
-          v-model="search"
-          icon="i-lucide-search"
-          :placeholder="placeholder"
-          :aria-label="placeholder"
-          size="lg"
-          class="w-full"
-          @keydown="onKeydown"
-        />
+        <div id="picker-panel" role="tabpanel" :aria-labelledby="`picker-tab-${tab}`" class="flex flex-col gap-3">
+          <!-- Search: ARIA combobox wired to the results listbox below -->
+          <UInput
+            ref="searchInput"
+            v-model="search"
+            role="combobox"
+            aria-expanded="true"
+            aria-autocomplete="list"
+            aria-controls="picker-results"
+            :aria-activedescendant="activeDescendant"
+            icon="i-lucide-search"
+            :placeholder="placeholder"
+            :aria-label="placeholder"
+            size="lg"
+            class="w-full"
+            @keydown="onKeydown"
+          />
 
-        <!-- Bulk mode: clear the selection's refs -->
-        <button
-          v-if="ui.pickerTarget === 'bulk'"
-          type="button"
-          class="focus-visible:outline-offset-[-2px] flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
-          :disabled="moving"
-          @click="bulkMove(null, null, 'No client / project / task')"
-        >
-          <span class="size-2 shrink-0 rounded-full border border-dashed border-accented" />
-          <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm text-highlighted">No client / project / task</span>
-            <span class="block truncate text-xs text-muted">Clear the assignment on the selected entries</span>
-          </span>
-        </button>
-
-        <!-- Results -->
-        <!-- Arrow-key position / result count, read out politely -->
-        <div role="status" class="sr-only">{{ announcement }}</div>
-
-        <!-- Results -->
-        <div
-          id="picker-results"
-          ref="listEl"
-          role="tabpanel"
-          class="flex max-h-[340px] flex-col gap-px overflow-y-auto max-sm:max-h-[45vh]"
-        >
+          <!-- Bulk mode: clear the selection's refs -->
           <button
-            v-for="(it, i) in visible"
-            :key="it.id"
+            v-if="ui.pickerTarget === 'bulk'"
             type="button"
-            class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left focus-visible:outline-offset-[-2px] max-sm:min-h-12"
-            :class="i === highlighted
-              ? 'bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'
-              : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'"
-            @mousemove="highlighted = i"
-            @click="pick(tab, it.id)"
+            class="focus-visible:outline-offset-[-2px] flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
+            :disabled="moving"
+            @click="bulkMove(null, null, 'No client / project / task')"
           >
-            <span class="size-2 shrink-0 rounded-full" :style="{ background: clientColorVar(it.dot) }" />
+            <span class="size-2 shrink-0 rounded-full border border-dashed border-accented" />
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm text-highlighted">{{ it.name }}</span>
-              <span v-if="it.sub" class="block truncate text-xs text-muted">{{ it.sub }}</span>
+              <span class="block truncate text-sm text-highlighted">No client / project / task</span>
+              <span class="block truncate text-xs text-muted">Clear the assignment on the selected entries</span>
             </span>
-            <span class="tnum shrink-0 text-xs text-muted">{{ it.meta }}</span>
           </button>
 
-          <button
-            v-if="moreCount > 0"
-            type="button"
-            class="focus-visible:outline-offset-[-2px] flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-11"
-            @click="limit += PAGE"
-          >
-            <UIcon name="i-lucide-chevron-down" class="size-3.5 shrink-0" />
-            Show {{ moreCount }} more
-          </button>
+          <!-- Results -->
+          <!-- Arrow-key position / result count, read out politely -->
+          <div role="status" class="sr-only">{{ announcement }}</div>
 
-          <button
-            v-if="showCreate"
-            type="button"
-            class="focus-visible:outline-offset-[-2px] flex items-center gap-3 rounded-md border border-dashed border-default px-2.5 py-[9px] text-left text-sm text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
-            :disabled="creating"
-            @click="createFromSearch"
-          >
-            <UIcon name="i-lucide-plus" class="size-3.5 shrink-0" />
-            <span class="truncate">Create “{{ search.trim() }}”</span>
-          </button>
+          <!-- The listbox is the scroll container itself (not a wrapper div
+               around it): axe's scrollable-region-focusable wants a scroller
+               with either a focusable descendant or a combobox pointed at it
+               (this one has both — the options, and the search input above
+               via aria-controls). "Show more"/"Create…" are real buttons kept
+               OUTSIDE the scroll area so they can't be scrolled out of reach
+               and are never mistaken for the thing that needs to satisfy
+               that rule. Options are div/li, not buttons, so they're never
+               separate tab stops (focus stays in the search input; ↑↓↵esc
+               still drive it). -->
+          <div class="flex flex-col gap-px">
+            <div
+              id="picker-results"
+              ref="listEl"
+              role="listbox"
+              :aria-label="listboxLabel"
+              class="flex max-h-[340px] flex-col gap-px overflow-y-auto max-sm:max-h-[45vh]"
+            >
+              <div
+                v-for="(it, i) in visible"
+                :id="optionId(it.id)"
+                :key="it.id"
+                role="option"
+                :aria-selected="i === highlighted"
+                class="flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-[9px] text-left max-sm:min-h-12"
+                :class="i === highlighted
+                  ? 'bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'
+                  : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'"
+                @mousemove="highlighted = i"
+                @click="pick(tab, it.id)"
+              >
+                <span class="size-2 shrink-0 rounded-full" :style="{ background: clientColorVar(it.dot) }" />
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm text-highlighted">{{ it.name }}</span>
+                  <span v-if="it.sub" class="block truncate text-xs text-muted">{{ it.sub }}</span>
+                </span>
+                <span class="tnum shrink-0 text-xs text-muted">{{ it.meta }}</span>
+              </div>
+            </div>
 
-          <div v-if="!visible.length && !showCreate" class="px-2.5 py-3 text-[13px] text-muted">
-            Nothing here yet — type a name to create one.
+            <button
+              v-if="moreCount > 0"
+              type="button"
+              class="focus-visible:outline-offset-[-2px] flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-11"
+              @click="limit += PAGE"
+            >
+              <UIcon name="i-lucide-chevron-down" class="size-3.5 shrink-0" />
+              Show {{ moreCount }} more
+            </button>
+
+            <button
+              v-if="showCreate"
+              type="button"
+              class="focus-visible:outline-offset-[-2px] flex items-center gap-3 rounded-md border border-dashed border-default px-2.5 py-[9px] text-left text-sm text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
+              :disabled="creating"
+              @click="createFromSearch"
+            >
+              <UIcon name="i-lucide-plus" class="size-3.5 shrink-0" />
+              <span class="truncate">Create “{{ search.trim() }}”</span>
+            </button>
+
+            <div v-if="!visible.length && !showCreate" class="px-2.5 py-3 text-[13px] text-muted">
+              Nothing here yet — type a name to create one.
+            </div>
           </div>
         </div>
 

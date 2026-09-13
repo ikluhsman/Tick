@@ -1,6 +1,6 @@
 // Sign in / sign out / route guard — the flow every swing re-verified by hand.
 // Opts out of the shared storageState: these tests drive the real form.
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/test'
 import { SEED_USER } from './helpers/fixtures'
 
 test.use({ storageState: { cookies: [], origins: [] } })

@@ -1,10 +1,14 @@
 import { defineConfig } from '@playwright/test'
+import { TEST_DATABASE_URL } from './test/e2e/helpers/fixtures'
 
 // Playwright config for the Tick end-to-end suite (`npm run test:e2e`).
 //
 // The suite never touches the dev server on 3790 or its database: it builds the
 // app into test/e2e/.cache (isolated buildDir, so the shared .nuxt is left
-// alone) and serves it on 3804 against the dedicated tick_test database.
+// alone) and serves it on 3804 against the dedicated e2e database (tick_test,
+// or E2E_DATABASE_URL/TEST_DATABASE_URL when overridden — see webServer.env
+// below, which forwards the same URL global-setup seeds so the served app
+// and the seeded fixture are always the same database).
 // See test/e2e/README.md.
 
 const PORT = Number(process.env.E2E_PORT ?? 3804)
@@ -72,7 +76,13 @@ export default defineConfig({
     stderr: 'pipe',
     env: {
       E2E_PORT: String(PORT),
-      PORT: String(PORT)
+      PORT: String(PORT),
+      // serve.mjs's `NUXT_DATABASE_URL ??= tick_test` default otherwise wins
+      // even when E2E_DATABASE_URL points global-setup at a different
+      // database (e.g. tick_test_i15) — the suite would then seed one DB and
+      // serve another, silently. This keeps the served DB the same one
+      // global-setup just pushed the schema into and reseeded.
+      NUXT_DATABASE_URL: TEST_DATABASE_URL
     }
   }
 })

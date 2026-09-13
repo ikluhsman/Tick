@@ -109,6 +109,13 @@ export async function findProject(request: APIRequestContext, name: string): Pro
   return hit
 }
 
+/** Creates a standalone open task — e.g. to push the picker's task list past one screen. */
+export async function createTask(request: APIRequestContext, name: string): Promise<{ id: string, name: string }> {
+  const res = await request.post('/api/tasks', { data: { name } })
+  expect(res.ok(), `POST /api/tasks → ${res.status()}`).toBe(true)
+  return res.json() as Promise<{ id: string, name: string }>
+}
+
 /** Deletes every task whose name matches — cleanup for specs that create tasks through the UI. */
 export async function deleteTasksNamed(request: APIRequestContext, ...names: string[]): Promise<void> {
   const wanted = new Set(names)

@@ -11,6 +11,79 @@ const ui = useUiStore()
 const toast = useToast()
 const route = useRoute()
 
+// ── Mobile (<1024px) "Select" mode ──────────────────────────────────────────
+// Page state, not persisted: resets to off on remount. Turning it off, or
+// leaving the page, drops any selection so it never lingers into a later
+// visit or leaks into desktop-width bulk actions.
+const selectMode = ref(false)
+
+function toggleSelectMode() {
+  selectMode.value = !selectMode.value
+  if (!selectMode.value) entriesStore.clearSelection()
+}
+
+onBeforeUnmount(() => {
+  entriesStore.clearSelection()
+})
+
+// Always-mounted polite live region for selection-count changes. The bar's
+// own visual "n selected" text is a child of the v-if'd bar, so a screen
+// reader that hasn't attached to it yet by the time it mounts misses the
+// first announcement; this one exists before the count ever changes.
+const selectionAnnouncement = ref('')
+watch(() => entriesStore.selection.size, (n, prev) => {
+  if (n === prev) return
+  selectionAnnouncement.value = n === 0 ? 'Selection cleared' : `${n} selected`
+})
+
+/**
+ * Where to land focus once a bulk action (Clear, Mark billable, Move to…,
+ * bulk Delete) empties the selection and the bar unmounts. In Select mode
+ * the Select/Done toggle is a fixed, known landmark in the header; outside
+ * it (desktop, where the checkbox column is always visible) fall back to
+ * the first row, which is what main did before Select mode existed. No
+ * `preventScroll` here — unlike the guard below, everything that reaches
+ * this point is a deliberate action, so scrolling the new target into view
+ * is wanted: it's what keeps the focus ring visible instead of landing
+ * off-screen and looking like nothing happened.
+ */
+function focusAfterBarAction() {
+  nextTick(() => {
+    if (document.activeElement && document.activeElement !== document.body) return
+    const toggle = selectMode.value ? document.querySelector<HTMLElement>('[data-select-toggle]') : null
+    const target = (toggle && toggle.offsetParent !== null ? toggle : null)
+      ?? document.querySelector<HTMLElement>('[data-entry-name]')
+      ?? document.getElementById('main')
+    target?.focus()
+  })
+}
+
+// Whenever the selection empties out from under a focused control inside the
+// selection bar (Clear, Mark billable, Move to…) — not just the page's own
+// bulk-delete path below, which already handles its own focus — land focus
+// back on the page instead of letting it fall to <body>.
+//
+// Two guards, both load-bearing:
+// - `singleDeleteInFlight`: a single row's own Delete button (EntryRow) can
+//   also empty the selection when that row was the only one selected.
+//   onDelete below already restores focus to the row's neighbour; without
+//   this guard this watcher's nextTick can run first and steal focus to the
+//   first row before the neighbour-restore gets a turn.
+// - `wasInBar`: captured synchronously here, at this watcher's default 'pre'
+//   flush timing — i.e. before the bar unmounts — because the "activeElement
+//   fell to body" check below can't tell a real bar-control activation apart
+//   from a plain checkbox uncheck. Reka's CheckboxRoot is a <button>, and
+//   Safari/iOS/Firefox-macOS don't focus a button on click, so unchecking the
+//   last selected row already leaves activeElement on <body> with no bar
+//   control ever involved — without this guard that click would wrongly
+//   scroll-jump focus up to the first row.
+watch(() => entriesStore.hasSelection, (has, had) => {
+  if (has || !had || singleDeleteInFlight) return
+  const wasInBar = !!document.activeElement?.closest('[data-selection-bar]')
+  if (!wasInBar) return
+  focusAfterBarAction()
+})
+
 // ?filter=#design (Tags page filter-jump) seeds the filter input; watch covers
 // repeat jumps while this page is already mounted.
 watch(
@@ -190,14 +263,23 @@ function focusNeighbourAfterRemoval(id: string): () => void {
   })
 }
 
+// Set for the span of a single-row delete so the hasSelection watcher above
+// (fired by the same store mutation, when this row was the only one
+// selected) doesn't race focusNeighbourAfterRemoval's own restore — see that
+// watcher's comment.
+let singleDeleteInFlight = false
+
 async function onDelete(entry: EntryDto) {
   const restoreFocus = focusNeighbourAfterRemoval(entry.id)
+  singleDeleteInFlight = true
   try {
     const result = await entriesStore.remove(entry.id)
     restoreFocus()
     undoToast(`Deleted “${entry.name}”`, result)
   } catch {
     // row stays; server said no
+  } finally {
+    singleDeleteInFlight = false
   }
 }
 
@@ -205,11 +287,8 @@ async function onBulkDelete() {
   const count = entriesStore.selection.size
   try {
     const result = await entriesStore.bulkDelete()
-    // The selection bar (and its Delete trigger) is gone — land on the list
-    nextTick(() => {
-      if (document.activeElement && document.activeElement !== document.body) return
-      ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus()
-    })
+    // The selection bar (and its Delete trigger) is gone — land back on the page
+    focusAfterBarAction()
     if (result) undoToast(`Moved ${count} ${count === 1 ? 'entry' : 'entries'} to trash`, result)
   } catch {
     // selection stays for retry
@@ -218,7 +297,10 @@ async function onBulkDelete() {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-[1100px] flex-col gap-[17px] px-[22px] pt-[22px] pb-[120px]">
+  <div
+    class="mx-auto flex w-full max-w-[1100px] flex-col gap-[17px] px-[22px] pt-[22px] pb-[120px]"
+    :class="{ 'max-lg:pb-[200px]': entriesStore.hasSelection }"
+  >
     <!-- Header -->
     <div class="flex flex-wrap items-end gap-3">
       <div class="min-w-[200px] flex-1">
@@ -258,11 +340,36 @@ async function onBulkDelete() {
           label="Manual entry"
           @click="ui.openManual()"
         />
+        <!-- Plain action button, not a toggle: the APG toggle-button pattern
+             requires the label stay fixed across states, and this one reads
+             "Done" while active by design (see docs) — aria-pressed alongside
+             a changing label would announce a self-contradicting "Done …
+             pressed". Select mode's own effect (row checkboxes, the bulk bar)
+             communicates the state instead. -->
+        <UButton
+          color="neutral"
+          variant="outline"
+          class="lg:hidden"
+          :class="selectMode ? '' : 'text-muted'"
+          :label="selectMode ? 'Done' : 'Select'"
+          data-select-toggle
+          @click="toggleSelectMode"
+        />
       </div>
     </div>
 
-    <!-- Selection bar -->
-    <TimeSelectionBar v-if="entriesStore.hasSelection" @delete="onBulkDelete" />
+    <!-- Always mounted (unlike the bar's own visual count) so the very first
+         "n selected" is never missed by a screen reader that hasn't attached
+         to the bar yet. -->
+    <div class="sr-only" role="status" aria-live="polite">{{ selectionAnnouncement }}</div>
+
+    <!-- Selection bar — desktop copy: in-flow above the list, exactly as
+         before. `max-lg:hidden` drops it (display:none, so out of both the
+         tab order and the accessibility tree) below 1024px, where the
+         `mobile` copy after the groups below takes over instead. See
+         SelectionBar.vue's docblock for why two copies rather than one
+         instance repositioned by JS. -->
+    <TimeSelectionBar v-if="entriesStore.hasSelection" class="max-lg:hidden" @delete="onBulkDelete" />
 
     <!-- Groups -->
     <template v-if="groups.length">
@@ -273,6 +380,7 @@ async function onBulkDelete() {
         :sub="g.sub"
         :total-sec="g.totalSec"
         :entries="g.entries"
+        :select-mode="selectMode"
         @delete="onDelete"
       />
       <div v-if="hiddenRows" class="flex flex-col items-center gap-2 pt-1">
@@ -308,6 +416,12 @@ async function onBulkDelete() {
         <p class="text-[13px] text-muted">Start the timer above, or add a manual entry.</p>
       </template>
     </div>
+
+    <!-- Selection bar — mobile copy: rendered AFTER the rows so Tab order is
+         rows → bar, matching where it visually sits (fixed above the dock).
+         `lg:hidden` keeps it out of the tab order/accessibility tree at
+         1024px and up, where the desktop copy above is the live one. -->
+    <TimeSelectionBar v-if="entriesStore.hasSelection" mobile class="lg:hidden" @delete="onBulkDelete" />
 
     <!-- Manual entry / edit dialog. The shared picker mounts in the default
          layout (after the page slot), so teleport order still layers it
