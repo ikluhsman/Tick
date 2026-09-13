@@ -63,6 +63,16 @@ test.describe('logged out', () => {
 
 for (const preset of ['Nocturne', 'Daylight'] as const) {
   test.describe(`logged in — ${preset}`, () => {
+    // Restore the default theme right after every test that changes it — the
+    // preset persists server-side (`users.theme`), so leaving it dirty until
+    // some later end-of-file cleanup means whichever spec runs next (in this
+    // file or another) inherits it depending on run order.
+    if (preset !== 'Nocturne') {
+      test.afterEach(async ({ page }) => {
+        await applyPreset(page, 'Nocturne')
+      })
+    }
+
     for (const path of PAGES) {
       test(`${path} has no violations (${preset})`, async ({ page }) => {
         await applyPreset(page, preset)
