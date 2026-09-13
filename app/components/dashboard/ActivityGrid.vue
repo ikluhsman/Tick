@@ -146,7 +146,7 @@ onMounted(() => {
         role="row"
         class="flex items-center gap-2.5"
       >
-        <span role="rowheader" class="w-3.5 shrink-0 text-[10px] leading-3.25 text-dimmed">{{ WEEKDAY_LABELS[ri] }}</span>
+        <span role="rowheader" class="w-3.5 shrink-0 text-[10px] leading-3.25 text-muted">{{ WEEKDAY_LABELS[ri] }}</span>
         <div class="flex flex-1 justify-between gap-1.75">
           <span
             v-for="(d, ci) in row"
