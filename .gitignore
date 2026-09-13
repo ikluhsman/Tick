@@ -165,3 +165,11 @@ logs
 .env
 .env.*
 !.env.example
+
+# Claude Design handoff bundles — kept locally as build reference (mocks,
+# tokens, data rules); the app doesn't ship them. Screenshots used by the
+# README live in screenshots/ instead.
+handoff_design_*/
+
+# VS Code: keep launch.json, drop the debug browser profile
+.vscode/.chrome-profile/

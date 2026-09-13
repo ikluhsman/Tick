@@ -14,7 +14,7 @@ Tick is a self-hosted, MIT-licensed time tracker for freelancers and small teams
 - Theme editor: presets, primary/neutral palette, radius, font, light/dark, starfield background
 - Session auth (register/login) with scrypt password hashing; multi-user orgs
 
-**Screenshots** (design reference): [Time](handoff_design_Tick/design_handoff_tick/screenshots/01-time.png) · [Dashboard](handoff_design_Tick/design_handoff_tick/screenshots/02-dashboard.png) · [Projects & tasks](handoff_design_Tick/design_handoff_tick/screenshots/05-projects-tasks.png) · [Clients](handoff_design_Tick/design_handoff_tick/screenshots/06-clients.png) · [Theme editor](handoff_design_Tick/design_handoff_tick/screenshots/08-settings-appearance.png) · [Manual entry](handoff_design_Tick/design_handoff_tick/screenshots/09-manual-entry-dialog.png) · [Cascade delete](handoff_design_Tick/design_handoff_tick/screenshots/10-cascade-delete-dialog.png) · [Mobile](handoff_design_Tick/design_handoff_tick/screenshots/11-mobile.png)
+**Screenshots**: [Time](screenshots/01-time.png) · [Dashboard](screenshots/02-dashboard.png) · [Calendar](screenshots/03-calendar.png) · [Reports](screenshots/04-reports.png) · [Projects & tasks](screenshots/05-projects-tasks.png) · [Clients](screenshots/06-clients.png) · [Tags](screenshots/07-tags.png) · [Theme editor](screenshots/08-settings-appearance.png) · [Manual entry](screenshots/09-manual-entry-dialog.png) · [Cascade delete](screenshots/10-cascade-delete-dialog.png) · [Mobile](screenshots/11-mobile.png)
 
 ## Quickstart (Docker Compose)
 
@@ -89,7 +89,9 @@ Seed credentials: **mara@example.com** / **tick-demo** (org "Hollow Studio").
 
 Other scripts: `npm run typecheck`, `npm run db:generate` (new SQL migration from schema changes — commit the `server/db/migrations` output so deployed instances pick it up).
 
-Stack: Nuxt 4 · Nuxt UI 4 · Tailwind 4 · Pinia · Drizzle ORM + postgres.js · nuxt-auth-utils · GSAP · Zod. Design handoff (mocks, tokens, data rules) lives in `handoff_design_Tick/design_handoff_tick/`.
+Debugging in VS Code: `.vscode/launch.json` ships configs for the dev server, a full-stack (server + browser) session, the production `.output` server, the seeder and the docs site.
+
+Stack: Nuxt 4 · Nuxt UI 4 · Tailwind 4 · Pinia · Drizzle ORM + postgres.js · nuxt-auth-utils · GSAP · Zod.
 
 ## License
 

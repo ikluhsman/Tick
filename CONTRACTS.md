@@ -1,7 +1,8 @@
 # Tick — build contracts (agent coordination doc)
 
 Read `handoff_design_Tick/design_handoff_tick/README.md` first (data rules, screens), plus `BRIEF.md`.
-Design mocks: `handoff_design_Tick/design_handoff_tick/*.dc.html` + `screenshots/`.
+Design mocks: `handoff_design_Tick/design_handoff_tick/*.dc.html` + its `screenshots/`.
+That bundle is local-only (gitignored, not shipped) — it exists on this machine as build reference. The README's screenshots are copies in the tracked `screenshots/` folder.
 Shared DTO types: `shared/types/index.ts` (auto-imported in app + server). Do not redefine DTOs.
 
 **Stack (installed):** Nuxt 4.5 · @nuxt/ui 4.11 · Pinia · GSAP · nuxt-auth-utils · drizzle-orm + postgres.js · zod · @vueuse/nuxt. Dev DB is live: see `.env`.

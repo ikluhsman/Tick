@@ -1,0 +1,99 @@
+{
+  // Debug configs for Tick. Start with "Tick: full stack" — it runs the Nuxt
+  // dev server with the Nitro side attached and opens a debuggable Chrome once
+  // the server is ready, so breakpoints in both server/** and app/** hit.
+  // Env comes from .env (NUXT_DATABASE_URL, NUXT_SESSION_PASSWORD, …).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Tick: full stack",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3000"],
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "serverReadyAction": {
+        // Nuxt prints "➜ Local: http://localhost:3000/"
+        "pattern": "Local:\\s+(https?://\\S+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}",
+        "killOnServerStop": true
+      }
+    },
+    {
+      // Server-side only (API routes, server/utils, plugins, SSR). No browser.
+      "name": "Tick: dev server only",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3000"],
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // Client-side debugging against a dev server you already started
+      // (e.g. `npm run dev -- --port 3790`). Breakpoints in app/**.
+      "name": "Tick: browser → :3790",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3790",
+      "webRoot": "${workspaceFolder}",
+      "userDataDir": "${workspaceFolder}/.vscode/.chrome-profile"
+    },
+    {
+      // Same, for the default port.
+      "name": "Tick: browser → :3000",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}",
+      "userDataDir": "${workspaceFolder}/.vscode/.chrome-profile"
+    },
+    {
+      // Production output: run `npm run build` first. Useful for prod-only
+      // paths — service worker, auto-migrate plugin, CSP without the dev
+      // relaxations, demo mode (set NUXT_DEMO_MODE here, never on real data).
+      "name": "Tick: production server (.output)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/.output/server/index.mjs",
+      "envFile": "${workspaceFolder}/.env",
+      "env": { "NITRO_PORT": "3100" },
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      // Reseed the demo org (server/db/seed.ts via tsx) with breakpoints.
+      "name": "Tick: db seed",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "db:seed"],
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // Documentation site — docs/ is a separate Nuxt app.
+      "name": "Docs: dev server",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/docs",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "3001"],
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    }
+  ]
+}
