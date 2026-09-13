@@ -19,10 +19,16 @@ npm run test:e2e  # Playwright (separate runner, see test/e2e)
 | `test/unit/*.spec.ts` | Pure-function and module-level units. No Nuxt runtime, no network, no DB. |
 | `test/e2e/**` | Playwright specs. Excluded from Vitest in `vitest.config.ts`. |
 
+`test/e2e/a11y.spec.ts` sweeps every main page (plus the picker and
+manual-entry dialogs) with `@axe-core/playwright`, in both shipped
+color-mode defaults — see the "Accessibility" section of `test/e2e/README.md`
+for what it covers and how to read a failing run (each violation prints its
+axe rule id, impact, help text and the failing selector).
+
 Current unit files:
 
 - `test/unit/parse.spec.ts` — `app/utils/parse.ts`: `parseDate`, `parseTime`, `parseDuration`, `parseEstimate`. Every date/time/duration format listed in `docs/content/3.guide/1.timer-and-entries.md` has a case, plus the invalid-input cases that must return `null`.
-- `test/unit/format.spec.ts` — `app/utils/format.ts`: `formatDuration`, `formatClock`, `formatMoney`, `formatTime`, `formatRange`, `formatDayLabel`, `formatDaySub`, `formatDateLong`, `formatEstimate`, `clientColorVar`, plus `formatDuration` ↔ `parseDuration` round-trips.
+- `test/unit/format.spec.ts` — `app/utils/format.ts`: `formatDuration`, `formatClock`, `formatMoney`, `formatTime`, `formatRange`, `formatDayLabel`, `formatDaySub`, `formatDateLong`, `formatEstimate`, `clientColorVar`, `clientColorInk`, plus `formatDuration` ↔ `parseDuration` round-trips.
 
 ## Config
 

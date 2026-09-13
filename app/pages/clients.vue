@@ -6,6 +6,7 @@
 const catalog = useCatalogStore()
 const ui = useUiStore()
 const session = useUserSession()
+const colorMode = useColorMode()
 
 useHead({ title: 'Clients · Tick' })
 
@@ -21,6 +22,11 @@ const userRate = computed(() => (session.user.value as SessionUser | null)?.defa
 
 function initials(name: string) {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+/** Avatar initials ink — see clientColorInk (app/utils/format.ts). */
+function initialsInk(token: string | null | undefined) {
+  return clientColorInk(token, colorMode.value === 'dark')
 }
 
 const clientForm = ref<{ open: boolean, client: ClientDto | null }>({ open: false, client: null })
@@ -65,8 +71,8 @@ function openClientForm(client: ClientDto | null) {
           <div class="flex min-w-0 items-center gap-2.5" role="cell">
             <span
               aria-hidden="true"
-              class="grid size-[26px] shrink-0 place-items-center rounded-full text-[10px] font-semibold text-inverted"
-              :style="{ background: clientColorVar(c.color) }"
+              class="grid size-[26px] shrink-0 place-items-center rounded-full text-[10px] font-semibold"
+              :style="{ background: clientColorVar(c.color), color: initialsInk(c.color) }"
             >
               {{ initials(c.name) }}
             </span>

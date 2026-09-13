@@ -13,6 +13,28 @@ export function clientColorVar(token: string | null | undefined, fallback = 'var
   return `var(--ui-color-${token})`
 }
 
+/**
+ * Ink for text painted on top of a `clientColorVar` swatch (e.g. the avatar
+ * initials on /clients) — WCAG AA (4.5:1) against every CLIENT_COLOR_PALETTE
+ * entry (server/utils/entry-dto.ts), in both shipped color-mode defaults
+ * (Nocturne/dark, Daylight/light).
+ *
+ * Unlike the app's semantic text tokens, these are raw Tailwind shades: a
+ * `-400` swatch stays light and a `-600` one stays comparatively dark
+ * regardless of app color-mode, so most of this is mode-INdependent — except
+ * `primary-600`, because the *hue* behind "primary" changes per preset and
+ * that shade happens to sit on opposite sides of the light/dark line for
+ * violet (Nocturne's primary) vs. sky (Daylight's primary). Measured with
+ * `test/unit/format.spec.ts`; re-measure if CLIENT_COLOR_PALETTE changes.
+ */
+export function clientColorInk(token: string | null | undefined, dark: boolean): string {
+  const DARK_INK = 'var(--ui-color-neutral-950)'
+  const LIGHT_INK = 'var(--ui-color-neutral-50)'
+  if (token === 'secondary-600') return LIGHT_INK
+  if (token === 'primary-600') return dark ? LIGHT_INK : DARK_INK
+  return DARK_INK // primary-400, neutral-400, and any unrecognized token
+}
+
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
