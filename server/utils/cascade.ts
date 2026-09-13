@@ -3,7 +3,7 @@
 // are kept and detached: client_id / project_id cleared, and entries pointing
 // DIRECTLY at a deleted object get ref_type/ref_id nulled — time is never lost
 // silently, and nothing is ever hard-deleted here.
-import { and, eq, inArray, isNotNull, isNull, or, schema } from './drizzle'
+import { and, eq, inArray, inUuids, isNotNull, isNull, or, schema } from './drizzle'
 import type { DB } from './drizzle'
 
 /** Works for both the root db handle and a transaction handle. */
@@ -164,7 +164,8 @@ async function softDeleteEntries(db: Dbx, orgId: string, ids: string[], now: Dat
   await db
     .update(schema.timeEntries)
     .set({ deletedAt: now })
-    .where(and(eq(schema.timeEntries.orgId, orgId), inArray(schema.timeEntries.id, ids)))
+    // Entry id lists are unbounded (a client's whole history): one array param.
+    .where(and(eq(schema.timeEntries.orgId, orgId), inUuids(schema.timeEntries.id, ids)))
 }
 
 /**
@@ -197,7 +198,7 @@ async function detachEntries(
     .where(
       and(
         eq(schema.timeEntries.orgId, orgId),
-        inArray(schema.timeEntries.id, prior.map(r => r.id))
+        inUuids(schema.timeEntries.id, prior.map(r => r.id))
       )
     )
   return prior.filter(

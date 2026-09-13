@@ -15,8 +15,7 @@ export default defineEventHandler(async (event): Promise<TagDto> => {
   const [tag] = await ensureTags(db, user.orgId, [name])
   if (!tag) throw createError({ statusCode: 400, message: 'Tag name is empty' })
 
-  const ctx = await loadRateContext(db, user.orgId)
-  const dto = (await buildTagDtos(db, user.orgId, ctx)).find(t => t.id === tag.id)
+  const [dto] = await buildTagDtos(db, user.orgId, tag.id)
   if (!dto) throw createError({ statusCode: 500, message: 'Tag creation failed' })
   return dto
 })

@@ -1,6 +1,6 @@
 // DTO builders: entries/timer (chain derivation per Rule 1), catalog DTOs with
 // tracked/amount aggregates, deterministic client colors, tag helpers.
-import { and, eq, inArray, isNotNull, isNull, schema } from './drizzle'
+import { and, eq, inArray, inUuids, isNotNull, isNull, schema, sql } from './drizzle'
 import type { DB } from './drizzle'
 import { pickRate, resolveEntryRate, walkChain } from './rates'
 import type { RateContext } from './rates'
@@ -120,7 +120,9 @@ export async function fetchTagsForEntries(
     .select({ entryId: schema.entryTags.entryId, name: schema.tags.name })
     .from(schema.entryTags)
     .innerJoin(schema.tags, eq(schema.tags.id, schema.entryTags.tagId))
-    .where(and(inArray(schema.entryTags.entryId, entryIds), isNull(schema.tags.deletedAt)))
+    // One array parameter, not one per id: a year of entries is >10k ids, and
+    // inArray() would hit Postgres' 65,535 bind-parameter limit on a big range.
+    .where(and(inUuids(schema.entryTags.entryId, entryIds), isNull(schema.tags.deletedAt)))
   for (const r of rows) {
     const list = map.get(r.entryId)
     if (list) list.push(r.name)
@@ -181,33 +183,42 @@ export interface CatalogAggregates {
 }
 
 /**
- * One pass over the org's ended, non-trashed entries (all users): tracked time
- * and billable amounts attributed up the chain. Rates resolve per Rule 2
- * against the preloaded context — no N+1.
+ * Whole seconds of an ended entry, computed in SQL exactly as toEntryDto()
+ * does in JS: Math.max(0, Math.round((end - start) / 1000)) over
+ * millisecond-precision timestamps (postgres.js Dates carry ms, so both sides
+ * truncate microseconds first; round() is half-up for the positive values the
+ * clamp keeps).
+ */
+const entrySecSql = sql`greatest(0, round(extract(epoch from (date_trunc('milliseconds', ${schema.timeEntries.end}) - date_trunc('milliseconds', ${schema.timeEntries.start})))))`
+
+/**
+ * The org's ended, non-trashed entries (all users), pre-summed in SQL per
+ * distinct (user, ref, billable, override) — the only inputs Rule 1/Rule 2
+ * resolution depends on — so an org with 25k entries ships a few thousand
+ * rows instead of 25k. Tracked time and billable amounts are then attributed
+ * up the chain against the preloaded context — no N+1. `ctx` may be the
+ * still-pending loadRateContext() promise so both round-trips run in parallel.
  */
 export async function loadOrgAggregates(
   db: DB,
   orgId: string,
-  ctx: RateContext
+  ctxOrPromise: RateContext | Promise<RateContext>
 ): Promise<CatalogAggregates> {
-  const rows = await db
+  const e = schema.timeEntries
+  const rowsQ = db
     .select({
-      userId: schema.timeEntries.userId,
-      refType: schema.timeEntries.refType,
-      refId: schema.timeEntries.refId,
-      billable: schema.timeEntries.billable,
-      rateOverride: schema.timeEntries.rateOverride,
-      start: schema.timeEntries.start,
-      end: schema.timeEntries.end
+      userId: e.userId,
+      refType: e.refType,
+      refId: e.refId,
+      billable: e.billable,
+      rateOverride: e.rateOverride,
+      count: sql<number>`count(*)::int`,
+      sec: sql<number>`sum(${entrySecSql})::float8`
     })
-    .from(schema.timeEntries)
-    .where(
-      and(
-        eq(schema.timeEntries.orgId, orgId),
-        isNull(schema.timeEntries.deletedAt),
-        isNotNull(schema.timeEntries.end)
-      )
-    )
+    .from(e)
+    .where(and(eq(e.orgId, orgId), isNull(e.deletedAt), isNotNull(e.end), isNotNull(e.refId)))
+    .groupBy(e.userId, e.refType, e.refId, e.billable, e.rateOverride)
+  const [rows, ctx] = await Promise.all([rowsQ, ctxOrPromise])
 
   const agg: CatalogAggregates = { clients: new Map(), projects: new Map(), tasks: new Map() }
   const bump = (m: Map<string, { sec: number; amount: number }>, id: string, sec: number, amount: number) => {
@@ -218,7 +229,7 @@ export async function loadOrgAggregates(
   }
 
   for (const row of rows) {
-    const sec = Math.max(0, Math.round((row.end!.getTime() - row.start.getTime()) / 1000))
+    const sec = Number(row.sec)
     const chain = walkChain(row.refType, row.refId, ctx)
     if (!chain) continue
     const { rate } = resolveEntryRate(
@@ -229,7 +240,7 @@ export async function loadOrgAggregates(
     if (chain.taskId) {
       const cur = agg.tasks.get(chain.taskId) ?? { sec: 0, count: 0 }
       cur.sec += sec
-      cur.count += 1
+      cur.count += row.count
       agg.tasks.set(chain.taskId, cur)
     }
     if (chain.projectId) bump(agg.projects, chain.projectId, sec, amount)
@@ -240,8 +251,11 @@ export async function loadOrgAggregates(
 
 /* ------------------------------------------------------------ catalog DTOs */
 
-const byName = <T extends { name: string }>(a: T, b: T) =>
-  a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+// Same ordering as a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+// (the spec defines that call as this collator), but built once: V8 constructs
+// a fresh collator per localeCompare call with options — ~30ms to sort 800 tasks.
+const nameCollator = new Intl.Collator(undefined, { sensitivity: 'base' })
+const byName = <T extends { name: string }>(a: T, b: T) => nameCollator.compare(a.name, b.name)
 
 export function buildClientDtos(ctx: RateContext, agg: CatalogAggregates): ClientDto[] {
   const projectCount = new Map<string, number>()
@@ -336,49 +350,75 @@ export function buildTaskDtos(ctx: RateContext, agg: CatalogAggregates): TaskDto
     .sort(byName)
 }
 
-/** TagDto list: usage counts over ended, non-trashed org entries. */
-export async function buildTagDtos(db: DB, orgId: string, ctx: RateContext): Promise<TagDto[]> {
-  const tagRows = await db
+/**
+ * TagDto list: usage stats over ended, non-trashed org entries, aggregated in
+ * SQL (tag rows, usage totals and "used on" buckets — three queries in
+ * parallel) instead of shipping one row per tag link.
+ * "Used on" = distinct projects/clients the tagged time resolves to, with the
+ * chain walked by the same join shape as the report query — equivalent to
+ * walkChain(): trashed catalog rows read as detached, a task whose project is
+ * gone counts for nothing, time under a project counts for the project only.
+ * Pass `tagId` to build just that tag's DTO (tag create/delete responses).
+ */
+export async function buildTagDtos(db: DB, orgId: string, tagId?: string): Promise<TagDto[]> {
+  const e = schema.timeEntries
+  const et = schema.entryTags
+  const tagFilter = tagId ? eq(et.tagId, tagId) : undefined
+  const live = and(eq(e.orgId, orgId), isNull(e.deletedAt), isNotNull(e.end), tagFilter)
+
+  const tagRowsQ = db
     .select({ id: schema.tags.id, name: schema.tags.name })
     .from(schema.tags)
-    .where(and(eq(schema.tags.orgId, orgId), isNull(schema.tags.deletedAt)))
-
-  const usage = await db
-    .select({
-      tagId: schema.entryTags.tagId,
-      refType: schema.timeEntries.refType,
-      refId: schema.timeEntries.refId,
-      start: schema.timeEntries.start,
-      end: schema.timeEntries.end
-    })
-    .from(schema.entryTags)
-    .innerJoin(schema.timeEntries, eq(schema.timeEntries.id, schema.entryTags.entryId))
     .where(
       and(
-        eq(schema.timeEntries.orgId, orgId),
-        isNull(schema.timeEntries.deletedAt),
-        isNotNull(schema.timeEntries.end)
+        eq(schema.tags.orgId, orgId),
+        isNull(schema.tags.deletedAt),
+        tagId ? eq(schema.tags.id, tagId) : undefined
       )
     )
 
-  const stats = new Map<
-    string,
-    { count: number; sec: number; last: Date | null; buckets: Set<string> }
-  >()
-  for (const u of usage) {
-    let s = stats.get(u.tagId)
-    if (!s) {
-      s = { count: 0, sec: 0, last: null, buckets: new Set() }
-      stats.set(u.tagId, s)
-    }
-    s.count += 1
-    s.sec += Math.max(0, Math.round((u.end!.getTime() - u.start.getTime()) / 1000))
-    if (!s.last || u.start > s.last) s.last = u.start
-    const chain = walkChain(u.refType, u.refId, ctx)
-    // "Used on" = distinct projects/clients the tagged time resolves to.
-    if (chain?.projectId) s.buckets.add(`p:${chain.projectId}`)
-    else if (chain?.clientId) s.buckets.add(`c:${chain.clientId}`)
-  }
+  const usageQ = db
+    .select({
+      tagId: et.tagId,
+      count: sql<number>`count(*)::int`,
+      sec: sql<number>`sum(${entrySecSql})::float8`,
+      last: sql<Date>`max(${e.start})`.mapWith(e.start)
+    })
+    .from(et)
+    .innerJoin(e, eq(e.id, et.entryId))
+    .where(live)
+    .groupBy(et.tagId)
+
+  const usedOnQ = db.execute<{ tag_id: string, used_on: number }>(sql`
+    select x.tag_id, count(*)::int as used_on
+    from (
+      select distinct et.tag_id, coalesce(p.id, c.id) as bucket, p.id is null as client_bucket
+      from ${et} et
+      join ${e} e on e.id = et.entry_id
+      left join tasks t
+        on e.ref_type = 'task' and t.id = e.ref_id and t.org_id = e.org_id and t.deleted_at is null
+      left join projects p
+        on p.org_id = e.org_id and p.deleted_at is null
+        and p.id = case when e.ref_type = 'project' then e.ref_id else t.project_id end
+      left join clients c
+        on c.org_id = e.org_id and c.deleted_at is null
+        and c.id = case when e.ref_type = 'client' then e.ref_id else p.client_id end
+      where e.org_id = ${orgId}
+        and e.deleted_at is null
+        and e."end" is not null
+        and coalesce(p.id, c.id) is not null
+        ${tagId ? sql`and et.tag_id = ${tagId}` : sql``}
+    ) x
+    group by x.tag_id
+  `)
+
+  const [tagRows, usage, usedOnRes] = await Promise.all([tagRowsQ, usageQ, usedOnQ])
+  const usedOnRows = (Array.isArray(usedOnRes) ? usedOnRes : (usedOnRes as { rows: unknown[] }).rows) as {
+    tag_id: string
+    used_on: number
+  }[]
+  const stats = new Map(usage.map(u => [u.tagId, u]))
+  const usedOn = new Map(usedOnRows.map(r => [r.tag_id, Number(r.used_on)]))
 
   return tagRows
     .map(t => {
@@ -387,8 +427,8 @@ export async function buildTagDtos(db: DB, orgId: string, ctx: RateContext): Pro
         id: t.id,
         name: t.name,
         entryCount: s?.count ?? 0,
-        trackedSec: s?.sec ?? 0,
-        usedOn: s?.buckets.size ?? 0,
+        trackedSec: s ? Number(s.sec) : 0,
+        usedOn: usedOn.get(t.id) ?? 0,
         lastUsed: s?.last ? s.last.toISOString() : null
       }
     })

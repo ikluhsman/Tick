@@ -148,6 +148,16 @@ export const timeEntries = pgTable(
     index('time_entries_user_start_idx').on(t.userId, t.start),
     index('time_entries_org_id_idx').on(t.orgId),
     index('time_entries_ref_id_idx').on(t.refId),
+    // Org-wide date ranges over live, ended entries (reports, CSV/PDF export,
+    // cascade subtree scans). Partial: trashed rows and the timer never match.
+    index('time_entries_org_start_live_idx')
+      .on(t.orgId, t.start)
+      .where(sql`${t.deletedAt} is null and ${t.end} is not null`),
+    // Trash listing + 30-day purge (GET /api/trash runs both every visit).
+    // Partial: holds only trashed rows, so it stays tiny.
+    index('time_entries_org_trash_idx')
+      .on(t.orgId, t.deletedAt)
+      .where(sql`${t.deletedAt} is not null`),
     // Timer = row with end IS NULL; at most ONE running (non-trashed) entry per user.
     uniqueIndex('time_entries_one_running_per_user')
       .on(t.userId)
@@ -201,5 +211,10 @@ export const entryTags = pgTable(
       .notNull()
       .references(() => tags.id, { onDelete: 'cascade' })
   },
-  t => [primaryKey({ columns: [t.entryId, t.tagId] })]
+  t => [
+    primaryKey({ columns: [t.entryId, t.tagId] }),
+    // The PK leads with entry_id; lookups by tag (tag stats for one tag, the
+    // ON DELETE CASCADE when a trashed tag is purged) need their own index.
+    index('entry_tags_tag_id_idx').on(t.tagId)
+  ]
 )

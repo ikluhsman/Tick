@@ -41,16 +41,21 @@ const fmtDuration = (sec: number): string => {
   const m = totalMin % 60
   return h ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`
 }
-const fmtMoney = (n: number): string =>
-  '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+// Formatters built once: toLocaleString/toLocaleDateString with options
+// construct a fresh Intl formatter per call (~40-75µs each), which dominated
+// a year-long report's hundreds of day and money cells. Same output by spec.
+const MONEY_FMT = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const DAY_ROW_FMT = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+const DATE_LONG_FMT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+
+const fmtMoney = (n: number): string => '$' + MONEY_FMT.format(n)
 
 const fmtDayRow = (iso: string): string => {
   const [y, m, d] = iso.split('-').map(Number)
   const date = new Date(y!, (m ?? 1) - 1, d ?? 1)
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  return DAY_ROW_FMT.format(date)
 }
-const fmtDateLong = (d: Date): string =>
-  d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+const fmtDateLong = (d: Date): string => DATE_LONG_FMT.format(d)
 
 const BILLABLE_LABEL: Record<ReportBillFilter, string> = {
   all: 'All entries',

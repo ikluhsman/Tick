@@ -14,8 +14,20 @@ export default defineEventHandler(async (event): Promise<EntryDto[]> => {
   const { from, to } = getSanitizedQuery(event, querySchema)
   const db = useDrizzle()
 
-  const rows = await db
-    .select()
+  const e = schema.timeEntries
+  // Only the columns toEntryDto reads; the rate context loads in parallel.
+  const rowsQ = db
+    .select({
+      id: e.id,
+      userId: e.userId,
+      name: e.name,
+      refType: e.refType,
+      refId: e.refId,
+      billable: e.billable,
+      rateOverride: e.rateOverride,
+      start: e.start,
+      end: e.end
+    })
     .from(schema.timeEntries)
     .where(
       and(
@@ -29,7 +41,7 @@ export default defineEventHandler(async (event): Promise<EntryDto[]> => {
     )
     .orderBy(desc(schema.timeEntries.start))
 
-  const ctx = await loadRateContext(db, user.orgId)
+  const [rows, ctx] = await Promise.all([rowsQ, loadRateContext(db, user.orgId)])
   const tags = await fetchTagsForEntries(db, rows.map(r => r.id))
   return rows.map(r => toEntryDto(r, ctx, tags.get(r.id) ?? []))
 })

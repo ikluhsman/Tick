@@ -29,6 +29,13 @@
       "when": 1789255011893,
       "tag": "0003_unique_sabretooth",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789303359147,
+      "tag": "0004_spicy_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

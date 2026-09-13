@@ -2,7 +2,7 @@
 export default defineEventHandler(async (event): Promise<TaskDto[]> => {
   const user = await requireAuth(event)
   const db = useDrizzle()
-  const ctx = await loadRateContext(db, user.orgId)
-  const agg = await loadOrgAggregates(db, user.orgId, ctx)
+  const ctxQ = loadRateContext(db, user.orgId)
+  const [ctx, agg] = await Promise.all([ctxQ, loadOrgAggregates(db, user.orgId, ctxQ)])
   return buildTaskDtos(ctx, agg)
 })

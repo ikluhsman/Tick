@@ -196,7 +196,16 @@ export async function buildReportSummary(
     from b
   `)
 
-  const [groupedRes, totalsRes] = await Promise.all([groupedQ, totalsQ])
+  // Tag grouping: day totals must come from entry seconds, not the tag
+  // fan-out — a third fan-out-free query, run alongside the other two.
+  const tagDaysQ = groupBy === 'tag'
+    ? db.execute(sql`
+        with b as (${base})
+        select b.day, sum(b.sec)::float as sec from b group by 1
+      `)
+    : null
+
+  const [groupedRes, totalsRes, tagDaysRes] = await Promise.all([groupedQ, totalsQ, tagDaysQ])
   const rows = unwrap<GroupRow>(groupedRes)
   const t = unwrap<TotalsRow>(totalsRes)[0] ?? {
     entries: 0,
@@ -245,13 +254,8 @@ export async function buildReportSummary(
     segsByDay.set(r.day, list)
   }
   // Day totals must come from entry seconds, not the tag fan-out.
-  if (groupBy === 'tag') {
-    const dayRows = unwrap<{ day: string; sec: number }>(
-      await db.execute(sql`
-        with b as (${base})
-        select b.day, sum(b.sec)::float as sec from b group by 1
-      `)
-    )
+  if (tagDaysRes) {
+    const dayRows = unwrap<{ day: string; sec: number }>(tagDaysRes)
     for (const r of dayRows) totalByDay.set(r.day, Math.round(r.sec))
   } else {
     for (const [day, segs] of segsByDay) {

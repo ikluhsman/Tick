@@ -26,7 +26,7 @@ const fmtTime = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`
  * e.g. =HYPERLINK/DDE) — neutralize with a leading apostrophe and force
  * quoting. Numeric/boolean fields are never neutralized.
  */
-function csvField(v: string | number | boolean | null): string {
+export function csvField(v: string | number | boolean | null): string {
   const s = v == null ? '' : String(v)
   const formulaRisk = typeof v === 'string' && /^[=+\-@\t\r]/.test(s)
   const out = formulaRisk ? `'${s}` : s
@@ -49,9 +49,24 @@ export default defineEventHandler(async (event): Promise<string> => {
   if (billable === 'billable') conds.push(eq(e.billable, true))
   if (billable === 'nonbillable') conds.push(eq(e.billable, false))
 
-  const rows = await db.select().from(e).where(and(...conds)).orderBy(asc(e.start))
-
-  const ctx = await loadRateContext(db, user.orgId)
+  const [rows, ctx] = await Promise.all([
+    db
+      .select({
+        id: e.id,
+        userId: e.userId,
+        name: e.name,
+        refType: e.refType,
+        refId: e.refId,
+        billable: e.billable,
+        rateOverride: e.rateOverride,
+        start: e.start,
+        end: e.end
+      })
+      .from(e)
+      .where(and(...conds))
+      .orderBy(asc(e.start)),
+    loadRateContext(db, user.orgId)
+  ])
   const tagMap = await fetchTagsForEntries(db, rows.map(r => r.id))
 
   const header = 'date,start,end,duration_h,name,task,project,client,tags,billable,rate,amount'

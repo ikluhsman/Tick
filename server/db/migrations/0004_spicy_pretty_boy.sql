@@ -1,0 +1,3 @@
+CREATE INDEX "entry_tags_tag_id_idx" ON "entry_tags" USING btree ("tag_id");--> statement-breakpoint
+CREATE INDEX "time_entries_org_start_live_idx" ON "time_entries" USING btree ("org_id","start") WHERE "time_entries"."deleted_at" is null and "time_entries"."end" is not null;--> statement-breakpoint
+CREATE INDEX "time_entries_org_trash_idx" ON "time_entries" USING btree ("org_id","deleted_at") WHERE "time_entries"."deleted_at" is not null;
