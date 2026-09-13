@@ -11,6 +11,33 @@ const ui = useUiStore()
 const toast = useToast()
 const route = useRoute()
 
+// ── Mobile (<1024px) "Select" mode ──────────────────────────────────────────
+// Page state, not persisted: resets to off on remount. Turning it off, or
+// leaving the page, drops any selection so it never lingers into a later
+// visit or leaks into desktop-width bulk actions.
+const selectMode = ref(false)
+
+function toggleSelectMode() {
+  selectMode.value = !selectMode.value
+  if (!selectMode.value) entriesStore.clearSelection()
+}
+
+onBeforeUnmount(() => {
+  entriesStore.clearSelection()
+})
+
+// Whenever the selection empties out from under a focused control inside the
+// selection bar (Clear, Mark billable, Move to…) — not just the page's own
+// bulk-delete path below, which already handles its own focus — land focus
+// back on the list instead of letting it fall to <body>.
+watch(() => entriesStore.hasSelection, (has, had) => {
+  if (has || !had) return
+  nextTick(() => {
+    if (document.activeElement && document.activeElement !== document.body) return
+    ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus()
+  })
+})
+
 // ?filter=#design (Tags page filter-jump) seeds the filter input; watch covers
 // repeat jumps while this page is already mounted.
 watch(
@@ -258,6 +285,15 @@ async function onBulkDelete() {
           label="Manual entry"
           @click="ui.openManual()"
         />
+        <UButton
+          color="neutral"
+          variant="outline"
+          class="lg:hidden"
+          :class="selectMode ? '' : 'text-muted'"
+          :label="selectMode ? 'Done' : 'Select'"
+          :aria-pressed="selectMode"
+          @click="toggleSelectMode"
+        />
       </div>
     </div>
 
@@ -273,6 +309,7 @@ async function onBulkDelete() {
         :sub="g.sub"
         :total-sec="g.totalSec"
         :entries="g.entries"
+        :select-mode="selectMode"
         @delete="onDelete"
       />
       <div v-if="hiddenRows" class="flex flex-col items-center gap-2 pt-1">

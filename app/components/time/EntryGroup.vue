@@ -3,12 +3,17 @@
 // surface card of entry rows. Works for both By-day and By-project grouping.
 import type { EntryDto } from '#shared/types'
 
-defineProps<{
-  label: string
-  sub: string
-  totalSec: number
-  entries: EntryDto[]
-}>()
+withDefaults(
+  defineProps<{
+    label: string
+    sub: string
+    totalSec: number
+    entries: EntryDto[]
+    /** Mobile "Select" mode — forwarded to each row. */
+    selectMode?: boolean
+  }>(),
+  { selectMode: false }
+)
 
 const emit = defineEmits<{ delete: [entry: EntryDto] }>()
 </script>
@@ -26,6 +31,7 @@ const emit = defineEmits<{ delete: [entry: EntryDto] }>()
         :key="e.id"
         :entry="e"
         :first="i === 0"
+        :select-mode="selectMode"
         @delete="emit('delete', e)"
       />
     </div>

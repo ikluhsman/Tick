@@ -19,8 +19,10 @@ const props = withDefaults(
     first?: boolean
     /** Preference: show the $ amount under the duration. */
     showAmounts?: boolean
+    /** Mobile (<1024px) "Select" mode: shows the checkbox and disables swipe. */
+    selectMode?: boolean
   }>(),
-  { first: false, showAmounts: true }
+  { first: false, showAmounts: true, selectMode: false }
 )
 
 const emit = defineEmits<{ delete: [] }>()
@@ -98,8 +100,14 @@ let baseOffset = 0
 let tracking = false
 let horizontal = false
 
+// Select mode turns off swipe entirely — a checkbox tap must never be read
+// as the start of a swipe — and any row left mid-swipe snaps shut.
+watch(() => props.selectMode, (on) => {
+  if (on) offset.value = 0
+})
+
 function onPointerDown(e: PointerEvent) {
-  if (e.pointerType !== 'touch') return
+  if (e.pointerType !== 'touch' || props.selectMode) return
   tracking = true
   horizontal = false
   startX = e.clientX
@@ -183,8 +191,9 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
 
     <!-- Row content (translates under the swipe) -->
     <div
-      class="group grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-[11px] py-[9px] pr-2 pl-3.5 lg:grid-cols-[30px_minmax(0,1fr)_auto_auto_auto_94px] lg:pl-1.5"
+      class="group grid items-center gap-[11px] py-[9px] pr-2 pl-3.5 lg:grid-cols-[30px_minmax(0,1fr)_auto_auto_auto_94px] lg:pl-1.5"
       :class="[
+        selectMode ? 'grid-cols-[auto_minmax(0,1fr)_auto_auto]' : 'grid-cols-[minmax(0,1fr)_auto_auto]',
         selected ? 'bg-primary/10' : swipeActive ? 'bg-elevated' : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_4%,transparent)]',
         dragging ? '' : 'transition-transform duration-200'
       ]"
@@ -195,11 +204,11 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
       @pointercancel="onPointerEnd"
       @click.capture="onContentClickCapture"
     >
-      <!-- Select (desktop only) -->
+      <!-- Select — always visible on desktop; on mobile only while Select mode is on -->
       <UCheckbox
         :model-value="selected"
         aria-label="Select entry"
-        class="ml-1.5 max-lg:hidden"
+        :class="selectMode ? 'ml-1.5' : 'ml-1.5 max-lg:hidden'"
         :ui="{ base: 'size-[18px] rounded-sm' }"
         @update:model-value="entriesStore.toggleSelect(entry.id)"
       />
