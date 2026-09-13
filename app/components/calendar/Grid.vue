@@ -31,6 +31,7 @@ const emit = defineEmits<{ create: [payload: { day: number, startMin: number, en
 const calendar = useCalendarStore()
 const timer = useTimerStore()
 const toast = useToast()
+const ui = useUiStore()
 
 const gridEl = useTemplateRef<HTMLElement>('gridEl')
 const scrollEl = useTemplateRef<HTMLElement>('scrollEl')
@@ -419,7 +420,14 @@ function onDragUp() {
     })
 }
 
-// ── Click (no drag) = start again ───────────────────────────────────────────
+// ── Clicking a block opens it for editing (the Time page's dialog, mounted by
+//    the calendar page). Starting the timer is the block's play button only —
+//    a bare surface that silently starts tracking is too easy to hit. ───────
+function openEntry(entry: EntryDto) {
+  if (suppressClick.value) return
+  ui.openEdit(entry)
+}
+
 const busy = ref(false)
 
 async function startAgain(entry: EntryDto) {
@@ -645,7 +653,7 @@ function blockEdge(billable: boolean): string {
             <button
               type="button"
               :title="b.title || undefined"
-              class="absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-sm px-1.5 py-1 text-left transition-[filter] hover:brightness-[1.12]"
+              class="absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-sm py-1 pl-1.5 pr-7 text-left transition-[filter] hover:brightness-[1.12]"
               :class="[
                 b.dragging ? 'z-10 cursor-grabbing opacity-90 shadow-md' : 'cursor-grab',
                 isCoarse && armedId === b.id && !b.dragging ? 'ring ring-primary/60' : ''
@@ -657,12 +665,29 @@ function blockEdge(billable: boolean): string {
                 borderLeft: `2px solid ${blockEdge(b.billable)}`
               }"
               @pointerdown="onBlockDown(b.entry, di, $event)"
-              @click="startAgain(b.entry)"
+              @click="openEntry(b.entry)"
             >
               <span class="pointer-events-none absolute inset-x-0 top-0 h-[6px] cursor-ns-resize" />
               <span class="truncate text-[11px] font-medium leading-[1.25] text-highlighted">{{ b.name }}</span>
               <span class="tnum truncate text-[10px] text-muted">{{ b.sub }}</span>
               <span class="pointer-events-none absolute inset-x-0 bottom-0 h-[6px] cursor-ns-resize" />
+            </button>
+
+            <!-- Start again — the only way a block starts the timer. A sibling
+                 of the block (buttons can't nest) positioned over its right
+                 edge; pointerdown is swallowed so it never begins a drag. -->
+            <button
+              v-if="!b.dragging"
+              type="button"
+              :aria-label="`Start timer for ${b.name}`"
+              :title="`Start timer for ${b.name}`"
+              class="absolute right-[5px] z-20 grid place-items-center rounded-full bg-default/85 text-primary ring-1 ring-primary/50 backdrop-blur-[2px] transition hover:bg-default hover:ring-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ui-primary)]"
+              :class="b.h >= 34 ? 'size-[22px]' : 'size-[18px]'"
+              :style="{ top: (b.top + (b.h - (b.h >= 34 ? 22 : 18)) / 2) + 'px' }"
+              @pointerdown.stop
+              @click.stop="startAgain(b.entry)"
+            >
+              <UIcon name="i-lucide-play" :class="b.h >= 34 ? 'size-3' : 'size-2.5'" />
             </button>
 
             <!-- Touch resize handles (armed block only): 44px hit areas whose

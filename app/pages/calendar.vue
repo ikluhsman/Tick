@@ -7,6 +7,14 @@
 useHead({ title: 'Calendar · Tick' })
 
 const calendar = useCalendarStore()
+const ui = useUiStore()
+
+// Clicking a block opens the Time page's edit dialog (mounted below). It saves
+// through the entries store, which the grid doesn't read — so refetch the
+// visible range once the dialog closes and re-render the block.
+watch(() => ui.editEntry, (open, was) => {
+  if (was && !open) calendar.fetchRange().catch(() => {})
+})
 
 // SSR-hydrated grid: fetch on the server (state rides the Pinia payload, so
 // hydration re-fetches nothing) and again on every later client-side visit.
@@ -112,5 +120,8 @@ function onCreate({ day, startMin, endMin }: { day: number, startMin: number, en
     <!-- New-entry dialog — the shared picker mounts in the default layout
          (after the page slot), teleport order layers it above this dialog -->
     <CalendarEntryDialog v-model:open="dialogOpen" :prefill="prefill" />
+
+    <!-- Edit dialog for a clicked block (opens from ui.editEntry) -->
+    <TimeManualEntryDialog />
   </div>
 </template>
