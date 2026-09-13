@@ -119,6 +119,42 @@ test.describe('open dialogs (desktop)', () => {
     await checkA11y(page, 'picker dialog')
   })
 
+  test('picker tabs follow the APG tablist keyboard model', async ({ page }) => {
+    await page.goto('/time')
+    await timerPlus(page).click()
+    await page.getByRole('menuitem', { name: 'Client' }).click()
+    await expect(picker(page)).toBeVisible()
+
+    const clientTab = picker(page).getByRole('tab', { name: 'Client' })
+    const projectTab = picker(page).getByRole('tab', { name: 'Project' })
+    const taskTab = picker(page).getByRole('tab', { name: 'Task' })
+
+    // Roving tabindex: only the active tab is a Tab stop.
+    await expect(clientTab).toHaveAttribute('tabindex', '0')
+    await expect(projectTab).toHaveAttribute('tabindex', '-1')
+    await expect(taskTab).toHaveAttribute('tabindex', '-1')
+
+    await clientTab.focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(projectTab).toHaveAttribute('aria-selected', 'true')
+    await expect(projectTab).toBeFocused()
+    await expect(projectTab).toHaveAttribute('tabindex', '0')
+    await expect(clientTab).toHaveAttribute('tabindex', '-1')
+
+    await page.keyboard.press('End')
+    await expect(taskTab).toHaveAttribute('aria-selected', 'true')
+    await expect(taskTab).toBeFocused()
+
+    await page.keyboard.press('Home')
+    await expect(clientTab).toHaveAttribute('aria-selected', 'true')
+    await expect(clientTab).toBeFocused()
+
+    // Wraps backward past the first tab to the last.
+    await page.keyboard.press('ArrowLeft')
+    await expect(taskTab).toHaveAttribute('aria-selected', 'true')
+    await expect(taskTab).toBeFocused()
+  })
+
   test('manual entry dialog has no violations', async ({ page }) => {
     await page.goto('/time')
     await page.getByRole('button', { name: 'Manual entry' }).click()

@@ -272,6 +272,29 @@ const listboxLabel = computed(() => {
   return `${noun} matching search`
 })
 
+// ── Tablist keyboard model (APG Tabs, automatic activation) ─────────────────
+// Roving tabindex: only the active tab is in the Tab sequence (wired via
+// `:tabindex` below); Left/Right (wrapping) and Home/End move both the
+// selection and focus together, since switching tabs here just re-filters
+// the same panel and costs nothing to activate immediately.
+function onTabsKeydown(e: KeyboardEvent) {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+  e.preventDefault()
+  const i = tabs.findIndex(t => t.value === tab.value)
+  const last = tabs.length - 1
+  const next = e.key === 'Home'
+    ? 0
+    : e.key === 'End'
+      ? last
+      : e.key === 'ArrowRight'
+        ? (i + 1) % tabs.length
+        : (i - 1 + tabs.length) % tabs.length
+  tab.value = tabs[next]!.value
+  nextTick(() => {
+    (e.currentTarget as HTMLElement)?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus()
+  })
+}
+
 /** Keep the dialog from focusing the first tab button; focus the search instead. */
 function onOpenAutoFocus(e: Event) {
   e.preventDefault()
@@ -318,8 +341,10 @@ function onCloseAutoFocus(e: Event) {
              The combobox's own aria-controls points at the results listbox
              separately; a tablist with no tabpanel at all (as if aria-controls
              referenced the listbox here too) leaves screen readers announcing
-             "tab, 1 of 3" with nothing to go to. -->
-        <div class="flex gap-1" role="tablist" aria-label="Pick type">
+             "tab, 1 of 3" with nothing to go to. Roving tabindex (only the
+             active tab is a Tab stop) plus onTabsKeydown's Left/Right/Home/End
+             give it the rest of the APG Tabs keyboard model. -->
+        <div class="flex gap-1" role="tablist" aria-label="Pick type" @keydown="onTabsKeydown">
           <UButton
             v-for="t in tabs"
             :id="`picker-tab-${t.value}`"
@@ -331,6 +356,7 @@ function onCloseAutoFocus(e: Event) {
             :class="[tab === t.value ? '' : 'text-toned', 'max-sm:min-h-11 max-sm:px-4']"
             role="tab"
             :aria-selected="tab === t.value"
+            :tabindex="tab === t.value ? 0 : -1"
             aria-controls="picker-panel"
             @click="tab = t.value"
           />

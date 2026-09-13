@@ -135,6 +135,6 @@ Roles, labels and headings first (`helpers/dom.ts`). Two notes:
 Other suites on this machine also use `tick_test`. They work in their own orgs,
 and `db:seed` only resets the "Hollow Studio" org and `mara@example.com`, so the
 two coexist — but running another suite that reseeds *at the same time* as this
-one will disturb it. A full run (both projects, 51 tests as of this writing)
+one will disturb it. A full run (both projects, 54 tests as of this writing)
 takes about 2 minutes once the build is cached; add ~10-15s the first time,
 for the build and `db:push`/`db:seed`.
