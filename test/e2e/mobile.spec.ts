@@ -99,14 +99,15 @@ test.describe('mobile shell', { tag: '@mobile' }, () => {
     const today = group(page, 'Today')
     await expect(entryRow(today, first)).toBeVisible()
 
-    // Off by default: no checkbox.
+    // Off by default: no checkbox. Select/Done is a plain action button (its
+    // changing label is the state cue, not aria-pressed — see time.vue).
     const selectBtn = page.getByRole('button', { name: 'Select', exact: true })
-    await expect(selectBtn).toHaveAttribute('aria-pressed', 'false')
+    await expect(selectBtn).toBeVisible()
     await expect(entryRow(today, first).getByRole('checkbox', { name: 'Select entry' })).toBeHidden()
 
     await selectBtn.click()
     const doneBtn = page.getByRole('button', { name: 'Done', exact: true })
-    await expect(doneBtn).toHaveAttribute('aria-pressed', 'true')
+    await expect(doneBtn).toBeVisible()
 
     await entryRow(today, first).getByRole('checkbox', { name: 'Select entry' }).click()
     await entryRow(today, second).getByRole('checkbox', { name: 'Select entry' }).click()
@@ -126,8 +127,49 @@ test.describe('mobile shell', { tag: '@mobile' }, () => {
     await entryRow(today, first).getByRole('checkbox', { name: 'Select entry' }).click()
     await expect(page.getByText('1 selected')).toBeVisible()
     await doneBtn.click()
-    await expect(selectBtn).toHaveAttribute('aria-pressed', 'false')
+    await expect(selectBtn).toBeVisible()
     await expect(page.getByText('1 selected')).toBeHidden()
     await expect(entryRow(today, first).getByRole('checkbox', { name: 'Select entry' })).toBeHidden()
+  })
+
+  test('bulk-action bar stays reachable and on-screen once the list scrolls', async ({ page, api }) => {
+    // Enough rows to push well past the fold; hour ascending so the lowest
+    // hour (oldest) sorts to the very bottom of the "Today" group.
+    const names: string[] = []
+    for (let i = 0; i < 20; i++) {
+      const n = name(`E2E mobile scroll ${i}`)
+      names.push(n)
+      await createEntry(api, { name: n, billable: false, ...slot(4 + i) })
+    }
+
+    await page.goto('/time')
+    const today = group(page, 'Today')
+    await expect(entryRow(today, names[19]!)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Select', exact: true }).click()
+
+    // Select the bottom-most (oldest) row, below the fold on a 390×844 screen.
+    const lastRow = entryRow(today, names[0]!)
+    await lastRow.scrollIntoViewIfNeeded()
+    await lastRow.getByRole('checkbox', { name: 'Select entry' }).click()
+
+    // The bar must actually be reachable: fully inside the viewport, above
+    // the fixed dock — not scrolled off the top (a bottom-sticky element
+    // rendered above the list can only move up, never back into view).
+    const bar = page.getByRole('region', { name: 'Bulk actions' })
+    await expect(bar).toBeVisible()
+    const barBox = await bar.boundingBox()
+    expect(barBox).not.toBeNull()
+    expect(barBox!.y).toBeGreaterThanOrEqual(0)
+    expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(VIEWPORT.height)
+
+    // No page-wide horizontal scroll (WCAG 1.4.10 Reflow), and every bar
+    // action — Delete included — sits fully inside the 390px viewport.
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
+    expect(scrollWidth).toBeLessThanOrEqual(VIEWPORT.width)
+    const deleteBox = await bar.getByRole('button', { name: 'Delete' }).boundingBox()
+    expect(deleteBox).not.toBeNull()
+    expect(deleteBox!.x).toBeGreaterThanOrEqual(0)
+    expect(deleteBox!.x + deleteBox!.width).toBeLessThanOrEqual(VIEWPORT.width)
   })
 })

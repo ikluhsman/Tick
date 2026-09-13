@@ -30,11 +30,28 @@ onBeforeUnmount(() => {
 // selection bar (Clear, Mark billable, Move to…) — not just the page's own
 // bulk-delete path below, which already handles its own focus — land focus
 // back on the list instead of letting it fall to <body>.
+//
+// Two guards, both load-bearing:
+// - `singleDeleteInFlight`: a single row's own Delete button (EntryRow) can
+//   also empty the selection when that row was the only one selected.
+//   onDelete below already restores focus to the row's neighbour; without
+//   this guard this watcher's nextTick can run first and steal focus to the
+//   first row before the neighbour-restore gets a turn.
+// - `wasInBar`: captured synchronously here, at this watcher's default 'pre'
+//   flush timing — i.e. before the bar unmounts — because the "activeElement
+//   fell to body" check below can't tell a real bar-control activation apart
+//   from a plain checkbox uncheck. Reka's CheckboxRoot is a <button>, and
+//   Safari/iOS/Firefox-macOS don't focus a button on click, so unchecking the
+//   last selected row already leaves activeElement on <body> with no bar
+//   control ever involved — without this guard that click would wrongly
+//   scroll-jump focus up to the first row.
 watch(() => entriesStore.hasSelection, (has, had) => {
-  if (has || !had) return
+  if (has || !had || singleDeleteInFlight) return
+  const wasInBar = !!document.activeElement?.closest('[data-selection-bar]')
   nextTick(() => {
+    if (!wasInBar) return
     if (document.activeElement && document.activeElement !== document.body) return
-    ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus()
+    ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus({ preventScroll: true })
   })
 })
 
@@ -217,14 +234,23 @@ function focusNeighbourAfterRemoval(id: string): () => void {
   })
 }
 
+// Set for the span of a single-row delete so the hasSelection watcher above
+// (fired by the same store mutation, when this row was the only one
+// selected) doesn't race focusNeighbourAfterRemoval's own restore — see that
+// watcher's comment.
+let singleDeleteInFlight = false
+
 async function onDelete(entry: EntryDto) {
   const restoreFocus = focusNeighbourAfterRemoval(entry.id)
+  singleDeleteInFlight = true
   try {
     const result = await entriesStore.remove(entry.id)
     restoreFocus()
     undoToast(`Deleted “${entry.name}”`, result)
   } catch {
     // row stays; server said no
+  } finally {
+    singleDeleteInFlight = false
   }
 }
 
@@ -235,7 +261,7 @@ async function onBulkDelete() {
     // The selection bar (and its Delete trigger) is gone — land on the list
     nextTick(() => {
       if (document.activeElement && document.activeElement !== document.body) return
-      ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus()
+      ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus({ preventScroll: true })
     })
     if (result) undoToast(`Moved ${count} ${count === 1 ? 'entry' : 'entries'} to trash`, result)
   } catch {
@@ -245,7 +271,10 @@ async function onBulkDelete() {
 </script>
 
 <template>
-  <div class="mx-auto flex w-full max-w-[1100px] flex-col gap-[17px] px-[22px] pt-[22px] pb-[120px]">
+  <div
+    class="mx-auto flex w-full max-w-[1100px] flex-col gap-[17px] px-[22px] pt-[22px] pb-[120px]"
+    :class="{ 'max-lg:pb-[200px]': entriesStore.hasSelection }"
+  >
     <!-- Header -->
     <div class="flex flex-wrap items-end gap-3">
       <div class="min-w-[200px] flex-1">
@@ -285,13 +314,18 @@ async function onBulkDelete() {
           label="Manual entry"
           @click="ui.openManual()"
         />
+        <!-- Plain action button, not a toggle: the APG toggle-button pattern
+             requires the label stay fixed across states, and this one reads
+             "Done" while active by design (see docs) — aria-pressed alongside
+             a changing label would announce a self-contradicting "Done …
+             pressed". Select mode's own effect (row checkboxes, the bulk bar)
+             communicates the state instead. -->
         <UButton
           color="neutral"
           variant="outline"
           class="lg:hidden"
           :class="selectMode ? '' : 'text-muted'"
           :label="selectMode ? 'Done' : 'Select'"
-          :aria-pressed="selectMode"
           @click="toggleSelectMode"
         />
       </div>

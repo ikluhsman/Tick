@@ -53,15 +53,22 @@ function onCloseAutoFocus(e: Event) {
 </script>
 
 <template>
-  <!-- <1024px: pin above the fixed dock (docked timer card + tab bar) instead
-       of scrolling behind it. 150px + safe-area matches the bottom padding
-       app/layouts/default.vue reserves for that dock; +8px is breathing room. -->
+  <!-- <1024px: this renders BEFORE the entry groups (time.vue), so a bottom-
+       sticky position never re-enters the viewport once scrolled past — it
+       can only move up, never back down. Taken out of flow instead: fixed
+       above the mobile dock (docked timer card + tab bar). 150px + safe-area
+       matches the bottom padding app/layouts/default.vue reserves for that
+       dock; +8px is breathing room. flex-wrap + the count's own line keep
+       Delete from running off a 390px screen once four buttons + the count
+       can't share one row. bg-default keeps it opaque over the rows it now
+       floats above (the primary/25 ring stands in for the desktop tint). -->
   <div
     role="region"
     aria-label="Bulk actions"
-    class="tick-rise flex items-center gap-2.5 rounded-md bg-primary/10 py-1.5 pr-1.5 pl-3.5 ring-1 ring-primary/25 max-lg:sticky max-lg:bottom-[calc(150px+env(safe-area-inset-bottom)+8px)] max-lg:z-30 max-lg:shadow-lg"
+    data-selection-bar
+    class="tick-rise flex flex-wrap items-center gap-2.5 rounded-md bg-primary/10 py-1.5 pr-1.5 pl-3.5 ring-1 ring-primary/25 max-lg:fixed max-lg:inset-x-4 max-lg:bottom-[calc(150px+env(safe-area-inset-bottom)+8px)] max-lg:z-30 max-lg:bg-default max-lg:shadow-lg"
   >
-    <span class="flex-1 text-[13px] text-primary" role="status">{{ count }} selected</span>
+    <span class="flex-1 text-[13px] text-primary max-lg:basis-full" role="status">{{ count }} selected</span>
     <UButton color="primary" variant="ghost" size="sm" label="Clear" @click="entriesStore.clearSelection()" />
     <UButton color="neutral" variant="outline" size="sm" label="Mark billable" @click="markBillable" />
     <UButton

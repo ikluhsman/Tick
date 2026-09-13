@@ -102,6 +102,32 @@ test('deleting an entry shows the undo toast and undo restores the row', async (
   await expect(entryRow(today, entryName)).toBeVisible()
 })
 
+test('deleting the sole selected row via its own Delete button restores focus to a neighbour', async ({ page, api }) => {
+  // Selecting exactly this row, then deleting it, flips hasSelection back to
+  // false from under a row that isn't the selection bar — the page's
+  // neighbour-focus restore must win the race against the (unrelated)
+  // hasSelection watcher, which would otherwise steal focus to the top row.
+  const early = name('E2E focus early')
+  const middle = name('E2E focus middle')
+  const late = name('E2E focus late')
+  await createEntry(api, { name: early, billable: true, ...slot(0, 5) })
+  await createEntry(api, { name: middle, billable: true, ...slot(0, 6) })
+  await createEntry(api, { name: late, billable: true, ...slot(0, 7) })
+
+  await page.goto('/time')
+  const today = group(page, 'Today')
+  const middleRow = entryRow(today, middle)
+  await expect(middleRow).toBeVisible()
+
+  await middleRow.getByRole('checkbox', { name: 'Select entry' }).click()
+  await middleRow.getByRole('button', { name: 'Delete entry' }).click()
+  await expect(middleRow).toHaveCount(0)
+
+  // "early" is the next row after "middle" in start-time-descending order —
+  // the correct neighbour, not "late" (the top of the whole list).
+  await expect(entryRow(today, early).getByRole('button', { name: early, exact: true })).toBeFocused()
+})
+
 test('bulk selecting two rows and "Move to…" reassigns both', async ({ page, api }) => {
   const first = name('E2E bulk one')
   const second = name('E2E bulk two')
