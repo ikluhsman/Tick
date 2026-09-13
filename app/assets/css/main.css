@@ -10,6 +10,24 @@
   --ui-radius: 0.5rem;
 }
 
+/* Set/cleared by SelectionBar.vue's `mobile` copy (app/components/time/SelectionBar.vue)
+   only while it is genuinely visible — measured from its own top edge, so
+   this covers the mobile dock sitting below it too, and stays right however
+   tall the bar itself renders (it can wrap to a second line of buttons on a
+   narrow phone). A keyboard-focused row must scroll fully above the fixed
+   bar+dock (WCAG 2.4.11 Focus Not Obscured), not just into the layout
+   viewport. The `min-width: 1024px` guard is a static backstop for the rare
+   case a resize event lands between the bar leaving the layout and its own
+   resize handler clearing the var. */
+html {
+  scroll-padding-bottom: var(--tick-obscured-bottom, 0px);
+}
+@media (min-width: 1024px) {
+  html {
+    scroll-padding-bottom: 0px !important;
+  }
+}
+
 /* Light mode, one palette step darker than Nuxt UI's defaults so text and
    primary clear WCAG AA (4.5:1) on white and on elevated cards — the stock
    primary-500 on white is ~2.7:1. Unlayered, so it beats Nuxt UI's

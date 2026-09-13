@@ -4,10 +4,22 @@
 // a confirmation dialog stating count and total hours (Rule 4), then emits
 // so the page can run the bulk delete and show the undo toast. "Move to…"
 // opens the picker in bulk mode (target 'bulk'); the picker runs the reassign.
+//
+// time.vue mounts TWO of these behind opposite `lg:hidden`/`max-lg:hidden`
+// classes — one before the entry groups (desktop, in-flow, exactly as
+// before), one after them (mobile: DOM/tab order then reads rows → bar,
+// matching where it visually sits, fixed above the dock — WCAG 2.4.3).
+// `display:none` drops whichever copy isn't for the current breakpoint out
+// of both the tab order and the accessibility tree, so only one is ever
+// live at a time — including its confirm-delete dialog, since that dialog
+// can only open from a click on a bar a user can actually see.
+const props = defineProps<{ mobile?: boolean }>()
 const entriesStore = useEntriesStore()
 const ui = useUiStore()
 
 const emit = defineEmits<{ delete: [] }>()
+
+const rootEl = ref<HTMLElement | null>(null)
 
 const confirmOpen = ref(false)
 
@@ -50,19 +62,59 @@ function onCloseAutoFocus(e: Event) {
   deleting = false
   e.preventDefault()
 }
+
+// ── Keep a keyboard-focused row from landing under the fixed bar/dock ──────
+// Only the `mobile` copy is ever actually `position: fixed` (its own
+// `max-lg:fixed` class only takes effect below 1024px — see the desktop
+// copy's `max-lg:hidden`, which keeps it in-flow and never fixed at all).
+// Measuring THIS element's own top edge — rather than re-deriving "150px
+// dock + safe-area + 8px gap" in JS — automatically covers the dock below
+// it too, and stays right if either one's height ever changes, including the
+// bar wrapping to a second line of buttons on a narrow phone.
+let ro: ResizeObserver | undefined
+
+function syncScrollPadding() {
+  if (!props.mobile || !rootEl.value) return
+  const rect = rootEl.value.getBoundingClientRect()
+  if (rect.height === 0) {
+    // `lg:hidden` — not the active breakpoint's copy right now.
+    document.documentElement.style.removeProperty('--tick-obscured-bottom')
+    return
+  }
+  const obscured = Math.max(0, window.innerHeight - rect.top)
+  document.documentElement.style.setProperty('--tick-obscured-bottom', `${obscured}px`)
+}
+
+onMounted(() => {
+  if (!props.mobile) return
+  syncScrollPadding()
+  ro = new ResizeObserver(syncScrollPadding)
+  ro.observe(rootEl.value!)
+  window.addEventListener('resize', syncScrollPadding, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  if (!props.mobile) return
+  ro?.disconnect()
+  window.removeEventListener('resize', syncScrollPadding)
+  document.documentElement.style.removeProperty('--tick-obscured-bottom')
+})
 </script>
 
 <template>
-  <!-- <1024px: this renders BEFORE the entry groups (time.vue), so a bottom-
-       sticky position never re-enters the viewport once scrolled past — it
-       can only move up, never back down. Taken out of flow instead: fixed
-       above the mobile dock (docked timer card + tab bar). 150px + safe-area
-       matches the bottom padding app/layouts/default.vue reserves for that
-       dock; +8px is breathing room. flex-wrap + the count's own line keep
-       Delete from running off a 390px screen once four buttons + the count
-       can't share one row. bg-default keeps it opaque over the rows it now
-       floats above (the primary/25 ring stands in for the desktop tint). -->
+  <!-- <1024px: the `mobile` copy (time.vue) renders AFTER the entry groups —
+       tab order then reads rows → bar, matching where this sits visually —
+       but is taken out of flow so a bottom-sticky position never re-enters
+       the viewport once scrolled past (it could only move up, never back
+       down, if it stayed in-flow at the top): fixed above the mobile dock
+       (docked timer card + tab bar). 150px + safe-area matches the bottom
+       padding app/layouts/default.vue reserves for that dock; +8px is
+       breathing room. flex-wrap + the count's own line keep Delete from
+       running off a 390px screen once four buttons + the count can't share
+       one row. bg-default keeps it opaque over the rows it now floats above
+       (the primary/25 ring stands in for the desktop tint). -->
   <div
+    ref="rootEl"
     role="region"
     aria-label="Bulk actions"
     data-selection-bar

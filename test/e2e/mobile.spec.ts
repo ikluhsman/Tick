@@ -193,6 +193,89 @@ test.describe('mobile shell', { tag: '@mobile' }, () => {
     await expect(doneBtn).toBeInViewport()
   })
 
+  test('Select mode: tab order reaches the rows before the bulk-action bar (WCAG 2.4.3)', async ({ page, api }) => {
+    // The bar sits at the BOTTOM of the screen (fixed, above the dock) but
+    // must come AFTER every row in Tab order — issue #15's followup: it used
+    // to render before the groups in the DOM on every breakpoint, so Tab
+    // order was bar → rows while it visually sits below them.
+    const names: string[] = []
+    for (let i = 0; i < 20; i++) {
+      const n = name(`E2E mobile order ${i}`)
+      names.push(n)
+      await createEntry(api, { name: n, billable: false, ...slot(i) })
+    }
+
+    await page.goto('/time')
+    const today = group(page, 'Today')
+    const topRow = entryRow(today, names[19]!) // hour 19 sorts newest → rendered first
+    const bottomRow = entryRow(today, names[0]!) // hour 0 sorts oldest → rendered last
+    await expect(topRow).toBeVisible()
+
+    await page.getByRole('button', { name: 'Select', exact: true }).click()
+    const doneBtn = page.getByRole('button', { name: 'Done', exact: true })
+
+    // Show the bar (select the bottom row — also the row a not-obscured
+    // check below cares about).
+    await bottomRow.scrollIntoViewIfNeeded()
+    await bottomRow.getByRole('checkbox', { name: 'Select entry' }).click()
+    const bar = bulkActionsBar(page)
+    await expect(bar).toBeVisible()
+
+    // A real Tab from the toggle lands in the FIRST row, not the bar.
+    await doneBtn.focus()
+    await page.keyboard.press('Tab')
+    await expect(topRow.getByRole('checkbox', { name: 'Select entry' })).toBeFocused()
+
+    // The mechanism behind that for every row count, not just the first
+    // press: the bar's DOM node comes after the very last row, so nothing
+    // in between skips over it however many Tabs it takes to get there.
+    const barAfterLastRow = await page.evaluate(() => {
+      const bars = [...document.querySelectorAll('[data-selection-bar]')]
+      const visibleBar = bars.find(el => el.getBoundingClientRect().height > 0)
+      const lastRow = [...document.querySelectorAll('div.group')].at(-1)
+      if (!visibleBar || !lastRow) return null
+      // eslint-disable-next-line no-bitwise
+      return !!(lastRow.compareDocumentPosition(visibleBar) & Node.DOCUMENT_POSITION_FOLLOWING)
+    })
+    expect(barAfterLastRow).toBe(true)
+  })
+
+  test('Select mode: a focused row near the bottom scrolls fully clear of the bulk-action bar', async ({ page, api }) => {
+    // WCAG 2.2 SC 2.4.11 Focus Not Obscured: the bar (+ the dock beneath it)
+    // must never sit over a keyboard-focused row. There is no scroll-padding
+    // reserved for either while the bar isn't showing, so this only matters
+    // once Select mode has a live selection.
+    const names: string[] = []
+    for (let i = 0; i < 20; i++) {
+      const n = name(`E2E mobile obscure ${i}`)
+      names.push(n)
+      await createEntry(api, { name: n, billable: false, ...slot(i) })
+    }
+
+    await page.goto('/time')
+    const today = group(page, 'Today')
+    const bottomRow = entryRow(today, names[0]!)
+    await expect(entryRow(today, names[19]!)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Select', exact: true }).click()
+    await bottomRow.scrollIntoViewIfNeeded()
+    await bottomRow.getByRole('checkbox', { name: 'Select entry' }).click()
+    const bar = bulkActionsBar(page)
+    await expect(bar).toBeVisible()
+
+    // Focus the bottom row's own name button — the browser's default
+    // scroll-into-view-on-focus is what scroll-padding-bottom steers.
+    await bottomRow.locator('[data-entry-name]').focus()
+
+    const [rowBox, barBox] = await Promise.all([bottomRow.boundingBox(), bar.boundingBox()])
+    expect(rowBox).not.toBeNull()
+    expect(barBox).not.toBeNull()
+    // Fully above the bar's top edge, not merely overlapping less than before.
+    expect(rowBox!.y + rowBox!.height).toBeLessThanOrEqual(barBox!.y)
+    // And still actually on-screen (not scrolled past the top instead).
+    expect(rowBox!.y).toBeGreaterThanOrEqual(0)
+  })
+
   test('bulk-action bar stays reachable and on-screen once the list scrolls', async ({ page, api }) => {
     // Enough rows to push well past the fold; hour ascending so the lowest
     // hour (oldest) sorts to the very bottom of the "Today" group.

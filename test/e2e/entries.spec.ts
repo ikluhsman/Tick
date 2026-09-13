@@ -154,3 +154,27 @@ test('bulk selecting two rows and "Move to…" reassigns both', async ({ page, a
     await expect(row).toContainText(SEED.projectBrand.client)
   }
 })
+
+test('desktop (≥1024px): the bulk-action bar stays in-flow above the list, unchanged by the mobile bar/order fix', async ({ page, api }) => {
+  // mobile.spec.ts's "tab order" test covers <1024px, where a second copy of
+  // TimeSelectionBar now renders after the groups (lg:hidden) so Tab order
+  // is rows → bar there. This is the other side of that same change: the
+  // desktop copy (max-lg:hidden) must still be the in-flow, non-fixed bar
+  // sitting above the rows that it always was.
+  const entryName = name('E2E desktop bar position')
+  await createEntry(api, { name: entryName, billable: true, ...slot(0, 8) })
+
+  await page.goto('/time')
+  const today = group(page, 'Today')
+  await entryRow(today, entryName).getByRole('checkbox', { name: 'Select entry' }).click()
+
+  const bar = bulkActionsBar(page)
+  await expect(bar).toBeVisible()
+  expect(await bar.evaluate(el => getComputedStyle(el).position)).toBe('static')
+
+  const [barBox, rowBox] = await Promise.all([bar.boundingBox(), entryRow(today, entryName).boundingBox()])
+  expect(barBox).not.toBeNull()
+  expect(rowBox).not.toBeNull()
+  // Above the row, not overlapping it — i.e. still part of the normal flow.
+  expect(barBox!.y + barBox!.height).toBeLessThanOrEqual(rowBox!.y)
+})

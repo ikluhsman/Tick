@@ -363,8 +363,13 @@ async function onBulkDelete() {
          to the bar yet. -->
     <div class="sr-only" role="status" aria-live="polite">{{ selectionAnnouncement }}</div>
 
-    <!-- Selection bar -->
-    <TimeSelectionBar v-if="entriesStore.hasSelection" @delete="onBulkDelete" />
+    <!-- Selection bar — desktop copy: in-flow above the list, exactly as
+         before. `max-lg:hidden` drops it (display:none, so out of both the
+         tab order and the accessibility tree) below 1024px, where the
+         `mobile` copy after the groups below takes over instead. See
+         SelectionBar.vue's docblock for why two copies rather than one
+         instance repositioned by JS. -->
+    <TimeSelectionBar v-if="entriesStore.hasSelection" class="max-lg:hidden" @delete="onBulkDelete" />
 
     <!-- Groups -->
     <template v-if="groups.length">
@@ -411,6 +416,12 @@ async function onBulkDelete() {
         <p class="text-[13px] text-muted">Start the timer above, or add a manual entry.</p>
       </template>
     </div>
+
+    <!-- Selection bar — mobile copy: rendered AFTER the rows so Tab order is
+         rows → bar, matching where it visually sits (fixed above the dock).
+         `lg:hidden` keeps it out of the tab order/accessibility tree at
+         1024px and up, where the desktop copy above is the live one. -->
+    <TimeSelectionBar v-if="entriesStore.hasSelection" mobile class="lg:hidden" @delete="onBulkDelete" />
 
     <!-- Manual entry / edit dialog. The shared picker mounts in the default
          layout (after the page slot), so teleport order still layers it
