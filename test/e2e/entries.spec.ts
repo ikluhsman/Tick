@@ -116,8 +116,8 @@ test('bulk selecting two rows and "Move to…" reassigns both', async ({ page, a
 
   await page.getByRole('button', { name: 'Move to…' }).click()
   await expect(picker(page)).toBeVisible()
-  await picker(page).getByRole('textbox').fill(SEED.projectBrand.name)
-  await picker(page).getByRole('button', { name: startsWith(SEED.projectBrand.name) }).click()
+  await picker(page).getByRole('combobox').fill(SEED.projectBrand.name)
+  await picker(page).getByRole('option', { name: startsWith(SEED.projectBrand.name) }).click()
   await expect(picker(page)).toBeHidden()
   await expect(page.getByText(`2 entries moved to ${SEED.projectBrand.name}`, { exact: true })).toBeVisible()
 

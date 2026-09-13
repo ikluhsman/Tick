@@ -224,14 +224,6 @@ async function createFromSearch() {
   }
 }
 
-/** Polite status text for the row the arrow keys just moved to. */
-function announceHighlighted() {
-  const it = visible.value[highlighted.value]
-  if (!it) return
-  const parts = [it.name, it.sub, it.meta].filter(Boolean).join(', ')
-  announcement.value = `${parts} — ${highlighted.value + 1} of ${allItems.value.length}`
-}
-
 // Result count after typing (not on every arrow move)
 watch([search, tab], () => {
   if (!ui.pickerOpen) return
@@ -246,11 +238,9 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     if (count) highlighted.value = (highlighted.value + 1) % count
-    announceHighlighted()
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     if (count) highlighted.value = (highlighted.value - 1 + count) % count
-    announceHighlighted()
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const it = visible.value[highlighted.value]
@@ -258,6 +248,29 @@ function onKeydown(e: KeyboardEvent) {
     else if (showCreate.value) createFromSearch()
   }
 }
+
+// ── ARIA combobox/listbox wiring ─────────────────────────────────────────
+// Each option gets a stable id (`picker-option-<catalog id>`); the input
+// references the highlighted one via aria-activedescendant so screen readers
+// announce it as arrow keys move — which is also why the old polite
+// `announceHighlighted()` status line was dropped above: with
+// aria-activedescendant wired up, announcing the same text again on every
+// arrow press would just be a duplicate. The result-count announcement above
+// (after typing/switching tabs) stays, since activedescendant says nothing
+// about how many results there are.
+function optionId(id: string): string {
+  return `picker-option-${id}`
+}
+
+const activeDescendant = computed(() => {
+  const it = visible.value[highlighted.value]
+  return it ? optionId(it.id) : undefined
+})
+
+const listboxLabel = computed(() => {
+  const noun = tab.value === 'task' ? 'Tasks' : tab.value === 'client' ? 'Clients' : 'Projects'
+  return `${noun} matching search`
+})
 
 /** Keep the dialog from focusing the first tab button; focus the search instead. */
 function onOpenAutoFocus(e: Event) {
@@ -316,10 +329,15 @@ function onCloseAutoFocus(e: Event) {
           />
         </div>
 
-        <!-- Search -->
+        <!-- Search: ARIA combobox wired to the results listbox below -->
         <UInput
           ref="searchInput"
           v-model="search"
+          role="combobox"
+          aria-expanded="true"
+          aria-autocomplete="list"
+          aria-controls="picker-results"
+          :aria-activedescendant="activeDescendant"
           icon="i-lucide-search"
           :placeholder="placeholder"
           :aria-label="placeholder"
@@ -347,31 +365,39 @@ function onCloseAutoFocus(e: Event) {
         <!-- Arrow-key position / result count, read out politely -->
         <div role="status" class="sr-only">{{ announcement }}</div>
 
-        <!-- Results -->
-        <div
-          id="picker-results"
-          ref="listEl"
-          role="tabpanel"
-          class="flex max-h-[340px] flex-col gap-px overflow-y-auto max-sm:max-h-[45vh]"
-        >
-          <button
-            v-for="(it, i) in visible"
-            :key="it.id"
-            type="button"
-            class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left focus-visible:outline-offset-[-2px] max-sm:min-h-12"
-            :class="i === highlighted
-              ? 'bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'
-              : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'"
-            @mousemove="highlighted = i"
-            @click="pick(tab, it.id)"
+        <!-- Scroll container: the listbox itself holds only role="option"
+             rows — "Show more"/"Create…" are real buttons outside it, and
+             options are div/li, not buttons, so they're never separate tab
+             stops (focus stays in the search input; ↑↓↵esc still drive it). -->
+        <div class="flex max-h-[340px] flex-col gap-px overflow-y-auto max-sm:max-h-[45vh]">
+          <div
+            id="picker-results"
+            ref="listEl"
+            role="listbox"
+            :aria-label="listboxLabel"
+            class="flex flex-col gap-px"
           >
-            <span class="size-2 shrink-0 rounded-full" :style="{ background: clientColorVar(it.dot) }" />
-            <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm text-highlighted">{{ it.name }}</span>
-              <span v-if="it.sub" class="block truncate text-xs text-muted">{{ it.sub }}</span>
-            </span>
-            <span class="tnum shrink-0 text-xs text-muted">{{ it.meta }}</span>
-          </button>
+            <div
+              v-for="(it, i) in visible"
+              :id="optionId(it.id)"
+              :key="it.id"
+              role="option"
+              :aria-selected="i === highlighted"
+              class="flex cursor-pointer items-center gap-3 rounded-md px-2.5 py-[9px] text-left max-sm:min-h-12"
+              :class="i === highlighted
+                ? 'bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'
+                : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'"
+              @mousemove="highlighted = i"
+              @click="pick(tab, it.id)"
+            >
+              <span class="size-2 shrink-0 rounded-full" :style="{ background: clientColorVar(it.dot) }" />
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-sm text-highlighted">{{ it.name }}</span>
+                <span v-if="it.sub" class="block truncate text-xs text-muted">{{ it.sub }}</span>
+              </span>
+              <span class="tnum shrink-0 text-xs text-muted">{{ it.meta }}</span>
+            </div>
+          </div>
 
           <button
             v-if="moreCount > 0"
