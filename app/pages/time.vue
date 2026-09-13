@@ -101,6 +101,38 @@ const groups = computed<Group[]>(() => {
   })
 })
 
+// ── Row cap: each row mounts several Nuxt UI components (~4ms apiece on SSR
+// and hydration), so a heavy month froze the page for seconds. Render the
+// first ROW_PAGE rows across groups; group totals still cover every entry.
+const ROW_PAGE = 150
+const rowLimit = ref(ROW_PAGE)
+watch(() => [entriesStore.filter, entriesStore.groupBy], () => { rowLimit.value = ROW_PAGE })
+
+const totalRows = computed(() => groups.value.reduce((n, g) => n + g.entries.length, 0))
+const hiddenRows = computed(() => Math.max(0, totalRows.value - rowLimit.value))
+
+const visibleGroups = computed<Group[]>(() => {
+  let budget = rowLimit.value
+  const out: Group[] = []
+  for (const g of groups.value) {
+    if (budget <= 0) break
+    out.push(g.entries.length <= budget ? g : { ...g, entries: g.entries.slice(0, budget) })
+    budget -= g.entries.length
+  }
+  return out
+})
+
+function showMore() {
+  const firstRevealed = rowLimit.value
+  rowLimit.value += ROW_PAGE
+  // The button may unmount (nothing left to show) — keep keyboard focus in
+  // the list by landing on the first newly rendered row.
+  nextTick(() => {
+    if (document.activeElement?.isConnected && document.activeElement !== document.body) return
+    document.querySelectorAll<HTMLElement>('[data-entry-name]')[firstRevealed]?.focus()
+  })
+}
+
 // ── Delete flows + undo toast (Rule 4: countdown visible, Undo restores) ────
 function undoToast(message: string, result: DeleteResult) {
   const id = `undo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
@@ -235,7 +267,7 @@ async function onBulkDelete() {
     <!-- Groups -->
     <template v-if="groups.length">
       <TimeEntryGroup
-        v-for="g in groups"
+        v-for="g in visibleGroups"
         :key="g.key"
         :label="g.label"
         :sub="g.sub"
@@ -243,6 +275,17 @@ async function onBulkDelete() {
         :entries="g.entries"
         @delete="onDelete"
       />
+      <div v-if="hiddenRows" class="flex flex-col items-center gap-2 pt-1">
+        <p class="tnum text-[13px] text-muted">
+          Showing {{ rowLimit }} of {{ totalRows }} entries
+        </p>
+        <UButton
+          color="neutral"
+          variant="outline"
+          :label="`Show ${Math.min(ROW_PAGE, hiddenRows)} more`"
+          @click="showMore"
+        />
+      </div>
     </template>
 
     <!-- Empty state: filtered-to-nothing gets its own copy + a Clear filter action -->
