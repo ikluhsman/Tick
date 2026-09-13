@@ -3,7 +3,8 @@
 // visual axe sweep can't catch on its own — opacity-driven focus-ring
 // contrast and Ctrl+Home/End — plus the default tab stop landing on a real
 // (not future) day.
-import { expect, test } from '@playwright/test'
+import { expect, test } from './helpers/test'
+import { parseGridDate } from './helpers/dates'
 
 function grid(page: import('@playwright/test').Page) {
   return page.getByRole('grid', { name: /Weekday activity heatmap/ })
@@ -45,11 +46,14 @@ test.describe('dashboard activity heatmap', () => {
     // dotTitle() renders "{Weekday, Mon D} · {Nh / no time logged}" via
     // toLocaleDateString — parse that back out and compare to today, rather
     // than special-casing "no time logged" (a real past day can log 0h too).
+    // toLocaleDateString never includes a year, so parseGridDate pins one
+    // back on — see its docblock for why "assume today's year" falsely fails
+    // this test in early January (test/e2e/helpers/dates.ts, unit-checked in
+    // test/unit/dates.spec.ts).
     const datePart = label!.split(' · ')[0]!
-    const parsed = new Date(`${datePart}, ${new Date().getFullYear()}`)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    parsed.setHours(0, 0, 0, 0)
+    const parsed = parseGridDate(datePart, today)
     expect(parsed.getTime()).toBeLessThanOrEqual(today.getTime())
   })
 })
