@@ -79,7 +79,7 @@ Both are test-environment concessions, and nothing under test asserts on them:
 | Project | Viewport | Runs |
 | --- | --- | --- |
 | `desktop` | 1440×900 | everything except `@mobile` |
-| `mobile` | 390×844, `hasTouch` | only tests tagged `@mobile` (`mobile.spec.ts`) |
+| `mobile` | 390×844, `hasTouch` | only tests tagged `@mobile` (`mobile.spec.ts`, and the `a11y.spec.ts` mobile subset) |
 
 ## Accessibility (`a11y.spec.ts`)
 
@@ -90,12 +90,13 @@ Settings) plus the picker and manual-entry dialogs, asserting zero
 per shipped color-mode default — **Nocturne** (dark) and **Daylight**
 (light) — switched via the real Settings → Appearance preset buttons (not a
 hand-rolled cookie). Every test that switches to a non-default preset restores
-Nocturne in its own `afterEach` (plus a belt-and-suspenders file-level
-`afterAll`): the preset persists server-side (`users.theme`), so leaving it
-dirty would carry into whichever spec — in this run or the *next* run's
-one-time login — happens to go next. A small `@mobile`-tagged subset (`/`,
-`/time` incl. Select mode on, `/clients`, the picker bottom sheet) also runs
-in the `mobile` project.
+Nocturne in its own `afterEach`: the preset persists server-side
+(`users.theme`) for the rest of the run, so leaving it dirty would carry into
+whichever spec runs next. This doesn't need a run-to-run cleanup step —
+global setup's reseed clears `users.theme` between separate
+`npm run test:e2e` invocations. A small `@mobile`-tagged subset (`/`, `/time`
+incl. Select mode on + the bulk-action bar, `/clients`, the picker bottom
+sheet) also runs in the `mobile` project.
 
 **Reading a failure**: the assertion message lists every violation with its
 axe rule id, impact (`minor`/`moderate`/`serious`/`critical`), the rule's
@@ -134,4 +135,6 @@ Roles, labels and headings first (`helpers/dom.ts`). Two notes:
 Other suites on this machine also use `tick_test`. They work in their own orgs,
 and `db:seed` only resets the "Hollow Studio" org and `mara@example.com`, so the
 two coexist — but running another suite that reseeds *at the same time* as this
-one will disturb it. A full run takes well under a minute.
+one will disturb it. A full run (both projects, 51 tests as of this writing)
+takes about 2 minutes once the build is cached; add ~10-15s the first time,
+for the build and `db:push`/`db:seed`.

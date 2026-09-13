@@ -88,7 +88,7 @@ async function restoreDefaultTheme(page: Page) {
   await expect(btn).toHaveAttribute('aria-pressed', 'true')
 }
 
-test.describe('client avatar swatch ink — every primary × every neutral', () => {
+test.describe('client avatar swatch ink — every primary and every neutral', () => {
   // Every test here changes primary/neutral/mode via the real editor, which
   // persists server-side (`PATCH /api/me/theme`) — restore the default so
   // whichever spec runs next isn't left in some arbitrary combination.
