@@ -33,6 +33,10 @@ const weeks = computed<ActivityDay[][]>(() => {
 })
 
 const WEEKDAY_LABELS = ['M', 'T', 'W', 'R', 'F']
+/** Full names for the (now visible, see rowheader markup below) sr-only text
+ * — a bare "R" for Thursday reads as noise once a screen reader announces
+ * the row header on entering a new row. */
+const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
 /** Row-major view over `weeks`: rowsData[weekday][week]. */
 const rowsData = computed<ActivityDay[][]>(() =>
@@ -67,11 +71,27 @@ function dotTitle(d: ActivityDay): string {
 // ── Roving tabindex ──────────────────────────────────────────────────────
 interface Coord { row: number, col: number }
 
-/** Default focus target: the most recent day (last week, its last weekday). */
+/** "2026-09-11", local time, zero-padded — matches server/api/summary/dashboard.get.ts's `fmtDay`. */
+function fmtToday(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** Default focus target: the most recent day ON OR BEFORE today. The window
+ * always includes the current (possibly incomplete) week, so its later
+ * weekdays can be future dates with nothing logged yet — walking from the
+ * last week/weekday backwards to the first `date <= today` skips those
+ * rather than defaulting onto a day that hasn't happened. */
 const mostRecentCoord = computed<Coord>(() => {
-  const col = weeks.value.length - 1
-  if (col < 0) return { row: 0, col: 0 }
-  return { row: weeks.value[col]!.length - 1, col }
+  const today = fmtToday()
+  for (let col = weeks.value.length - 1; col >= 0; col--) {
+    const week = weeks.value[col]!
+    for (let row = week.length - 1; row >= 0; row--) {
+      if (week[row] && week[row]!.date <= today) return { row, col }
+    }
+  }
+  return { row: 0, col: 0 }
 })
 
 /** Explicit focus once the user has moved it; null = "use the default". */
@@ -109,13 +129,20 @@ function setFocus(row: number, col: number) {
 }
 
 function onCellKeydown(e: KeyboardEvent, row: number, col: number) {
+  const lastRow = WEEKDAY_LABELS.length - 1
   switch (e.key) {
     case 'ArrowLeft': e.preventDefault(); setFocus(row, col - 1); break
     case 'ArrowRight': e.preventDefault(); setFocus(row, col + 1); break
     case 'ArrowUp': e.preventDefault(); setFocus(row - 1, col); break
     case 'ArrowDown': e.preventDefault(); setFocus(row + 1, col); break
-    case 'Home': e.preventDefault(); setFocus(row, 0); break
-    case 'End': e.preventDefault(); setFocus(row, (rowsData.value[row]?.length ?? 1) - 1); break
+    case 'Home':
+      e.preventDefault()
+      e.ctrlKey ? setFocus(0, 0) : setFocus(row, 0)
+      break
+    case 'End':
+      e.preventDefault()
+      e.ctrlKey ? setFocus(lastRow, (rowsData.value[lastRow]?.length ?? 1) - 1) : setFocus(row, (rowsData.value[row]?.length ?? 1) - 1)
+      break
   }
 }
 
@@ -138,7 +165,7 @@ onMounted(() => {
       ref="gridEl"
       role="grid"
       :aria-label="`Weekday activity heatmap, last ${weekCount} weeks`"
-      class="mt-2 flex flex-col gap-1.75 overflow-x-auto"
+      class="mt-1 -mx-1 flex flex-col gap-1.75 overflow-x-auto p-1"
     >
       <div
         v-for="(row, ri) in rowsData"
@@ -146,25 +173,34 @@ onMounted(() => {
         role="row"
         class="flex items-center gap-2.5"
       >
-        <span role="rowheader" class="w-3.5 shrink-0 text-[10px] leading-3.25 text-muted">{{ WEEKDAY_LABELS[ri] }}</span>
+        <span role="rowheader" class="w-3.5 shrink-0 text-[10px] leading-3.25 text-muted">
+          <span aria-hidden="true">{{ WEEKDAY_LABELS[ri] }}</span>
+          <span class="sr-only">{{ WEEKDAY_NAMES[ri] }}</span>
+        </span>
         <div class="flex flex-1 justify-between gap-1.75">
+          <!-- The focusable cell stays at full opacity so the focus-visible
+               outline (main.css) never fades — CSS `opacity` dims outlines
+               along with everything else. Intensity lives on the inner
+               aria-hidden dot instead; GSAP's stagger-in also targets it via
+               [data-dot], which is why `opacity: 0` in that animation is safe
+               (it's the same element opacity is already dotStyle'd onto). -->
           <span
             v-for="(d, ci) in row"
             :key="d.date"
             role="gridcell"
-            data-dot
             :data-row="ri"
             :data-col="ci"
             :aria-label="dotTitle(d)"
             :title="dotTitle(d)"
             :tabindex="isTabbable(ri, ci) ? 0 : -1"
             class="size-3.25 rounded-full"
-            :style="dotStyle(d)"
             @focus="movedFocus = { row: ri, col: ci }"
             @mouseenter="hovered = { row: ri, col: ci }"
             @mouseleave="hovered = null"
             @keydown="onCellKeydown($event, ri, ci)"
-          />
+          >
+            <span aria-hidden="true" data-dot class="block size-full rounded-full" :style="dotStyle(d)" />
+          </span>
         </div>
       </div>
     </div>
