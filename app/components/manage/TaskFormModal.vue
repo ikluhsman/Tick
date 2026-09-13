@@ -14,6 +14,7 @@ const open = defineModel<boolean>('open', { default: false })
 
 const catalog = useCatalogStore()
 const toast = useToast()
+const ui = useUiStore()
 
 const name = ref('')
 const projectId = ref<string | null>(null)
@@ -86,7 +87,7 @@ async function remove() {
     toast.add({
       title: `Moved “${label}” to trash`,
       icon: 'i-lucide-trash-2',
-      duration: 8000,
+      duration: ui.undoSeconds * 1000, // Rule 4: 3–30s, Settings → Profile
       actions: [{
         label: 'Undo',
         color: 'primary',

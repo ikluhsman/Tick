@@ -1,9 +1,10 @@
 // POST /api/auth/reset {token, password} — finish a password reset.
 // Valid = token exists, unused, unexpired → 410 otherwise (page tells the user
 // to request a fresh link). On success: hash + store the new password, mark the
-// token used, and void the user's other outstanding tokens. Existing sessions
-// stay valid: nuxt-auth-utils sessions are sealed cookies with no server-side
-// store, so they can't be revoked here — they simply expire on their own.
+// token used, void the user's other outstanding tokens, and bump
+// users.session_version — requireAuth compares that against the version
+// stamped into each sealed session cookie, so every existing session is
+// revoked on its next request (see server/utils/auth.ts).
 import { z } from 'zod'
 import { hashPassword } from '../../utils/password'
 import type { ResetResponseDto } from '~~/shared/types/mail'
@@ -14,7 +15,8 @@ const bodySchema = z.object({
 })
 
 export default defineEventHandler(async (event): Promise<ResetResponseDto> => {
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  // Sanitized validation: unauth-reachable, must not echo zod internals.
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   const row = await db.query.passwordResetTokens.findFirst({
@@ -31,7 +33,11 @@ export default defineEventHandler(async (event): Promise<ResetResponseDto> => {
   await db.transaction(async (tx) => {
     await tx
       .update(schema.users)
-      .set({ passwordHash: hashPassword(body.password) })
+      .set({
+        passwordHash: hashPassword(body.password),
+        // Revoke every existing session (requireAuth compares this stamp).
+        sessionVersion: sql`${schema.users.sessionVersion} + 1`
+      })
       .where(eq(schema.users.id, row.userId))
     // Mark this token used and void any other outstanding tokens for the user.
     await tx

@@ -24,6 +24,8 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   defaultRate: numeric('default_rate', { precision: 10, scale: 2, mode: 'number' }),
   theme: jsonb('theme'),
+  /** Bumped on password reset/change; sessions carrying an older value are revoked (see requireAuth). */
+  sessionVersion: integer('session_version').notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 })
 

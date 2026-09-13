@@ -15,8 +15,17 @@ const bodySchema = z.object({
 
 const EXPIRY_MS = 60 * 60 * 1000 // 1 hour
 
+// Timing floor: the known-email path does real work (token insert + mail/log)
+// the unknown-email path skips, so raw response times would reveal whether an
+// account exists. Every response is padded to at least this long. (With SMTP
+// configured a slow relay can still push the known path past the floor —
+// self-hosters who care should use an async-queueing relay.)
+const MIN_RESPONSE_MS = 200
+
 export default defineEventHandler(async (event): Promise<ForgotResponseDto> => {
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  const startedAt = Date.now()
+  // Sanitized validation: unauth-reachable, must not echo zod internals.
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   const user = await db.query.users.findFirst({
@@ -51,5 +60,9 @@ export default defineEventHandler(async (event): Promise<ForgotResponseDto> => {
     }
   }
 
+  const elapsed = Date.now() - startedAt
+  if (elapsed < MIN_RESPONSE_MS) {
+    await new Promise(resolve => setTimeout(resolve, MIN_RESPONSE_MS - elapsed))
+  }
   return { ok: true }
 })

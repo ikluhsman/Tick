@@ -167,13 +167,23 @@ async function copyLink(token: string) {
   }
 }
 
-async function revokeInvite(invite: InviteDto) {
+// Revoking kills a live signup link, so it asks first.
+const revokeTarget = ref<InviteDto | null>(null)
+const revoking = ref(false)
+
+async function confirmRevoke() {
+  const invite = revokeTarget.value
+  if (!invite || revoking.value) return
+  revoking.value = true
   try {
     await $fetch(`/api/invites/${invite.id}`, { method: 'DELETE' })
     invites.value = invites.value.filter(i => i.id !== invite.id)
+    revokeTarget.value = null
     toast.add({ title: `Invite for ${invite.email} revoked`, icon: 'i-lucide-mail-x', color: 'neutral' })
   } catch (err) {
     toast.add({ title: apiError(err), icon: 'i-lucide-circle-alert', color: 'error' })
+  } finally {
+    revoking.value = false
   }
 }
 
@@ -192,7 +202,7 @@ function apiError(err: unknown): string {
   <div class="flex flex-col gap-[22px]">
     <!-- Members table -->
     <div class="overflow-hidden rounded-lg border border-default bg-elevated shadow-sm">
-      <div class="flex items-center gap-[11px] border-b border-default px-[22px] py-3">
+      <div class="flex flex-wrap items-center gap-[11px] border-b border-default px-[22px] py-3">
         <div class="min-w-0 flex-1">
           <h3 class="text-[15px] font-medium text-highlighted">Members</h3>
           <p class="text-xs text-muted">
@@ -209,8 +219,9 @@ function apiError(err: unknown): string {
         />
       </div>
 
+      <!-- Column headers only make sense once the row is a grid (≥sm) -->
       <div
-        class="grid grid-cols-[minmax(0,1.6fr)_140px_150px_70px] items-center gap-[11px] border-b border-default px-[22px] py-2 text-[10px] tracking-[0.08em] text-muted uppercase"
+        class="hidden gap-[11px] border-b border-default px-[22px] py-2 text-[10px] tracking-[0.08em] text-muted uppercase sm:grid sm:grid-cols-[minmax(0,1.6fr)_140px_150px_70px]"
       >
         <span>Member</span>
         <span>Role</span>
@@ -218,10 +229,11 @@ function apiError(err: unknown): string {
         <span />
       </div>
 
+      <!-- Narrow screens stack the cells instead of squeezing four columns -->
       <div
         v-for="m in members"
         :key="m.userId"
-        class="grid grid-cols-[minmax(0,1.6fr)_140px_150px_70px] items-center gap-[11px] border-b border-default px-[22px] py-[11px] last:border-0"
+        class="flex flex-col gap-2 border-b border-default px-[22px] py-[11px] last:border-0 sm:grid sm:grid-cols-[minmax(0,1.6fr)_140px_150px_70px] sm:items-center sm:gap-[11px]"
       >
         <div class="flex min-w-0 items-center gap-2.5">
           <span
@@ -322,7 +334,7 @@ function apiError(err: unknown): string {
           title="Revoke invite"
           aria-label="Revoke invite"
           class="text-dimmed hover:text-primary"
-          @click="revokeInvite(i)"
+          @click="revokeTarget = i"
         />
       </div>
     </div>
@@ -413,6 +425,34 @@ function apiError(err: unknown): string {
             :disabled="!canInvite"
             :loading="inviteBusy"
             @click="createInvite"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Revoke invite confirm -->
+    <UModal
+      :open="revokeTarget != null"
+      title="Revoke invite?"
+      :ui="{ content: 'max-w-[420px]' }"
+      @update:open="(v: boolean) => { if (!v) revokeTarget = null }"
+    >
+      <template #body>
+        <p class="text-sm text-default">
+          The invite link for
+          <span class="font-medium text-highlighted">{{ revokeTarget?.email }}</span>
+          stops working immediately. You can always send a new one.
+        </p>
+      </template>
+      <template #footer>
+        <div class="ml-auto flex items-center gap-2">
+          <UButton color="neutral" variant="outline" label="Keep it" @click="revokeTarget = null" />
+          <UButton
+            color="primary"
+            variant="outline"
+            label="Revoke"
+            :loading="revoking"
+            @click="confirmRevoke"
           />
         </div>
       </template>

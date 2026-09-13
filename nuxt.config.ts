@@ -50,7 +50,11 @@ export default defineNuxtConfig({
   },
   colorMode: {
     preference: 'dark',
-    fallback: 'dark'
+    fallback: 'dark',
+    // Cookie (not localStorage) so SSR knows the saved mode and renders the
+    // right <html> class on the first byte — no dark→light flip / hydration
+    // mismatch when a non-default mode (e.g. Daylight) is saved.
+    storage: 'cookie'
   },
   fonts: {
     families: [

@@ -173,6 +173,7 @@ async function bulkMove(refType: RefType | null, refId: string | null, name: str
       title: `${n} ${n === 1 ? 'entry' : 'entries'} moved to ${name}`,
       icon: 'i-lucide-folder-input',
       color: 'neutral',
+      duration: ui.undoSeconds * 1000, // Rule 4: 3–30s, Settings → Profile
       actions: [{
         label: 'Undo',
         color: 'primary',

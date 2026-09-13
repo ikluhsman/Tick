@@ -23,6 +23,31 @@ export const useUiStore = defineStore('ui', () => {
     id: null
   })
 
+  // ── Undo window preference (Rule 4: default 8s, configurable 3–30s) ───────
+  // Every undo toast (entry delete, bulk, cascade, tag delete, bulk move)
+  // reads this. localStorage-backed; hydrated client-side after mount (same
+  // pattern as useDashboardCards) so SSR/hydration never disagree.
+  const UNDO_KEY = 'tick-undo-seconds'
+  const undoSeconds = ref(8)
+
+  const clampUndo = (n: number) => Math.min(30, Math.max(3, Math.round(n)))
+
+  /** Read saved prefs on the client after hydration (default layout calls this). */
+  function hydratePrefs() {
+    if (!import.meta.client) return
+    try {
+      const raw = localStorage.getItem(UNDO_KEY)
+      if (raw != null && Number.isFinite(Number(raw))) undoSeconds.value = clampUndo(Number(raw))
+    } catch { /* corrupt prefs — keep the default */ }
+  }
+
+  function setUndoSeconds(n: number) {
+    undoSeconds.value = clampUndo(n)
+    try {
+      localStorage.setItem(UNDO_KEY, String(undoSeconds.value))
+    } catch { /* storage unavailable — pref just won't persist */ }
+  }
+
   function openPicker(target: PickerTarget, tab: RefType = 'task') {
     pickerTarget.value = target
     pickerTab.value = tab
@@ -64,6 +89,9 @@ export const useUiStore = defineStore('ui', () => {
     manualOpen,
     editEntry,
     cascade,
+    undoSeconds,
+    hydratePrefs,
+    setUndoSeconds,
     openPicker,
     closePicker,
     openManual,

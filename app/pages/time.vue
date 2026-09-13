@@ -22,7 +22,6 @@ watch(
 )
 
 const DAY_MS = 86_400_000
-const UNDO_SECONDS = 8
 
 // SSR-hydrated list: fetch on the server (state rides the Pinia payload, so
 // hydration re-fetches nothing) and again on every later client-side visit.
@@ -105,7 +104,8 @@ const groups = computed<Group[]>(() => {
 // ── Delete flows + undo toast (Rule 4: countdown visible, Undo restores) ────
 function undoToast(message: string, result: DeleteResult) {
   const id = `undo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-  let left = UNDO_SECONDS
+  const undoSeconds = ui.undoSeconds // Rule 4: 3–30s, Settings → Profile
+  let left = undoSeconds
   const tick = setInterval(() => {
     left -= 1
     if (left <= 0) {
@@ -116,9 +116,9 @@ function undoToast(message: string, result: DeleteResult) {
     // update() hard-sets it from this patch, so omitting it would drop the
     // toast to the provider default mid-count and passing a shrinking value
     // pushes progress past 100 (ProgressRoot "Invalid prop" spam). A constant
-    // value never re-triggers reka's [open, duration] watch, so the 8s close
+    // value never re-triggers reka's [open, duration] watch, so the close
     // timer started by add() keeps running untouched.
-    toast.update(id, { description: `Undo within ${left}s`, duration: UNDO_SECONDS * 1000 })
+    toast.update(id, { description: `Undo within ${left}s`, duration: undoSeconds * 1000 })
   }, 1000)
 
   toast.add({
@@ -127,7 +127,7 @@ function undoToast(message: string, result: DeleteResult) {
     description: `Undo within ${left}s`,
     icon: 'i-lucide-trash-2',
     color: 'neutral',
-    duration: UNDO_SECONDS * 1000,
+    duration: undoSeconds * 1000,
     actions: [{
       label: 'Undo',
       color: 'primary',

@@ -4,6 +4,15 @@ import type { H3Event } from 'h3'
 
 declare module '#auth-utils' {
   interface User extends SessionUser {}
+  interface UserSession {
+    /**
+     * users.session_version at login time. requireAuth compares it against the
+     * live DB value; password reset/change bumps the DB value, revoking every
+     * session stamped with an older one. Absent on pre-feature sessions —
+     * treated as 0 (the column default), so they stay valid until a bump.
+     */
+    sessionVersion?: number
+  }
 }
 
 export async function requireAuth(event: H3Event): Promise<SessionUser> {
@@ -24,15 +33,28 @@ export async function requireAuth(event: H3Event): Promise<SessionUser> {
   if (cached) return cached
 
   const db = useDrizzle()
-  const membership = await db.query.orgMembers.findFirst({
-    columns: { role: true },
-    where: and(
-      eq(schema.orgMembers.orgId, user.orgId),
-      eq(schema.orgMembers.userId, user.id)
+  const [membership] = await db
+    .select({
+      role: schema.orgMembers.role,
+      sessionVersion: schema.users.sessionVersion
+    })
+    .from(schema.orgMembers)
+    .innerJoin(schema.users, eq(schema.users.id, schema.orgMembers.userId))
+    .where(
+      and(
+        eq(schema.orgMembers.orgId, user.orgId),
+        eq(schema.orgMembers.userId, user.id)
+      )
     )
-  })
+    .limit(1)
   if (!membership) {
     // Membership was revoked while the cookie was still valid — kill the session.
+    await clearUserSession(event)
+    throw createError({ statusCode: 401, message: 'Unauthorized' })
+  }
+  // Session revocation: a password reset/change bumps users.session_version,
+  // so any cookie stamped with an older version dies here.
+  if (membership.sessionVersion !== (session.sessionVersion ?? 0)) {
     await clearUserSession(event)
     throw createError({ statusCode: 401, message: 'Unauthorized' })
   }

@@ -15,6 +15,7 @@ const bodySchema = z.object({
 const EXPIRY_DAYS = 7
 
 export default defineEventHandler(async (event): Promise<InviteCreateDto> => {
+  demoGuard(event) // 403 in demo mode — no inviting strangers into the demo org
   const user = await requireAuth(event)
   if (user.role !== 'owner' && user.role !== 'admin') {
     throw createError({ statusCode: 403, message: 'Only owners and admins can invite members.' })

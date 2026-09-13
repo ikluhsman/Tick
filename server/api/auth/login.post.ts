@@ -12,7 +12,8 @@ const bodySchema = z.object({
 const DUMMY_HASH = hashPassword('tick-timing-equalizer')
 
 export default defineEventHandler(async (event): Promise<SessionUser> => {
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  // Sanitized validation: unauth-reachable, must not echo zod internals.
+  const body = await readSanitizedBody(event, bodySchema)
   const db = useDrizzle()
 
   const invalid = () => createError({ statusCode: 401, message: 'Invalid email or password.' })
@@ -47,6 +48,7 @@ export default defineEventHandler(async (event): Promise<SessionUser> => {
     orgName: membership.orgName,
     role: membership.role as SessionUser['role']
   }
-  await setUserSession(event, { user: sessionUser })
+  // sessionVersion: revocation stamp — see requireAuth in server/utils/auth.ts.
+  await setUserSession(event, { user: sessionUser, sessionVersion: user.sessionVersion })
   return sessionUser
 })

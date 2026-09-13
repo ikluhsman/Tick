@@ -21,7 +21,8 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 export default defineEventHandler(async (event): Promise<SessionUser> => {
-  const body = await readValidatedBody(event, b => bodySchema.parse(b))
+  // Sanitized validation: unauth-reachable, must not echo zod internals.
+  const body = await readSanitizedBody(event, bodySchema)
 
   // NUXT_PUBLIC_REGISTRATION: 'open' (default) | 'invite' | 'closed'.
   const mode = useRuntimeConfig(event).public.registration || 'open'
@@ -119,6 +120,7 @@ export default defineEventHandler(async (event): Promise<SessionUser> => {
     throw err
   }
 
-  await setUserSession(event, { user: sessionUser })
+  // sessionVersion 0 = the users.session_version column default on a fresh row.
+  await setUserSession(event, { user: sessionUser, sessionVersion: 0 })
   return sessionUser
 })

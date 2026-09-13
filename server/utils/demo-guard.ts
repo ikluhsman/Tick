@@ -1,6 +1,9 @@
 // demoGuard(event) — 403s destructive account/org mutations while the
 // instance runs in demo mode (NUXT_DEMO_MODE=true). Dropped as a one-liner
-// into: PATCH /api/me/password, PATCH /api/org, DELETE /api/org/members/:id.
+// into: PATCH /api/me/password, PATCH /api/org, DELETE /api/org/members/:id,
+// POST /api/import/commit (preview stays open), POST /api/trash/purge
+// (hard deletes), POST /api/invites + DELETE /api/invites/:id.
+// Soft deletes stay allowed — the nightly demo reset restores them.
 import type { H3Event } from 'h3'
 
 export function demoGuard(event: H3Event): void {

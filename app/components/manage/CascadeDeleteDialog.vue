@@ -141,7 +141,7 @@ async function confirm() {
       title: `Deleted ${t.name}`,
       description: 'In the trash for 30 days — restore from Settings → Trash.',
       icon: 'i-lucide-trash-2',
-      duration: 8000,
+      duration: ui.undoSeconds * 1000, // Rule 4: 3–30s, Settings → Profile
       actions: [{
         label: 'Undo',
         color: 'primary',

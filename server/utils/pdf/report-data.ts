@@ -37,6 +37,29 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const fmtDay = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const round2 = (n: number) => Math.round(n * 100) / 100
 
+/**
+ * Money rounding at the DTO boundary: report amounts are whole dollars, and a
+ * row set is rounded by largest remainder so the rows add up to the rounded
+ * grand total (no "$88 + $88 = $175" mismatch between a table and its Total).
+ * Every consumer — the page, the PDF, the stat cards — then agrees, because
+ * they all format the same integers.
+ */
+function apportionDollars(values: number[]): number[] {
+  const target = Math.round(values.reduce((a, v) => a + v, 0))
+  const floors = values.map(v => Math.floor(v))
+  let rest = target - floors.reduce((a, v) => a + v, 0)
+  // Hand the leftover dollars to the largest fractional parts, biggest first.
+  const order = values
+    .map((v, i) => ({ i, frac: v - Math.floor(v) }))
+    .sort((a, b) => b.frac - a.frac)
+  for (const { i } of order) {
+    if (rest <= 0) break
+    floors[i]! += 1
+    rest -= 1
+  }
+  return floors
+}
+
 interface GroupRow {
   day: string
   key: string
@@ -198,11 +221,16 @@ export async function buildReportSummary(
     g.amount += r.amount
   }
   const sorted = [...byKey.values()].sort((a, b) => b.sec - a.sec)
+  // Whole-dollar amounts that add up to the rounded group total (see
+  // apportionDollars). Tag grouping fans an entry out per tag, so its group
+  // sum legitimately exceeds ReportTotals.amount — it is apportioned against
+  // its own sum, which is what the table's rows show.
+  const groupAmounts = apportionDollars(sorted.map(g => g.amount))
   const groups: ReportGroup[] = sorted.map((g, i) => ({
     ...g,
     sec: Math.round(g.sec),
     billableSec: Math.round(g.billableSec),
-    amount: round2(g.amount),
+    amount: groupAmounts[i]!,
     color: SERIES[Math.min(i, SERIES.length - 1)]!,
     sharePct: t.sec > 0 ? Math.round((g.sec / t.sec) * 100) : 0
   }))
@@ -243,13 +271,17 @@ export async function buildReportSummary(
   }
 
   const billableSec = Math.round(t.billable_sec)
+  const totalAmount = Math.round(t.amount)
   const totals: ReportTotals = {
     entries: t.entries,
     sec: Math.round(t.sec),
     billableSec,
-    amount: round2(t.amount),
+    // Whole dollars, equal to the sum of the rounded rows (non-tag groupings)
+    // and to the sum of the rounded per-day amounts.
+    amount: totalAmount,
     workedDays: t.worked_days,
-    avgRate: billableSec > 0 ? round2(t.amount / (billableSec / 3600)) : null
+    // avgRate derives from the displayed total so "avg $/h" can't contradict it
+    avgRate: billableSec > 0 ? round2(totalAmount / (billableSec / 3600)) : null
   }
 
   return { days, groups, totals }
@@ -301,8 +333,12 @@ export async function buildReportDayTotals(
       date,
       sec: Math.round(r?.sec ?? 0),
       billableSec: Math.round(r?.billable_sec ?? 0),
-      amount: round2(r?.amount ?? 0)
+      amount: r?.amount ?? 0
     })
   }
+  // Whole dollars adding up to the same rounded total the PDF's Total row
+  // prints (ReportTotals.amount) — the day table can't disagree with itself.
+  const dayAmounts = apportionDollars(out.map(o => o.amount))
+  out.forEach((o, i) => (o.amount = dayAmounts[i]!))
   return out
 }

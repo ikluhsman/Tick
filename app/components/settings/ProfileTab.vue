@@ -5,8 +5,25 @@
 
 const session = useUserSession()
 const toast = useToast()
+const ui = useUiStore()
 
 const me = computed(() => session.user.value as SessionUser | null)
+
+// ── Undo window (Rule 4: default 8s, 3–30s) ────────────────────────────────
+// localStorage-backed preference on the ui store; every undo toast reads it.
+onMounted(() => ui.hydratePrefs())
+
+const undoDraft = ref(ui.undoSeconds)
+watch(() => ui.undoSeconds, v => (undoDraft.value = v))
+
+function commitUndo(v: number | undefined) {
+  if (v == null || !Number.isFinite(v)) {
+    undoDraft.value = ui.undoSeconds
+    return
+  }
+  ui.setUndoSeconds(v)
+  undoDraft.value = ui.undoSeconds
+}
 
 // ── Profile form ───────────────────────────────────────────────────────────
 const name = ref(me.value?.name ?? '')
@@ -154,6 +171,42 @@ function apiError(err: unknown): string {
           @click="saveProfile"
         />
       </div>
+    </section>
+
+    <!-- Preferences card -->
+    <section class="flex flex-col gap-4 rounded-lg border border-default bg-elevated p-[22px] shadow-sm">
+      <div>
+        <h3 class="text-[15px] font-medium text-highlighted">Preferences</h3>
+        <p class="text-xs text-muted">Stored in this browser.</p>
+      </div>
+
+      <UFormField
+        label="Undo window"
+        help="How long a delete stays undoable in the toast — 3 to 30 seconds."
+      >
+        <div class="flex items-center gap-4">
+          <USlider
+            :model-value="undoDraft"
+            :min="3"
+            :max="30"
+            :step="1"
+            class="min-w-0 flex-1"
+            aria-label="Undo window in seconds"
+            @update:model-value="(v: number | number[] | undefined) => commitUndo(Array.isArray(v) ? v[0] : v)"
+          />
+          <UInputNumber
+            :model-value="undoDraft"
+            :min="3"
+            :max="30"
+            :step="1"
+            class="w-[110px]"
+            :ui="{ base: 'tnum' }"
+            aria-label="Undo window in seconds"
+            @update:model-value="(v: number) => commitUndo(v)"
+          />
+          <span class="w-6 text-xs text-muted">sec</span>
+        </div>
+      </UFormField>
     </section>
 
     <!-- Password card -->

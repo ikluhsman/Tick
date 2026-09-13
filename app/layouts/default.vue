@@ -8,10 +8,28 @@
 // (timer-bar counts + picker data). Pages own their content padding/max-width.
 const timer = useTimerStore()
 const catalog = useCatalogStore()
+const ui = useUiStore()
+
+// Refocusing the tab (visibilitychange → visible, window focus) re-hydrates
+// the timer so a timer started elsewhere (another tab/device) appears without
+// a reload; hydrateIfStale debounces to at most once per 5s.
+function onRefocus() {
+  if (document.visibilityState !== 'visible') return
+  timer.hydrateIfStale().catch(() => {})
+}
 
 onMounted(() => {
   timer.hydrate()
+  timer.hydrateDraft()
   catalog.fetchAll().catch(() => {})
+  ui.hydratePrefs()
+  window.addEventListener('focus', onRefocus)
+  document.addEventListener('visibilitychange', onRefocus)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('focus', onRefocus)
+  document.removeEventListener('visibilitychange', onRefocus)
 })
 </script>
 

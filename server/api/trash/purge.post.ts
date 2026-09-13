@@ -20,6 +20,7 @@ const bodySchema = z.object({
 
 export default defineEventHandler(
   async (event): Promise<{ purged: Record<TrashEntity, number> }> => {
+    demoGuard(event) // 403 in demo mode — hard deletes are unrecoverable
     const user = await requireAuth(event)
     const body = await readValidatedBody(event, b => bodySchema.parse(b))
     const db = useDrizzle()

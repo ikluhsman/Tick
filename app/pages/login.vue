@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { AuthFormField, FormSubmitEvent } from '@nuxt/ui'
+import type { ThemeSettings } from '~/stores/theme'
 
 definePageMeta({ layout: 'auth' })
 useHead({ title: 'Sign in · Tick' })
@@ -39,6 +40,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   try {
     await $fetch('/api/auth/login', { method: 'POST', body: event.data })
     await refreshSession()
+    // Apply the account's saved theme (users.theme) so another device picks it
+    // up on login; save() re-persists it locally (and writes the color-mode
+    // cookie, so later SSR loads render the right mode on the first byte).
+    try {
+      const me = await $fetch<SessionUser & { theme: Record<string, unknown> | null }>('/api/me')
+      if (me.theme) {
+        const theme = useThemeStore()
+        theme.load(me.theme as Partial<ThemeSettings>)
+        theme.save()
+      }
+    } catch { /* theme apply is best-effort; login already succeeded */ }
     await navigateTo('/')
   } catch (err) {
     const e = err as { data?: { message?: string } }

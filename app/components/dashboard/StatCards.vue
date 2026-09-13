@@ -33,8 +33,10 @@ const stats = computed(() => {
     },
     {
       label: 'Unbilled',
+      // The summary's unbilled query is all-time (not this week like the cards
+      // beside it), so the meta says so rather than implying a week window.
       value: dashMoney(s.unbilledAmount),
-      meta: `across ${s.unbilledClients} ${s.unbilledClients === 1 ? 'client' : 'clients'}`
+      meta: `across ${s.unbilledClients} ${s.unbilledClients === 1 ? 'client' : 'clients'} · all time`
     }
   ]
 })

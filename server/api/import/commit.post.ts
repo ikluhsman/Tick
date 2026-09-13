@@ -23,6 +23,7 @@ const bodySchema = z.object({
 const CHUNK = 500
 
 export default defineEventHandler(async (event): Promise<ImportCommitResult> => {
+  demoGuard(event) // 403 in demo mode (preview stays open; committing writes rows)
   const user = await requireAuth(event)
   const body = await readValidatedBody(event, b => bodySchema.parse(b))
   if (body.csv.length > IMPORT_MAX_BYTES) {

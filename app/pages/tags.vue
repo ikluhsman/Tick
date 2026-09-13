@@ -5,6 +5,7 @@
 
 const catalog = useCatalogStore()
 const toast = useToast()
+const ui = useUiStore()
 
 useHead({ title: 'Tags · Tick' })
 
@@ -21,12 +22,16 @@ const adding = ref(false)
 
 async function addTag() {
   const clean = newTag.value.trim().replace(/^#/, '').toLowerCase()
-  newTag.value = ''
   if (!clean || adding.value) return
-  if (catalog.tags.some(t => t.name === clean)) return // dedupe
+  // Duplicate (case-insensitive — tags are stored lowercase): say so, keep the input
+  if (catalog.tags.some(t => t.name.toLowerCase() === clean)) {
+    toast.add({ title: `Tag #${clean} already exists`, icon: 'i-lucide-tag', color: 'neutral' })
+    return
+  }
   adding.value = true
   try {
     await catalog.createTag(clean)
+    newTag.value = ''
   } finally {
     adding.value = false
   }
@@ -57,7 +62,7 @@ async function removeTag(t: TagDto) {
       ? `Removed #${t.name} from ${t.entryCount} ${t.entryCount === 1 ? 'entry' : 'entries'}`
       : `Deleted #${t.name}`,
     icon: 'i-lucide-tag',
-    duration: 8000,
+    duration: ui.undoSeconds * 1000, // Rule 4: 3–30s, Settings → Profile
     actions: [{
       label: 'Undo',
       color: 'primary',

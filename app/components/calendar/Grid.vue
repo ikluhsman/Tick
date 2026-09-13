@@ -23,6 +23,8 @@ const LONG_PRESS_MS = 300
 const TOUCH_SLOP_PX = 8
 const TOUCH_DEFAULT_MIN = 30
 const MAX_BODY_PX = 12 * HOUR_PX + 1
+/** Breathing room above/below the grid so the edge hour labels aren't clipped. */
+const GUTTER_PAD = 8
 
 const emit = defineEmits<{ create: [payload: { day: number, startMin: number, endMin: number }] }>()
 
@@ -595,8 +597,15 @@ function blockEdge(billable: boolean): string {
       </div>
     </div>
 
-    <!-- Body (scrolls when the hour window outgrows 12h) -->
-    <div ref="scrollEl" class="overflow-y-auto" :style="{ maxHeight: MAX_BODY_PX + 'px' }">
+    <!-- Body (scrolls when the hour window outgrows 12h).
+         GUTTER_PAD block padding keeps the first/last hour labels (centred on
+         their rule, so half of each sits outside the grid box) from being
+         clipped by this scroller / the card's overflow-hidden. -->
+    <div
+      ref="scrollEl"
+      class="overflow-y-auto"
+      :style="{ maxHeight: MAX_BODY_PX + GUTTER_PAD * 2 + 'px', paddingBlock: GUTTER_PAD + 'px' }"
+    >
       <div
         ref="gridEl"
         class="relative grid select-none"

@@ -21,10 +21,18 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, message: 'Current password is incorrect.' })
   }
 
-  await db
+  const [updated] = await db
     .update(schema.users)
-    .set({ passwordHash: hashPassword(body.newPassword) })
+    .set({
+      passwordHash: hashPassword(body.newPassword),
+      // Revoke every other session (requireAuth compares this stamp)…
+      sessionVersion: sql`${schema.users.sessionVersion} + 1`
+    })
     .where(eq(schema.users.id, user.id))
+    .returning({ sessionVersion: schema.users.sessionVersion })
+
+  // …but keep THIS session alive by re-stamping it with the new version.
+  await setUserSession(event, { sessionVersion: updated!.sessionVersion })
 
   return { ok: true }
 })

@@ -67,6 +67,9 @@ For real deployments put nginx or Caddy in front of the app for TLS, compression
 | `NUXT_SESSION_PASSWORD` | yes | — | Session cookie encryption secret, 32+ chars. Generate: `openssl rand -base64 36`. Changing it logs everyone out |
 | `NUXT_AUTO_MIGRATE` | no | `true` | Apply pending SQL migrations on production startup; `false` to run them out-of-band (`npx drizzle-kit migrate`) |
 | `NUXT_MIGRATIONS_DIR` | no | `<cwd>/server/db/migrations` | Override the migrations folder location |
+| `NUXT_AUTH_RATE_LIMIT` | no | `10` | Max POSTs per IP per minute to each auth endpoint (login/register/forgot/reset); `0` disables it |
+| `NUXT_DEMO_MODE` | no | `false` | Public-demo hardening: reseeds the demo org every 24h and returns `403` for destructive operations (password change, org rename, member removal, invite create/revoke, import commit, permanent trash deletion) |
+| `NUXT_PUBLIC_DEMO_MODE` | no | `false` | Shows the "Demo — data resets nightly" banner in the app shell |
 | `NITRO_HOST` | no | `0.0.0.0` (image) | Bind address of the production server |
 | `NITRO_PORT` | no | `3000` | Port of the production server |
 | `POSTGRES_PASSWORD` | no | `tick` | docker-compose only: password for the bundled Postgres |

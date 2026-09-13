@@ -15,10 +15,52 @@ export const useTimerStore = defineStore('timer', () => {
   const timer = ref<TimerState | null>(null)
   const elapsedSec = ref(0)
 
-  // Idle draft — what the timer bar shows before start; consumed by start()
+  // Idle draft — what the timer bar shows before start; consumed by start().
+  // Persisted to localStorage so a typed name / attached chip survives a
+  // reload; cleared once the draft is consumed (start) or reset (stop).
   const draftName = ref('')
   const draftRef = ref<ChainRef | null>(null)
   const draftBillable = ref(true)
+
+  const DRAFT_KEY = 'tick-timer-draft'
+  let draftWatching = false
+
+  /**
+   * Restore the saved idle draft and start persisting changes. Called from the
+   * default layout's onMounted — i.e. after hydration, so the SSR'd empty
+   * timer bar and the first client render still agree (no mismatch).
+   */
+  function hydrateDraft() {
+    if (!import.meta.client || draftWatching) return
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (raw) {
+        const d = JSON.parse(raw) as { name?: string, ref?: ChainRef | null, billable?: boolean }
+        if (typeof d.name === 'string') draftName.value = d.name
+        if (d.ref && typeof d.ref === 'object' && d.ref.refType && d.ref.refId) draftRef.value = d.ref
+        if (typeof d.billable === 'boolean') draftBillable.value = d.billable
+      }
+    } catch { /* corrupt draft — start clean */ }
+
+    draftWatching = true
+    watch([draftName, draftRef, draftBillable], ([name, r, billable]) => {
+      try {
+        if (!name && !r && billable) localStorage.removeItem(DRAFT_KEY)
+        else localStorage.setItem(DRAFT_KEY, JSON.stringify({ name, ref: r, billable }))
+      } catch { /* storage unavailable */ }
+    })
+  }
+
+  function clearDraft() {
+    draftName.value = ''
+    draftRef.value = null
+    draftBillable.value = true
+    if (import.meta.client) {
+      try {
+        localStorage.removeItem(DRAFT_KEY)
+      } catch { /* storage unavailable */ }
+    }
+  }
 
   const running = computed(() => !!timer.value)
 
@@ -70,7 +112,10 @@ export const useTimerStore = defineStore('timer', () => {
   }
 
   /** GET /api/timer — call once on app mount (default layout). Survives reloads. */
+  let lastHydrateAt = 0
+
   async function hydrate() {
+    lastHydrateAt = Date.now()
     try {
       timer.value = await $fetch<TimerState | null>('/api/timer') ?? null
     } catch {
@@ -81,6 +126,12 @@ export const useTimerStore = defineStore('timer', () => {
       stopTicking()
       elapsedSec.value = 0
     }
+  }
+
+  /** Re-hydrate on tab refocus (visibilitychange/focus), at most every `minMs`. */
+  async function hydrateIfStale(minMs = 5000) {
+    if (Date.now() - lastHydrateAt < minMs) return
+    await hydrate()
   }
 
   /** POST /api/timer/start — falls back to the idle draft for omitted fields. */
@@ -97,6 +148,7 @@ export const useTimerStore = defineStore('timer', () => {
     }
     timer.value = await $fetch<TimerState>('/api/timer/start', { method: 'POST', body })
     startTicking()
+    clearDraft() // consumed — the running timer is now the source of truth
     return timer.value
   }
 
@@ -107,9 +159,7 @@ export const useTimerStore = defineStore('timer', () => {
     timer.value = null
     stopTicking()
     elapsedSec.value = 0
-    draftName.value = ''
-    draftRef.value = null
-    draftBillable.value = true
+    clearDraft()
     return dto ?? null
   }
 
@@ -199,6 +249,8 @@ export const useTimerStore = defineStore('timer', () => {
     billable,
     resolvedRate,
     hydrate,
+    hydrateIfStale,
+    hydrateDraft,
     start,
     stop,
     update,
