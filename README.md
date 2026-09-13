@@ -38,7 +38,7 @@ docker run -d --name tick -p 3000:3000 \
   ghcr.io/ticktimer/tick:latest
 ```
 
-Images are published to GHCR by CI on pushes to `main` (`latest`, `sha-…`) and on `v*` tags (semver). The package is public, so `docker pull ghcr.io/ticktimer/tick:latest` works without `docker login`.
+Multi-arch images (`linux/amd64`, `linux/arm64`) are published to GHCR by CI on pushes to `main` (`latest`, `sha-…`) and on `v*` tags (semver). The package is public, so `docker pull ghcr.io/ticktimer/tick:latest` works without `docker login`.
 
 ## Native (Node + PM2)
 

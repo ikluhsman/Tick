@@ -1,13 +1,18 @@
 # syntax=docker/dockerfile:1
 
+# deps + build run on the builder's own platform even for a multi-arch image:
+# .output is plain JavaScript (no native .node addons), so one native build
+# serves every target and only the small runner stage runs per architecture.
+# If a native dependency is ever added, drop --platform=$BUILDPLATFORM here.
+
 # ---- deps: install node_modules (scripts skipped; `nuxt build` prepares itself) ----
-FROM node:22-alpine AS deps
+FROM --platform=$BUILDPLATFORM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 
 # ---- build: compile the Nuxt app to .output ----
-FROM node:22-alpine AS build
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

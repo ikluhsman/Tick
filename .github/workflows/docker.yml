@@ -31,9 +31,16 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Only the Dockerfile's runner stage executes under emulation (apk add +
+      # adduser); deps and build run natively via --platform=$BUILDPLATFORM.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -58,9 +65,11 @@ jobs:
             type=sha
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -72,3 +81,51 @@ jobs:
       # something this workflow controls — if it is ever flipped to private,
       # the pull instructions in README.md and docs/content/2.installation.md
       # stop being true.
+
+  # The arm64 variant is built but never exercised by the test jobs (they run
+  # on amd64), so boot the exact pushed digest on a native ARM runner.
+  smoke-arm64:
+    needs: build-and-push
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Boot the arm64 image against Postgres
+        env:
+          DIGEST: ${{ needs.build-and-push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}@${DIGEST}"
+          docker pull --platform linux/arm64 "$IMAGE"
+          test "$(docker image inspect --format '{{.Architecture}}' "$IMAGE")" = arm64
+
+          docker network create smoke
+          docker run -d --name db --network smoke \
+            -e POSTGRES_USER=tick -e POSTGRES_PASSWORD=tick -e POSTGRES_DB=tick \
+            postgres:17-alpine
+          # TCP check: during initdb Postgres listens on the socket only
+          for i in $(seq 60); do docker exec db pg_isready -h 127.0.0.1 -U tick -d tick && break; sleep 1; done
+
+          docker run -d --name app --network smoke -p 3000:3000 \
+            -e NUXT_DATABASE_URL=postgresql://tick:tick@db:5432/tick \
+            -e NUXT_SESSION_PASSWORD=smoke-test-session-password-not-a-secret \
+            "$IMAGE"
+          test "$(docker exec app uname -m)" = aarch64
+
+          for i in $(seq 60); do
+            if curl -fsS -o /dev/null http://localhost:3000/login; then
+              echo "arm64 image serves /login"; docker logs app | tail -5; exit 0
+            fi
+            sleep 2
+          done
+          docker logs app
+          exit 1
