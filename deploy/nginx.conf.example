@@ -4,7 +4,7 @@
 # and adjust server_name + the TLS cert paths, then `nginx -t && systemctl reload nginx`.
 #
 # Assumes Tick listens on 127.0.0.1:3000 (Docker `-p 127.0.0.1:3000:3000`,
-# compose `TICK_PORT=3000`, or the native server's default NITRO_PORT).
+# compose `TICK_IP=127.0.0.1` + `TICK_PORT=3000`, or the native server's default NITRO_PORT).
 
 upstream tick {
     server 127.0.0.1:3000;

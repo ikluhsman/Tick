@@ -35,10 +35,10 @@ Open http://localhost:3000 and register your first account.
 docker run -d --name tick -p 3000:3000 \
   -e NUXT_DATABASE_URL='postgresql://tick:password@db-host:5432/tick' \
   -e NUXT_SESSION_PASSWORD="$(openssl rand -base64 36)" \
-  ghcr.io/ikluhsman/tick:latest
+  ghcr.io/ticktimer/tick:latest
 ```
 
-Images are published to GHCR by CI on pushes to `main` (`latest`, `sha-…`) and on `v*` tags (semver).
+Images are published to GHCR by CI on pushes to `main` (`latest`, `sha-…`) and on `v*` tags (semver). The package is public, so `docker pull ghcr.io/ticktimer/tick:latest` works without `docker login`.
 
 ## Native (Node + PM2)
 
@@ -74,6 +74,7 @@ For real deployments put nginx or Caddy in front of the app for TLS, compression
 | `NITRO_PORT` | no | `3000` | Port of the production server |
 | `POSTGRES_PASSWORD` | no | `tick` | docker-compose only: password for the bundled Postgres |
 | `TICK_PORT` | no | `3000` | docker-compose only: host port the app is published on |
+| `TICK_IP` | no | `0.0.0.0` | docker-compose only: host IP the published port binds to — `127.0.0.1` behind a same-host reverse proxy (Docker bypasses ufw/firewalld) |
 
 ## Development
 

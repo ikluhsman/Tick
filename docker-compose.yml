@@ -3,11 +3,13 @@
 # chars — generate with `openssl rand -base64 36`). Compose reads .env automatically.
 services:
   app:
-    image: ghcr.io/ikluhsman/tick:latest # or uncomment `build: .` for a local build
+    image: ghcr.io/ticktimer/tick:latest # or uncomment `build: .` for a local build
     # build: .
     restart: unless-stopped
     ports:
-      - '${TICK_PORT:-3000}:3000'
+      # TICK_IP=127.0.0.1 when a reverse proxy runs on the same host. Docker writes
+      # published ports straight into iptables, so ufw/firewalld do NOT block them.
+      - '${TICK_IP:-0.0.0.0}:${TICK_PORT:-3000}:3000'
     environment:
       NUXT_DATABASE_URL: postgresql://tick:${POSTGRES_PASSWORD:-tick}@db:5432/tick
       NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:?set NUXT_SESSION_PASSWORD in .env (32+ chars, e.g. `openssl rand -base64 36`)}
@@ -31,9 +33,9 @@ services:
       POSTGRES_DB: tick
     volumes:
       - tick-pgdata:/var/lib/postgresql/data
-    # Uncomment to reach Postgres from the host:
+    # Uncomment to reach Postgres from the host (localhost only):
     # ports:
-    #   - '5432:5432'
+    #   - '127.0.0.1:5432:5432'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U tick -d tick']
       interval: 5s
