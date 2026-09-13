@@ -44,6 +44,7 @@ export function makeTask(over: Partial<CtxTask> = {}): CtxTask {
     id: makeId('task'),
     name: 'Hero layout pass',
     projectId: null,
+    rate: null,
     estimateMinutes: null,
     done: false,
     ...over

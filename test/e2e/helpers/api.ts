@@ -108,3 +108,14 @@ export async function findProject(request: APIRequestContext, name: string): Pro
   if (!hit) throw new Error(`seed project "${name}" not found`)
   return hit
 }
+
+/** Deletes every task whose name matches — cleanup for specs that create tasks through the UI. */
+export async function deleteTasksNamed(request: APIRequestContext, ...names: string[]): Promise<void> {
+  const wanted = new Set(names)
+  const res = await request.get('/api/tasks')
+  if (!res.ok()) return
+  const tasks = (await res.json()) as { id: string, name: string }[]
+  for (const t of tasks) {
+    if (wanted.has(t.name)) await request.delete(`/api/tasks/${t.id}`)
+  }
+}
