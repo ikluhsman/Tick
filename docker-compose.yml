@@ -14,6 +14,19 @@ services:
       NUXT_DATABASE_URL: postgresql://tick:${POSTGRES_PASSWORD:-tick}@db:5432/tick
       NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD:?set NUXT_SESSION_PASSWORD in .env (32+ chars, e.g. `openssl rand -base64 36`)}
       NUXT_AUTO_MIGRATE: ${NUXT_AUTO_MIGRATE:-true}
+      # open | invite | closed — switch to invite/closed once your own account exists
+      NUXT_PUBLIC_REGISTRATION: ${NUXT_PUBLIC_REGISTRATION:-open}
+      # blank = 10 per IP per minute; 0 disables (rate-limit at the proxy instead)
+      NUXT_AUTH_RATE_LIMIT: ${NUXT_AUTH_RATE_LIMIT:-}
+      # Mail stays off until both NUXT_SMTP_HOST and NUXT_MAIL_FROM are set
+      NUXT_SMTP_HOST: ${NUXT_SMTP_HOST:-}
+      NUXT_SMTP_PORT: ${NUXT_SMTP_PORT:-}
+      NUXT_SMTP_USER: ${NUXT_SMTP_USER:-}
+      NUXT_SMTP_PASS: ${NUXT_SMTP_PASS:-}
+      NUXT_SMTP_SECURE: ${NUXT_SMTP_SECURE:-}
+      NUXT_MAIL_FROM: ${NUXT_MAIL_FROM:-}
+      # NUXT_DEMO_MODE is deliberately not passed through: it wipes and reseeds
+      # the demo org. Add it here by hand only on a throwaway demo instance.
     depends_on:
       db:
         condition: service_healthy
