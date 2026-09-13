@@ -10,6 +10,18 @@
   --ui-radius: 0.5rem;
 }
 
+/* Light mode, one palette step darker than Nuxt UI's defaults so text and
+   primary clear WCAG AA (4.5:1) on white and on elevated cards — the stock
+   primary-500 on white is ~2.7:1. Unlayered, so it beats Nuxt UI's
+   `@layer theme` tokens; `:not(.dark)` leaves dark mode on the stock values. */
+:root:not(.dark) {
+  --ui-primary: var(--ui-color-primary-700);
+  --ui-text-dimmed: var(--ui-color-neutral-500);
+  --ui-text-muted: var(--ui-color-neutral-600);
+  --ui-text-toned: var(--ui-color-neutral-700);
+  --ui-text: var(--ui-color-neutral-800);
+}
+
 /* Keyboard focus indicator for hand-rolled controls (calendar blocks, entry
    names, preset/font cards, swatches, nav links…). Zero-specificity base rule:
    Nuxt UI components keep their own focus-visible utilities, which win. */
