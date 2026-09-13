@@ -4,6 +4,14 @@
 // change — mini timer bar, the three button variants, an input, three
 // billable/non-billable bars and the primary 100–900 ramp, plus the
 // generated app.config.ts snippet.
+//
+// a11y (issue #15 swing): `text-dimmed` measures under 4.5:1 against this
+// card's `bg-elevated` (and, in Nocturne, even against the mini timer bar's
+// `bg-default`) — the light-mode-only override in main.css bumps the other
+// text tiers but not dimmed. Everything here uses `text-muted` instead; the
+// "billable" badge moved from `variant="subtle"` (translucent tint, marginal
+// on an elevated surface) to `variant="outline"` (solid `--ui-primary` text,
+// already ≥4.5:1 on `--ui-bg-elevated` in both presets).
 const theme = useThemeStore()
 
 const bars = [
@@ -21,14 +29,14 @@ const ramp = [100, 200, 300, 400, 500, 600, 700, 800, 900]
     <div class="flex flex-col gap-4 rounded-lg border border-default bg-elevated p-4 shadow-sm">
       <div class="flex items-center gap-2">
         <div class="flex-1 text-[15px] font-medium text-highlighted">Sample</div>
-        <UBadge color="primary" variant="subtle" size="sm">billable</UBadge>
+        <UBadge color="primary" variant="outline" size="sm">billable</UBadge>
         <UBadge color="neutral" variant="subtle" size="sm">#design</UBadge>
       </div>
 
       <!-- Mini timer bar -->
       <div class="flex items-center gap-2 rounded-lg bg-default py-1.5 pr-1.5 pl-3 shadow-sm">
-        <span class="flex-1 truncate text-sm text-dimmed">What are you working on?</span>
-        <span class="tnum text-lg font-medium text-dimmed">00:00:00</span>
+        <span class="flex-1 truncate text-sm text-muted">What are you working on?</span>
+        <span class="tnum text-lg font-medium text-muted">00:00:00</span>
         <UButton
           color="primary"
           variant="outline"
@@ -56,7 +64,7 @@ const ramp = [100, 200, 300, 400, 500, 600, 700, 800, 900]
           :key="d.label"
           class="grid grid-cols-[30px_minmax(0,1fr)_40px] items-center gap-2.5 text-xs"
         >
-          <span class="text-dimmed">{{ d.label }}</span>
+          <span class="text-muted">{{ d.label }}</span>
           <div class="flex h-2 gap-[2px] overflow-hidden rounded-full bg-accented">
             <span
               class="h-full rounded-full bg-primary"
@@ -85,7 +93,7 @@ const ramp = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 
     <!-- Generated app.config.ts -->
     <div class="flex flex-col gap-1.5 rounded-lg border border-default bg-elevated px-4 py-3 shadow-sm">
-      <div class="text-[10px] font-medium uppercase tracking-[0.1em] text-dimmed">app.config.ts</div>
+      <div class="text-[10px] font-medium uppercase tracking-[0.1em] text-muted">app.config.ts</div>
       <pre class="overflow-x-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-toned">{{ theme.configText }}</pre>
     </div>
   </div>

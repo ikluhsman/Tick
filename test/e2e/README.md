@@ -81,6 +81,28 @@ Both are test-environment concessions, and nothing under test asserts on them:
 | `desktop` | 1440×900 | everything except `@mobile` |
 | `mobile` | 390×844, `hasTouch` | only tests tagged `@mobile` (`mobile.spec.ts`) |
 
+## Accessibility (`a11y.spec.ts`)
+
+`@axe-core/playwright` scans every main page (logged out: `/login`, `/register`;
+logged in: dashboard, Time, Calendar, Reports, Projects, Clients, Tags,
+Settings) plus the picker and manual-entry dialogs, asserting zero
+`wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` violations. Logged-in pages run once
+per shipped color-mode default — **Nocturne** (dark) and **Daylight**
+(light) — switched via the real Settings → Appearance preset buttons (not a
+hand-rolled cookie), and the file resets the account back to Nocturne in an
+`afterAll` once it's done: the preset persists server-side (`users.theme`),
+so leaving it dirty would carry into the *next* run's one-time login. A small
+`@mobile`-tagged subset (`/`, `/time` incl. Select mode on, `/clients`, the
+picker bottom sheet) also runs in the `mobile` project.
+
+**Reading a failure**: the assertion message lists every violation with its
+axe rule id, impact (`minor`/`moderate`/`serious`/`critical`), the rule's
+`help` text, and each failing node's target CSS selector — enough to find the
+element without re-running anything. There are no disabled rules; a violation
+that turns out to live inside a Nuxt UI internal you can't fix would get a
+`.exclude()` on that exact selector with a comment explaining why (none exist
+as of this writing — check `a11y.spec.ts` itself for the current list).
+
 ## Selector conventions
 
 Roles, labels and headings first (`helpers/dom.ts`). Two notes:

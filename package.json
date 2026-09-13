@@ -33,6 +33,7 @@
     "zod": "^4.6.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@iconify-json/lucide": "^1.2.131",
     "@nuxt/test-utils": "^4.3.2",
     "@playwright/test": "^1.63.0",
