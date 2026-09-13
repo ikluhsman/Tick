@@ -8,6 +8,8 @@
 // the <html> class from that cookie before first paint, so a saved light theme
 // never flashes dark.
 
+import { ALL_PRESETS, DEFAULT_PRESET } from '~/utils/theme-presets'
+
 export interface ThemeSettings {
   preset: string
   primary: string
@@ -32,22 +34,7 @@ export const THEME_PRIMARIES = ['red', 'orange', 'amber', 'yellow', 'lime', 'gre
 // Classic five + the four tinted neutrals Tailwind v4 added (OKLCH-tuned undertones).
 export const THEME_NEUTRALS = ['slate', 'zinc', 'stone', 'gray', 'neutral', 'mauve', 'taupe', 'mist', 'olive'] as const
 
-const NOCTURNE: Omit<ThemeSettings, 'preset'> = {
-  primary: 'violet',
-  neutral: 'zinc',
-  radius: 4,
-  font: 'Inter',
-  mode: 'dark',
-  starfield: true
-}
-
-export const THEME_PRESETS: { name: string, sub: string, settings: Omit<ThemeSettings, 'preset'> }[] = [
-  { name: 'Nocturne', sub: 'the default', settings: NOCTURNE },
-  { name: 'Daylight', sub: 'light · sky · zinc', settings: { primary: 'sky', neutral: 'zinc', radius: 12, font: 'DM Sans', mode: 'light', starfield: false } },
-  { name: 'Ember', sub: 'dark · amber · stone', settings: { primary: 'amber', neutral: 'stone', radius: 4, font: 'IBM Plex Sans', mode: 'dark', starfield: true } },
-  { name: 'Orchard', sub: 'light · emerald · stone', settings: { primary: 'emerald', neutral: 'stone', radius: 16, font: 'Manrope', mode: 'light', starfield: false } },
-  { name: 'Lagoon', sub: 'dark · teal · gray', settings: { primary: 'teal', neutral: 'gray', radius: 8, font: 'Source Sans 3', mode: 'dark', starfield: true } }
-]
+const NOCTURNE = DEFAULT_PRESET
 
 const STORAGE_KEY = 'tick-theme'
 
@@ -82,13 +69,13 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   function matchPreset() {
-    const hit = THEME_PRESETS.find(p =>
-      p.settings.primary === primary.value
-      && p.settings.neutral === neutral.value
-      && p.settings.radius === radius.value
-      && p.settings.font === font.value
-      && p.settings.mode === mode.value
-      && p.settings.starfield === starfield.value
+    const hit = ALL_PRESETS.find(p =>
+      p.primary === primary.value
+      && p.neutral === neutral.value
+      && p.radius === radius.value
+      && p.font === font.value
+      && p.mode === mode.value
+      && p.starfield === starfield.value
     )
     preset.value = hit ? hit.name : 'Custom'
   }
@@ -126,7 +113,11 @@ export const useThemeStore = defineStore('theme', () => {
     })
   }
 
-  /** Merge a partial change (from the editor), re-derive the preset name, apply. */
+  /**
+   * Merge a partial change (from the editor), apply and persist. An explicit
+   * `preset` in the patch wins (the editor pins the name it just applied);
+   * otherwise the name is re-derived from the resulting settings.
+   */
   function set(patch: Partial<ThemeSettings>) {
     if (patch.primary !== undefined) primary.value = patch.primary
     if (patch.neutral !== undefined) neutral.value = patch.neutral
@@ -134,21 +125,23 @@ export const useThemeStore = defineStore('theme', () => {
     if (patch.font !== undefined) font.value = patch.font
     if (patch.mode !== undefined) mode.value = patch.mode
     if (patch.starfield !== undefined) starfield.value = patch.starfield
-    matchPreset()
+    if (patch.preset !== undefined) preset.value = patch.preset
+    else matchPreset()
     apply()
   }
 
   function applyPreset(name: string) {
-    const p = THEME_PRESETS.find(x => x.name === name)
+    const p = ALL_PRESETS.find(x => x.name === name)
     if (!p) return
-    primary.value = p.settings.primary
-    neutral.value = p.settings.neutral
-    radius.value = p.settings.radius
-    font.value = p.settings.font
-    mode.value = p.settings.mode
-    starfield.value = p.settings.starfield
-    preset.value = p.name
-    apply()
+    set({
+      primary: p.primary,
+      neutral: p.neutral,
+      radius: p.radius,
+      font: p.font,
+      mode: p.mode,
+      starfield: p.starfield,
+      preset: p.name
+    })
   }
 
   function reset() {
