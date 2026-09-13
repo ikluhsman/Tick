@@ -27,6 +27,8 @@ const endInput = ref('')
 const durInput = ref('')
 const tagsInput = ref('')
 const saving = ref(false)
+/** Date/Start/End/Duration inputs point at the live interpretation line. */
+const interpId = useId()
 
 const descInput = useTemplateRef<{ inputRef?: HTMLInputElement }>('descInput')
 
@@ -161,10 +163,11 @@ function onOpenAutoFocus(e: Event) {
     v-model:open="open"
     :ui="{ content: 'max-w-[560px]' }"
     :content="{ onOpenAutoFocus }"
-    aria-label="New entry"
+    title="New entry"
   >
     <template #content>
       <div class="flex flex-col gap-4 p-5">
+        <!-- Dialog name comes from :title (Nuxt UI's aria-hidden DialogTitle); this is the visible heading -->
         <h2 class="text-[17px] font-medium text-highlighted">New entry</h2>
 
         <UFormField label="What did you work on?">
@@ -180,33 +183,38 @@ function onOpenAutoFocus(e: Event) {
         <!-- Ref picker (button styled as input) + billable toggle -->
         <div class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-2.5">
           <UFormField label="Client, project or task">
-            <button
-              type="button"
-              class="flex h-8 w-full items-center gap-2 rounded-md bg-default px-2.5 text-left text-sm ring ring-inset ring-accented transition-colors hover:bg-[color-mix(in_srgb,var(--ui-text)_4%,transparent)]"
-              @click="ui.openPicker('manual', 'task')"
-            >
-              <span class="min-w-0 flex-1 truncate" :class="refChain ? 'text-highlighted' : 'text-dimmed'">
-                {{ refLabel }}
-              </span>
-              <span
+            <!-- Clear sits beside the picker button (not nested in it) -->
+            <div class="relative">
+              <button
+                type="button"
+                class="flex h-8 w-full items-center gap-2 rounded-md bg-default px-2.5 text-left text-sm ring ring-inset ring-accented transition-colors hover:bg-[color-mix(in_srgb,var(--ui-text)_4%,transparent)]"
+                :class="refChain ? 'pr-9' : ''"
+                :aria-label="`Client, project or task: ${refLabel}`"
+                aria-haspopup="dialog"
+                @click="ui.openPicker('manual', 'task')"
+              >
+                <span class="min-w-0 flex-1 truncate" :class="refChain ? 'text-highlighted' : 'text-muted'">
+                  {{ refLabel }}
+                </span>
+                <UIcon v-if="!refChain" name="i-lucide-search" class="size-3.5 shrink-0 opacity-60" />
+              </button>
+              <button
                 v-if="refChain"
-                role="button"
-                tabindex="0"
-                aria-label="Clear selection"
-                class="flex size-[18px] shrink-0 items-center justify-center rounded-xs text-muted hover:text-highlighted"
-                @click.stop="refChain = null"
-                @keydown.enter.stop.prevent="refChain = null"
+                type="button"
+                aria-label="Clear client, project or task"
+                class="absolute top-1/2 right-2.5 flex size-[18px] -translate-y-1/2 items-center justify-center rounded-xs text-muted hover:text-highlighted"
+                @click="refChain = null"
               >
                 <UIcon name="i-lucide-x" class="size-3.5" />
-              </span>
-              <UIcon v-else name="i-lucide-search" class="size-3.5 shrink-0 opacity-60" />
-            </button>
+              </button>
+            </div>
           </UFormField>
           <UButton
             variant="outline"
             :color="billable ? 'primary' : 'neutral'"
             icon="i-lucide-dollar-sign"
             :aria-pressed="billable"
+            :aria-label="billable ? `Billable, ${rateLabel}` : 'Billable'"
             class="h-8"
             :class="billable ? '' : 'text-dimmed'"
             @click="billable = !billable"
@@ -218,16 +226,16 @@ function onOpenAutoFocus(e: Event) {
         <!-- Date / Start / End / or Duration -->
         <div class="grid grid-cols-[minmax(0,1.3fr)_1fr_1fr_1fr] gap-2.5">
           <UFormField label="Date — type it any way">
-            <UInput v-model="dateInput" placeholder="2025-03-14, mar 14, last tue…" class="tnum w-full" />
+            <UInput v-model="dateInput" :aria-describedby="interpId" placeholder="2025-03-14, mar 14, last tue…" class="tnum w-full" />
           </UFormField>
           <UFormField label="Start">
-            <UInput v-model="startInput" placeholder="9:00" class="tnum w-full" />
+            <UInput v-model="startInput" :aria-describedby="interpId" placeholder="9:00" class="tnum w-full" />
           </UFormField>
           <UFormField label="End">
-            <UInput v-model="endInput" placeholder="11:30" class="tnum w-full" />
+            <UInput v-model="endInput" :aria-describedby="interpId" placeholder="11:30" class="tnum w-full" />
           </UFormField>
           <UFormField label="or Duration">
-            <UInput v-model="durInput" placeholder="2h 30m" class="tnum w-full" />
+            <UInput v-model="durInput" :aria-describedby="interpId" placeholder="2h 30m" class="tnum w-full" />
           </UFormField>
         </div>
 
@@ -235,6 +243,7 @@ function onOpenAutoFocus(e: Event) {
         <div
           class="flex items-center gap-2 rounded-md bg-elevated px-2.5 py-2 text-xs"
           :class="parsed.valid ? 'text-primary' : 'text-muted'"
+          :id="interpId"
           aria-live="polite"
         >
           <UIcon name="i-lucide-calendar" class="size-3.5 shrink-0" />

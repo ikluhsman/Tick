@@ -35,8 +35,17 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex min-h-screen bg-default text-default">
+    <!-- Skip link: first tab stop, visible only while focused -->
+    <a
+      href="#main"
+      class="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-elevated focus-visible:px-3 focus-visible:py-2 focus-visible:text-sm focus-visible:text-highlighted focus-visible:shadow-md"
+    >Skip to main content</a>
     <ShellAppSidebar class="max-lg:hidden" />
-    <main class="flex min-w-0 flex-1 flex-col max-lg:pb-[calc(150px+env(safe-area-inset-bottom))]">
+    <main
+      id="main"
+      tabindex="-1"
+      class="flex min-w-0 flex-1 flex-col outline-none max-lg:pb-[calc(150px+env(safe-area-inset-bottom))]"
+    >
       <ShellDemoBanner />
       <ShellTimerBar class="max-lg:hidden" />
       <slot />

@@ -134,7 +134,7 @@ function chainLabel(row: ImportPreview['rows'][number]): string {
     <template v-if="step === 'pick'">
       <section class="flex flex-col gap-2.5">
         <div>
-          <h3 class="text-[15px] font-medium text-highlighted">Where is your data coming from?</h3>
+          <h2 class="text-[15px] font-medium text-highlighted">Where is your data coming from?</h2>
           <p class="text-xs text-muted">Import is a dry run first — you'll see exactly what gets created before anything is written.</p>
         </div>
         <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
@@ -151,7 +151,7 @@ function chainLabel(row: ImportPreview['rows'][number]): string {
       </section>
 
       <section class="flex flex-col gap-2.5">
-        <h3 class="text-[15px] font-medium text-highlighted">CSV file</h3>
+        <h2 class="text-[15px] font-medium text-highlighted">CSV file</h2>
         <UFileUpload
           v-model="file"
           accept=".csv,text/csv"
@@ -181,25 +181,25 @@ function chainLabel(row: ImportPreview['rows'][number]): string {
     <template v-else-if="step === 'preview' && preview">
       <section class="flex flex-col gap-2.5">
         <div>
-          <h3 class="text-[15px] font-medium text-highlighted">Preview — nothing written yet</h3>
+          <h2 class="text-[15px] font-medium text-highlighted">Preview — nothing written yet</h2>
           <p class="text-xs text-muted">Existing clients, projects, tasks and tags are matched by name; the rest get created.</p>
         </div>
 
         <!-- Counts -->
         <div class="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
           <div class="rounded-md border border-default bg-elevated px-3 py-2.5">
-            <div class="text-[10px] font-medium tracking-[0.1em] text-dimmed uppercase">Entries</div>
+            <div class="text-[10px] font-medium tracking-[0.1em] text-muted uppercase">Entries</div>
             <div class="tnum text-[20px] font-medium text-highlighted">{{ preview.entryCount }}</div>
           </div>
           <div class="rounded-md border border-default bg-elevated px-3 py-2.5">
-            <div class="text-[10px] font-medium tracking-[0.1em] text-dimmed uppercase">Date range</div>
+            <div class="text-[10px] font-medium tracking-[0.1em] text-muted uppercase">Date range</div>
             <div v-if="preview.dateRange" class="tnum text-[13px] font-medium text-highlighted">
               {{ fmtDay(preview.dateRange.from) }} – {{ fmtDay(preview.dateRange.to) }}
             </div>
             <div v-else class="text-[13px] text-muted">—</div>
           </div>
           <div class="rounded-md border border-default bg-elevated px-3 py-2.5">
-            <div class="text-[10px] font-medium tracking-[0.1em] text-dimmed uppercase">Skipped rows</div>
+            <div class="text-[10px] font-medium tracking-[0.1em] text-muted uppercase">Skipped rows</div>
             <div class="tnum text-[20px] font-medium" :class="preview.warnings.length ? 'text-highlighted' : 'text-muted'">
               {{ preview.warnings.length }}
             </div>
@@ -213,7 +213,7 @@ function chainLabel(row: ImportPreview['rows'][number]): string {
             :key="group.label"
             class="rounded-md border border-default bg-elevated px-3 py-2.5"
           >
-            <div class="mb-1.5 text-[10px] font-medium tracking-[0.1em] text-dimmed uppercase">{{ group.label }}</div>
+            <div class="mb-1.5 text-[10px] font-medium tracking-[0.1em] text-muted uppercase">{{ group.label }}</div>
             <p v-if="!group.items.length" class="text-[12px] text-muted">None in file</p>
             <ul v-else class="flex flex-col gap-1">
               <li v-for="item in group.items" :key="item.name" class="flex items-center gap-1.5 text-[12px]">
@@ -233,7 +233,7 @@ function chainLabel(row: ImportPreview['rows'][number]): string {
 
         <!-- First rows -->
         <div class="overflow-hidden rounded-md border border-default bg-elevated">
-          <div class="border-b border-default px-3 py-2 text-[10px] font-medium tracking-[0.1em] text-dimmed uppercase">
+          <div class="border-b border-default px-3 py-2 text-[10px] font-medium tracking-[0.1em] text-muted uppercase">
             First {{ preview.rows.length }} of {{ preview.entryCount }} entries
           </div>
           <div class="overflow-x-auto">
@@ -251,7 +251,7 @@ function chainLabel(row: ImportPreview['rows'][number]): string {
                 <tr v-for="(row, i) in preview.rows" :key="i" class="border-b border-default last:border-0">
                   <td class="max-w-[180px] truncate px-3 py-1.5 text-default">
                     {{ row.name || '(no name)' }}
-                    <span v-if="!row.billable" class="text-dimmed"> · non-billable</span>
+                    <span v-if="!row.billable" class="text-muted"> · non-billable</span>
                   </td>
                   <td class="max-w-[180px] truncate px-3 py-1.5 text-muted">{{ chainLabel(row) }}</td>
                   <td class="max-w-[120px] truncate px-3 py-1.5 text-muted">
@@ -306,9 +306,9 @@ function chainLabel(row: ImportPreview['rows'][number]): string {
         <div class="rounded-md border border-default bg-elevated px-4 py-4">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-check-check" class="size-5 text-primary" />
-            <h3 class="text-[15px] font-medium text-highlighted">
+            <h2 class="text-[15px] font-medium text-highlighted">
               Imported {{ summary.entries }} {{ summary.entries === 1 ? 'entry' : 'entries' }}
-            </h3>
+            </h2>
           </div>
           <p v-if="summary.dateRange" class="tnum mt-1 text-[13px] text-muted">
             {{ fmtDay(summary.dateRange.from) }} – {{ fmtDay(summary.dateRange.to) }}

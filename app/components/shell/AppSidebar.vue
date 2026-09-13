@@ -61,6 +61,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [[
 
 <template>
   <aside
+    aria-label="Sidebar"
     class="sticky top-0 flex h-screen w-56 shrink-0 flex-col gap-4 overflow-hidden border-r border-default px-3 py-4 text-toned"
     :style="{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--ui-bg-elevated) 55%, var(--ui-bg)) 0%, var(--ui-bg) 70%)' }"
   >
@@ -78,7 +79,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [[
         type="button"
         class="relative flex items-center gap-2.5 rounded-sm border border-default px-2.5 py-[7px] text-left transition-colors hover:bg-elevated/50"
       >
-        <span class="flex size-[22px] items-center justify-center rounded-xs bg-primary/15 text-[10px] font-semibold text-primary">
+        <span class="flex size-[22px] items-center justify-center rounded-xs bg-primary/15 text-[10px] font-semibold text-primary" aria-hidden="true">
           {{ initials(user?.orgName) }}
         </span>
         <span class="flex-1 truncate text-[13px] text-default">{{ user?.orgName ?? '—' }}</span>
@@ -87,7 +88,7 @@ const userItems = computed<DropdownMenuItem[][]>(() => [[
     </UDropdownMenu>
 
     <!-- Main nav -->
-    <nav class="relative flex flex-col gap-0.5">
+    <nav class="relative flex flex-col gap-0.5" aria-label="Main">
       <NuxtLink
         v-for="n in mainNav"
         :key="n.to"
@@ -105,8 +106,8 @@ const userItems = computed<DropdownMenuItem[][]>(() => [[
 
     <!-- Manage -->
     <div class="relative flex flex-col gap-1.5">
-      <div class="px-2.5 text-[10px] tracking-[0.1em] uppercase text-dimmed">Manage</div>
-      <nav class="flex flex-col gap-0.5">
+      <div id="sidebar-manage-label" class="px-2.5 text-[10px] tracking-[0.1em] uppercase text-muted">Manage</div>
+      <nav class="flex flex-col gap-0.5" aria-labelledby="sidebar-manage-label">
         <NuxtLink
           v-for="n in manageNav"
           :key="n.to"
@@ -130,12 +131,12 @@ const userItems = computed<DropdownMenuItem[][]>(() => [[
           type="button"
           class="flex w-full items-center gap-2.5 rounded-sm px-1.5 py-1.5 text-left transition-colors hover:bg-elevated/50"
         >
-          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-accented text-[11px] font-semibold text-default">
+          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-accented text-[11px] font-semibold text-default" aria-hidden="true">
             {{ initials(user?.name) }}
           </span>
           <span class="min-w-0 leading-tight">
             <span class="block truncate text-[13px] text-default">{{ user?.name ?? '—' }}</span>
-            <span class="block truncate text-[11px] text-dimmed tnum">{{ roleLine }}</span>
+            <span class="block truncate text-[11px] text-muted tnum">{{ roleLine }}</span>
           </span>
         </button>
       </UDropdownMenu>

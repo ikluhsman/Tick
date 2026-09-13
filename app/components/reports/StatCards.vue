@@ -42,7 +42,7 @@ const stats = computed(() => {
     >
       <div class="text-[10px] font-medium uppercase tracking-widest text-primary">{{ s.label }}</div>
       <div class="tnum text-[24px] font-medium leading-[1.1] text-highlighted">{{ s.value }}</div>
-      <div class="text-[11px] text-dimmed">{{ s.meta }}</div>
+      <div class="text-[11px] text-muted">{{ s.meta }}</div>
     </UCard>
   </div>
 </template>

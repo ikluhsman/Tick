@@ -110,6 +110,7 @@ function printReport() {
             variant="outline"
             :color="reports.range === r.key ? 'primary' : 'neutral'"
             :class="reports.range === r.key ? '' : 'text-muted'"
+            :aria-pressed="reports.range === r.key"
             @click="reports.setRange(r.key)"
           />
           <UPopover v-model:open="customOpen">
@@ -119,6 +120,7 @@ function printReport() {
               variant="outline"
               :color="reports.range === 'custom' ? 'primary' : 'neutral'"
               :class="reports.range === 'custom' ? '' : 'text-muted'"
+              :aria-pressed="reports.range === 'custom'"
             />
             <template #content>
               <UCalendar
@@ -138,6 +140,7 @@ function printReport() {
             variant="outline"
             :color="reports.billable === b.key ? 'primary' : 'neutral'"
             :class="reports.billable === b.key ? '' : 'text-muted'"
+            :aria-pressed="reports.billable === b.key"
             @click="reports.setBillable(b.key)"
           />
         </UFieldGroup>
@@ -176,7 +179,7 @@ function printReport() {
 
       <div class="flex flex-col gap-3">
         <div class="flex flex-wrap items-center gap-3 px-1">
-          <h3 class="text-[16px] font-medium text-highlighted">Breakdown</h3>
+          <h2 class="text-[16px] font-medium text-highlighted">Breakdown</h2>
           <UFieldGroup class="print-hide ml-auto">
             <UButton
               v-for="g in groupings"
@@ -185,6 +188,7 @@ function printReport() {
               variant="outline"
               :color="reports.groupBy === g.key ? 'primary' : 'neutral'"
               :class="reports.groupBy === g.key ? '' : 'text-muted'"
+              :aria-pressed="reports.groupBy === g.key"
               @click="reports.setGroupBy(g.key)"
             />
           </UFieldGroup>
@@ -196,7 +200,7 @@ function printReport() {
         />
         <!-- Tag rows fan out: an entry with two tags is counted under both, so
              the rows can exceed the total. Every other grouping partitions. -->
-        <p v-if="reports.groupBy === 'tag'" class="px-1 text-[11px] text-dimmed">
+        <p v-if="reports.groupBy === 'tag'" class="px-1 text-[11px] text-muted">
           An entry with several tags is counted under each of them, so tag rows can add up to more than the total.
         </p>
       </div>

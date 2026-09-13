@@ -126,7 +126,7 @@ function apiError(err: unknown): string {
     <!-- Profile card -->
     <section class="flex flex-col gap-4 rounded-lg border border-default bg-elevated p-[22px] shadow-sm">
       <div>
-        <h3 class="text-[15px] font-medium text-highlighted">Profile</h3>
+        <h2 class="text-[15px] font-medium text-highlighted">Profile</h2>
         <p class="text-xs text-muted">Your name, sign-in email and default hourly rate.</p>
       </div>
 
@@ -145,10 +145,10 @@ function apiError(err: unknown): string {
       >
         <UInput v-model="rateRaw" inputmode="decimal" placeholder="85" class="w-full tnum">
           <template #leading>
-            <span class="text-sm text-dimmed">$</span>
+            <span class="text-sm text-muted">$</span>
           </template>
           <template #trailing>
-            <span class="text-sm text-dimmed">/h</span>
+            <span class="text-sm text-muted">/h</span>
           </template>
         </UInput>
       </UFormField>
@@ -176,7 +176,7 @@ function apiError(err: unknown): string {
     <!-- Preferences card -->
     <section class="flex flex-col gap-4 rounded-lg border border-default bg-elevated p-[22px] shadow-sm">
       <div>
-        <h3 class="text-[15px] font-medium text-highlighted">Preferences</h3>
+        <h2 class="text-[15px] font-medium text-highlighted">Preferences</h2>
         <p class="text-xs text-muted">Stored in this browser.</p>
       </div>
 
@@ -212,7 +212,7 @@ function apiError(err: unknown): string {
     <!-- Password card -->
     <section class="flex flex-col gap-4 rounded-lg border border-default bg-elevated p-[22px] shadow-sm">
       <div>
-        <h3 class="text-[15px] font-medium text-highlighted">Password</h3>
+        <h2 class="text-[15px] font-medium text-highlighted">Password</h2>
         <p class="text-xs text-muted">Changing your password signs no one out — sessions stay valid.</p>
       </div>
 

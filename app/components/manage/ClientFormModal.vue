@@ -78,10 +78,10 @@ async function submit() {
             class="w-full tnum"
           >
             <template #leading>
-              <span class="text-sm text-dimmed">$</span>
+              <span class="text-sm text-muted">$</span>
             </template>
             <template #trailing>
-              <span class="text-sm text-dimmed">/h</span>
+              <span class="text-sm text-muted">/h</span>
             </template>
           </UInput>
         </UFormField>

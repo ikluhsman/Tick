@@ -73,6 +73,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         :ui="{ title: 'font-medium' }"
         @submit="onSubmit"
       >
+        <template #title>
+          <h1>Welcome back to Tick</h1>
+        </template>
         <template #validation>
           <UAlert
             v-if="errorMessage"

@@ -72,7 +72,7 @@ const createdLabel = computed(() =>
     <!-- Rename card -->
     <section class="flex flex-col gap-4 rounded-lg border border-default bg-elevated p-[22px] shadow-sm">
       <div>
-        <h3 class="text-[15px] font-medium text-highlighted">Organization</h3>
+        <h2 class="text-[15px] font-medium text-highlighted">Organization</h2>
         <p class="text-xs text-muted">The workspace name shown in the sidebar and on invites.</p>
       </div>
 
@@ -112,7 +112,7 @@ const createdLabel = computed(() =>
     <!-- Summary card -->
     <section class="flex flex-col gap-4 rounded-lg border border-default bg-elevated p-[22px] shadow-sm">
       <div>
-        <h3 class="text-[15px] font-medium text-highlighted">At a glance</h3>
+        <h2 class="text-[15px] font-medium text-highlighted">At a glance</h2>
         <p class="text-xs text-muted">Membership is managed under Members &amp; roles.</p>
       </div>
 

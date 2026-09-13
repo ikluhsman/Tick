@@ -104,10 +104,13 @@ async function toggle() {
 
 <template>
   <div
+    role="region"
+    aria-label="Timer"
     class="sticky top-0 z-20 border-b border-default px-[22px] py-[11px] backdrop-blur-[12px]"
     :style="{ background: 'color-mix(in srgb, var(--ui-bg) 86%, transparent)' }"
   >
-    <div class="flex items-center gap-2 rounded-lg border border-default bg-elevated py-1.5 pr-1.5 pl-3.5 shadow-sm">
+    <!-- The borderless description input shows keyboard focus on the bar itself -->
+    <div class="flex items-center gap-2 rounded-lg border border-default bg-elevated py-1.5 pr-1.5 pl-3.5 shadow-sm has-[>input:focus-visible]:border-primary has-[>input:focus-visible]:ring-1 has-[>input:focus-visible]:ring-primary">
       <!-- Description -->
       <input
         :value="nameLocal"
@@ -150,7 +153,7 @@ async function toggle() {
           <span class="text-[11px] text-dimmed tnum">{{ item.count }}</span>
         </template>
         <template #content-bottom>
-          <div class="mt-0.5 border-t border-default px-2.5 py-1.5 text-[11px] text-dimmed">
+          <div class="mt-0.5 border-t border-default px-2.5 py-1.5 text-[11px] text-muted">
             Type <b class="font-medium text-toned">#</b> for tags, <b class="font-medium text-toned">@</b> for projects
           </div>
         </template>
@@ -162,6 +165,7 @@ async function toggle() {
         variant="outline"
         icon="i-lucide-dollar-sign"
         :aria-pressed="timer.billable"
+        :aria-label="timer.billable ? `Billable, ${rateLabel}` : 'Billable'"
         :title="timer.billable ? 'Billable' : 'Not billable'"
         :class="timer.billable ? '' : 'text-dimmed'"
         class="h-[34px] gap-1.5 px-2.5 text-[13px]"

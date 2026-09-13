@@ -156,24 +156,32 @@ async function confirm() {
 </script>
 
 <template>
-  <UModal v-model:open="open" :ui="{ content: 'max-w-[500px]' }">
+  <UModal
+    v-model:open="open"
+    :ui="{ content: 'max-w-[500px]' }"
+    :title="`Delete ${target?.name ?? kind}?`"
+    :description="bodyCopy"
+  >
     <template #content>
       <div class="flex flex-col gap-3 p-[17px]">
-        <div class="text-[17px] font-medium text-highlighted">Delete {{ target?.name }}?</div>
+        <!-- Dialog name/description come from :title/:description (Nuxt UI's aria-hidden DialogTitle/Description) -->
+        <h2 class="text-[17px] font-medium text-highlighted">Delete {{ target?.name }}?</h2>
         <p class="text-[13px] leading-relaxed text-muted">{{ bodyCopy }}</p>
 
         <!-- Cascading checkboxes -->
-        <div class="flex flex-col gap-0.5">
+        <div class="flex flex-col gap-0.5" role="group" aria-label="Also move to trash">
           <button
             v-for="row in rows"
             :key="row.key"
             type="button"
             class="grid cursor-pointer grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-2.5 py-[9px] text-left transition-colors"
             :class="checks[row.key] ? 'bg-primary/10' : 'hover:bg-accented/40'"
-            :aria-pressed="checks[row.key]"
+            role="checkbox"
+            :aria-checked="checks[row.key]"
             @click="toggle(row.key)"
           >
             <span
+              aria-hidden="true"
               class="grid size-4 place-items-center rounded-sm border-[1.5px] transition-colors"
               :class="checks[row.key] ? 'border-primary bg-primary text-inverted' : 'border-accented'"
             >
@@ -190,7 +198,7 @@ async function confirm() {
         </div>
 
         <!-- Outcome panel -->
-        <div class="flex flex-col gap-1 rounded-md bg-default px-2.5 py-2 text-xs text-toned">
+        <div class="flex flex-col gap-1 rounded-md bg-default px-2.5 py-2 text-xs text-toned" aria-live="polite">
           <span v-for="(line, i) in outcome" :key="i">{{ line }}</span>
         </div>
 

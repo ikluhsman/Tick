@@ -160,6 +160,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
 <template>
   <div
     class="relative overflow-hidden"
+    :data-entry-id="entry.id"
     :style="first ? undefined : { boxShadow: 'inset 0 1px 0 color-mix(in srgb, var(--ui-text) 6%, transparent)' }"
   >
     <!-- Swipe action layers (touch reveal only) -->
@@ -210,6 +211,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
             type="button"
             class="min-w-0 cursor-pointer truncate text-left text-sm text-highlighted hover:underline"
             title="Edit entry"
+            data-entry-name
             @click="ui.openEdit(entry)"
           >
             {{ entry.name }}
@@ -269,7 +271,9 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
         </div>
       </div>
 
-      <!-- Row actions (mobile keeps only ▶ at a 44px target) -->
+      <!-- Row actions (mobile keeps only ▶ at a 44px target). <1024px Edit and
+           Delete stay in the tab order / accessibility tree (visually hidden
+           until focused) as the non-swipe alternative to the touch gestures. -->
       <div class="flex gap-0.5">
         <UButton
           icon="i-lucide-play"
@@ -289,7 +293,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
           square
           title="Edit entry"
           aria-label="Edit entry"
-          class="size-[30px] justify-center max-lg:hidden"
+          class="size-[30px] justify-center max-lg:sr-only max-lg:focus-visible:not-sr-only"
           :ui="{ leadingIcon: 'size-[13px]' }"
           @click="ui.openEdit(entry)"
         />
@@ -300,7 +304,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
           square
           title="Delete (undo available)"
           aria-label="Delete entry"
-          class="size-[30px] justify-center text-dimmed hover:text-primary max-lg:hidden"
+          class="size-[30px] justify-center text-dimmed hover:text-primary max-lg:sr-only max-lg:focus-visible:not-sr-only"
           :ui="{ leadingIcon: 'size-3.5' }"
           @click="emit('delete')"
         />

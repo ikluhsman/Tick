@@ -79,7 +79,7 @@ function openTaskForm(task: TaskDto | null, presetProjectId: string | null = nul
     <!-- Standalone tasks -->
     <div class="flex flex-col gap-2">
       <div class="flex items-baseline gap-2 px-1.5">
-        <h3 class="text-base font-medium text-highlighted">Standalone tasks</h3>
+        <h2 class="text-base font-medium text-highlighted">Standalone tasks</h2>
         <span class="text-xs text-muted">no project — still billable if you say so</span>
       </div>
       <div class="rounded-lg border border-default bg-elevated px-[22px] py-1 shadow-sm">

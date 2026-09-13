@@ -27,30 +27,31 @@ const rows = computed(() =>
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-lg bg-elevated shadow-sm">
+  <div class="overflow-hidden rounded-lg bg-elevated shadow-sm" role="table" :aria-label="`Breakdown by ${groupLabel}`">
     <!-- Header -->
-    <div class="report-grid border-b border-default px-5 py-2 text-[10px] uppercase tracking-[.08em] text-muted">
-      <span>{{ groupLabel }}</span>
-      <span>Share</span>
-      <span class="text-right">Entries</span>
-      <span class="text-right">Hours</span>
-      <span class="text-right">Billable</span>
-      <span class="text-right">Amount</span>
+    <div class="report-grid border-b border-default px-5 py-2 text-[10px] uppercase tracking-[.08em] text-muted" role="row">
+      <span role="columnheader">{{ groupLabel }}</span>
+      <span role="columnheader">Share</span>
+      <span role="columnheader" class="text-right">Entries</span>
+      <span role="columnheader" class="text-right">Hours</span>
+      <span role="columnheader" class="text-right">Billable</span>
+      <span role="columnheader" class="text-right">Amount</span>
     </div>
 
     <!-- Rows -->
     <div
       v-for="r in rows"
       :key="r.key"
+      role="row"
       class="report-grid items-center border-b border-default/40 px-5 py-2.5 text-[13px] hover:bg-default/40"
     >
-      <div class="flex min-w-0 items-center gap-2">
+      <div class="flex min-w-0 items-center gap-2" role="cell">
         <span class="size-2 flex-none rounded-[2px]" :style="{ background: r.color }" />
         <span class="truncate text-default">{{ r.label }}</span>
         <span v-if="r.sub" class="truncate text-[11px] text-muted">{{ r.sub }}</span>
       </div>
-      <div class="flex items-center gap-2">
-        <div class="h-1.5 flex-1 overflow-hidden rounded-full" style="background: var(--ui-bg)">
+      <div class="flex items-center gap-2" role="cell">
+        <div aria-hidden="true" class="h-1.5 flex-1 overflow-hidden rounded-full" style="background: var(--ui-bg)">
           <span
             class="block h-full rounded-full"
             :style="{ width: r.sharePct + '%', background: r.color }"
@@ -58,25 +59,25 @@ const rows = computed(() =>
         </div>
         <span class="tnum w-8 text-right text-[11px] text-muted">{{ r.sharePct }}%</span>
       </div>
-      <span class="tnum text-right text-muted">{{ r.entries }}</span>
-      <span class="tnum text-right font-medium text-highlighted">{{ r.hours }}</span>
-      <span class="tnum text-right text-primary">{{ r.billable }}</span>
-      <span class="tnum text-right text-default">{{ r.amount }}</span>
+      <span class="tnum text-right text-muted" role="cell">{{ r.entries }}</span>
+      <span class="tnum text-right font-medium text-highlighted" role="cell">{{ r.hours }}</span>
+      <span class="tnum text-right text-primary" role="cell">{{ r.billable }}</span>
+      <span class="tnum text-right text-default" role="cell">{{ r.amount }}</span>
     </div>
 
     <!-- Empty -->
-    <div v-if="!rows.length" class="px-5 py-6 text-center text-[13px] text-muted">
-      No entries in this range.
+    <div v-if="!rows.length" class="px-5 py-6 text-center text-[13px] text-muted" role="row">
+      <span role="cell">No entries in this range.</span>
     </div>
 
     <!-- Total -->
-    <div v-else class="report-grid px-5 py-2.5 text-[13px] font-medium">
-      <span class="text-highlighted">Total</span>
-      <span />
-      <span class="tnum text-right text-muted">{{ totals.entries }}</span>
-      <span class="tnum text-right text-highlighted">{{ dashDuration(totals.sec) }}</span>
-      <span class="tnum text-right text-primary">{{ totals.billableSec ? dashDuration(totals.billableSec) : '—' }}</span>
-      <span class="tnum text-right text-highlighted">{{ totals.amount ? dashMoney(totals.amount) : '—' }}</span>
+    <div v-else class="report-grid px-5 py-2.5 text-[13px] font-medium" role="row">
+      <span class="text-highlighted" role="rowheader">Total</span>
+      <span role="cell" />
+      <span class="tnum text-right text-muted" role="cell">{{ totals.entries }}</span>
+      <span class="tnum text-right text-highlighted" role="cell">{{ dashDuration(totals.sec) }}</span>
+      <span class="tnum text-right text-primary" role="cell">{{ totals.billableSec ? dashDuration(totals.billableSec) : '—' }}</span>
+      <span class="tnum text-right text-highlighted" role="cell">{{ totals.amount ? dashMoney(totals.amount) : '—' }}</span>
     </div>
   </div>
 </template>

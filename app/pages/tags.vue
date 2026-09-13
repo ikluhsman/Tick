@@ -103,53 +103,58 @@ async function removeTag(t: TagDto) {
 
     <!-- Table card -->
     <div class="overflow-hidden rounded-lg border border-default bg-elevated shadow-sm">
-      <div
-        class="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_80px_90px_110px_70px] gap-[11px] border-b border-default px-[22px] py-2 text-[10px] tracking-[0.08em] text-muted uppercase"
-      >
-        <span>Tag</span>
-        <span>Used on</span>
-        <span class="text-right">Entries</span>
-        <span class="text-right">Hours</span>
-        <span>Last used</span>
-        <span />
-      </div>
-
-      <div
-        v-for="t in catalog.tags"
-        :key="t.id"
-        class="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_80px_90px_110px_70px] items-center gap-[11px] border-b border-default px-[22px] py-2.5 text-[13px] transition-colors last:border-0 hover:bg-accented/30"
-      >
-        <span class="min-w-0">
-          <UBadge color="neutral" variant="soft" class="text-xs">#{{ t.name }}</UBadge>
-        </span>
-        <span class="truncate text-xs text-muted">{{ usedOnLabel(t) }}</span>
-        <span class="tnum text-right text-toned">{{ t.entryCount }}</span>
-        <span class="tnum text-right font-medium text-highlighted">
-          {{ t.trackedSec ? formatDuration(t.trackedSec) : '—' }}
-        </span>
-        <span class="text-xs text-muted">{{ lastUsedLabel(t.lastUsed) }}</span>
-        <div class="flex justify-end gap-0.5">
-          <UButton
-            icon="i-lucide-filter"
-            color="neutral"
-            variant="ghost"
-            square
-            title="Show entries"
-            aria-label="Show entries with this tag"
-            class="size-[30px] justify-center"
-            @click="jumpToTime(t)"
-          />
-          <UButton
-            icon="i-lucide-trash-2"
-            color="neutral"
-            variant="ghost"
-            square
-            title="Delete tag (entries keep their time)"
-            aria-label="Delete tag"
-            class="size-[30px] justify-center text-dimmed hover:text-primary"
-            @click="removeTag(t)"
-          />
+      <div role="table" aria-label="Tags">
+        <div
+          role="row"
+          class="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_80px_90px_110px_70px] gap-[11px] border-b border-default px-[22px] py-2 text-[10px] tracking-[0.08em] text-muted uppercase"
+        >
+          <span role="columnheader">Tag</span>
+          <span role="columnheader">Used on</span>
+          <span role="columnheader" class="text-right">Entries</span>
+          <span role="columnheader" class="text-right">Hours</span>
+          <span role="columnheader">Last used</span>
+          <span role="columnheader"><span class="sr-only">Actions</span></span>
         </div>
+
+        <div
+          v-for="t in catalog.tags"
+          :key="t.id"
+          role="row"
+          class="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_80px_90px_110px_70px] items-center gap-[11px] border-b border-default px-[22px] py-2.5 text-[13px] transition-colors last:border-0 hover:bg-accented/30"
+        >
+          <span class="min-w-0" role="cell">
+            <UBadge color="neutral" variant="soft" class="text-xs">#{{ t.name }}</UBadge>
+          </span>
+          <span class="truncate text-xs text-muted" role="cell">{{ usedOnLabel(t) }}</span>
+          <span class="tnum text-right text-toned" role="cell">{{ t.entryCount }}</span>
+          <span class="tnum text-right font-medium text-highlighted" role="cell">
+            {{ t.trackedSec ? formatDuration(t.trackedSec) : '—' }}
+          </span>
+          <span class="text-xs text-muted" role="cell">{{ lastUsedLabel(t.lastUsed) }}</span>
+          <div class="flex justify-end gap-0.5" role="cell">
+            <UButton
+              icon="i-lucide-filter"
+              color="neutral"
+              variant="ghost"
+              square
+              title="Show entries"
+              aria-label="Show entries with this tag"
+              class="size-[30px] justify-center"
+              @click="jumpToTime(t)"
+            />
+            <UButton
+              icon="i-lucide-trash-2"
+              color="neutral"
+              variant="ghost"
+              square
+              title="Delete tag (entries keep their time)"
+              aria-label="Delete tag"
+              class="size-[30px] justify-center text-dimmed hover:text-primary"
+              @click="removeTag(t)"
+            />
+          </div>
+        </div>
+
       </div>
 
       <p v-if="!catalog.tags.length" class="px-[22px] py-8 text-center text-[13px] text-muted">

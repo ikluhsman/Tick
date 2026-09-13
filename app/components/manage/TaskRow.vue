@@ -53,7 +53,6 @@ async function start() {
     <button
       type="button"
       :aria-label="task.done ? 'Reopen task' : 'Mark complete'"
-      :aria-pressed="task.done"
       class="grid size-4 cursor-pointer place-items-center rounded-full border-[1.5px] transition-colors"
       :class="task.done ? 'border-primary bg-primary text-inverted' : 'border-accented hover:border-primary'"
       @click="toggleDone"

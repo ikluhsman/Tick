@@ -103,7 +103,7 @@ watch(() => props.days, () => nextTick(growIn))
   <UCard class="bg-elevated shadow-sm" :ui="{ body: 'p-4 px-5 sm:p-4 sm:px-5' }">
     <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
       <h2 class="text-[15px] font-medium text-highlighted">Hours by day</h2>
-      <span class="text-[11px] text-dimmed">stacked by {{ groupLabel }}</span>
+      <span class="text-[11px] text-muted">stacked by {{ groupLabel }}</span>
       <div class="ml-auto flex flex-wrap gap-x-2.5 gap-y-1 text-[11px] text-muted">
         <span v-for="l in legend" :key="l.key" class="inline-flex items-center gap-1.25">
           <span class="size-2 rounded-[2px]" :style="{ background: l.color }" />

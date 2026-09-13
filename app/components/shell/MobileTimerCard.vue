@@ -77,7 +77,11 @@ async function toggle() {
 </script>
 
 <template>
-  <div class="mx-3 flex flex-col gap-2 rounded-lg border border-default bg-elevated py-2.5 pr-2.5 pl-3.5 shadow-md">
+  <div
+    role="region"
+    aria-label="Timer"
+    class="mx-3 flex flex-col gap-2 rounded-lg border border-default bg-elevated py-2.5 pr-2.5 pl-3.5 shadow-md has-[input:focus-visible]:border-primary has-[input:focus-visible]:ring-1 has-[input:focus-visible]:ring-primary"
+  >
     <!-- Row 1: description · clock · start/stop -->
     <div class="flex items-center gap-2">
       <input
@@ -92,7 +96,7 @@ async function toggle() {
       >
       <span
         class="tnum shrink-0 text-[22px] font-medium tracking-[0.01em]"
-        :class="timer.running ? 'text-primary-400 dark:text-primary-300' : 'text-dimmed'"
+        :class="timer.running ? 'text-primary-400 dark:text-primary-300' : 'text-muted'"
       >
         {{ clock }}
       </span>
@@ -124,7 +128,7 @@ async function toggle() {
           <UIcon name="i-lucide-x" class="size-2.5" />
         </button>
       </span>
-      <span v-else class="text-[11px] text-dimmed">No client, project or task</span>
+      <span v-else class="text-[11px] text-muted">No client, project or task</span>
 
       <UBadge
         color="neutral"

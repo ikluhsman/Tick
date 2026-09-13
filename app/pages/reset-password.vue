@@ -64,7 +64,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     <!-- Missing token: the page was opened without a reset link -->
     <div v-if="!token" class="flex flex-col items-center gap-3 py-2 text-center">
       <UIcon name="i-lucide-link-2-off" class="size-8 text-muted" />
-      <h2 class="text-lg font-medium text-highlighted">Missing reset link</h2>
+      <h1 class="text-lg font-medium text-highlighted">Missing reset link</h1>
       <p class="text-sm text-muted">
         Open this page from the link in your reset email, or request a new one.
       </p>
@@ -75,7 +75,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
     <div v-else-if="done" class="flex flex-col items-center gap-3 py-2 text-center">
       <UIcon name="i-lucide-check-circle-2" class="size-8 text-primary" />
-      <h2 class="text-lg font-medium text-highlighted">Password updated</h2>
+      <h1 class="text-lg font-medium text-highlighted">Password updated</h1>
       <p class="text-sm text-muted">Your new password is set. Sign in to get back to work.</p>
       <UButton to="/login" color="primary" variant="outline" label="Sign in" />
     </div>
@@ -91,6 +91,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       :ui="{ title: 'font-medium' }"
       @submit="onSubmit"
     >
+      <template #title>
+        <h1>Choose a new password</h1>
+      </template>
       <template #validation>
         <UAlert
           v-if="errorMessage"

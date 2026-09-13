@@ -61,7 +61,7 @@ onMounted(() => {
   <UCard class="bg-elevated shadow-sm" :ui="{ body: 'p-4 sm:p-4' }">
     <div class="flex items-baseline gap-2.5">
       <h2 class="text-[15px] font-medium text-highlighted">Activity</h2>
-      <span class="text-[11px] text-dimmed">last {{ weekCount }} weeks · brighter means more time logged</span>
+      <span class="text-[11px] text-muted">last {{ weekCount }} weeks · brighter means more time logged</span>
     </div>
     <div class="mt-2 flex gap-2.5 overflow-x-auto">
       <!-- Row labels: M T W R F -->
@@ -69,7 +69,12 @@ onMounted(() => {
         <span v-for="l in ['M', 'T', 'W', 'R', 'F']" :key="l" class="h-3.25 leading-3.25">{{ l }}</span>
       </div>
       <!-- 16 week columns -->
-      <div ref="gridEl" class="flex flex-1 justify-between gap-1.75">
+      <div
+        ref="gridEl"
+        role="img"
+        :aria-label="`Weekday activity heatmap, last ${weekCount} weeks`"
+        class="flex flex-1 justify-between gap-1.75"
+      >
         <div v-for="(week, w) in weeks" :key="w" class="flex flex-col gap-1.75">
           <span
             v-for="d in week"

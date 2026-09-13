@@ -59,6 +59,12 @@ const summary = computed(() => {
 const dialogOpen = ref(false)
 const prefill = ref<{ date: string, start: string, end: string } | null>(null)
 
+/** Keyboard alternative to drag-create: the same dialog, date defaults to today. */
+function onCreateFromKeyboard() {
+  prefill.value = null
+  dialogOpen.value = true
+}
+
 function onCreate({ day, startMin, endMin }: { day: number, startMin: number, endMin: number }) {
   const d = new Date(day)
   prefill.value = {
@@ -79,12 +85,23 @@ function onCreate({ day, startMin, endMin }: { day: number, startMin: number, en
         <p class="tnum text-[13px] text-muted">{{ summary }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
+        <!-- Keyboard route to "create": drag-to-create is pointer-only, so this
+             button is visually hidden until it takes keyboard focus -->
+        <UButton
+          color="primary"
+          variant="outline"
+          icon="i-lucide-plus"
+          label="New entry"
+          class="sr-only focus-visible:not-sr-only"
+          @click="onCreateFromKeyboard"
+        />
         <UFieldGroup>
           <UButton
             label="Week"
             variant="outline"
             :color="calendar.view === 'week' ? 'primary' : 'neutral'"
             :class="calendar.view === 'week' ? '' : 'text-muted'"
+            :aria-pressed="calendar.view === 'week'"
             @click="calendar.setView('week')"
           />
           <UButton
@@ -92,6 +109,7 @@ function onCreate({ day, startMin, endMin }: { day: number, startMin: number, en
             variant="outline"
             :color="calendar.view === 'day' ? 'primary' : 'neutral'"
             :class="calendar.view === 'day' ? '' : 'text-muted'"
+            :aria-pressed="calendar.view === 'day'"
             @click="calendar.setView('day')"
           />
         </UFieldGroup>

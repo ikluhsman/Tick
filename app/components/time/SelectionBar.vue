@@ -35,15 +35,30 @@ async function markBillable() {
   }
 }
 
+// After "Move to trash" the bar unmounts, so the dialog must not try to hand
+// focus back to its (vanishing) trigger — the page moves focus to the list.
+let deleting = false
+
 function confirmDelete() {
+  deleting = true
   confirmOpen.value = false
   emit('delete')
+}
+
+function onCloseAutoFocus(e: Event) {
+  if (!deleting) return
+  deleting = false
+  e.preventDefault()
 }
 </script>
 
 <template>
-  <div class="tick-rise flex items-center gap-2.5 rounded-md bg-primary/10 py-1.5 pr-1.5 pl-3.5 ring-1 ring-primary/25">
-    <span class="flex-1 text-[13px] text-primary">{{ count }} selected</span>
+  <div
+    role="region"
+    aria-label="Bulk actions"
+    class="tick-rise flex items-center gap-2.5 rounded-md bg-primary/10 py-1.5 pr-1.5 pl-3.5 ring-1 ring-primary/25"
+  >
+    <span class="flex-1 text-[13px] text-primary" role="status">{{ count }} selected</span>
     <UButton color="primary" variant="ghost" size="sm" label="Clear" @click="entriesStore.clearSelection()" />
     <UButton color="neutral" variant="outline" size="sm" label="Mark billable" @click="markBillable" />
     <UButton
@@ -63,7 +78,7 @@ function confirmDelete() {
       @click="confirmOpen = true"
     />
 
-    <UModal v-model:open="confirmOpen" :title="confirmTitle">
+    <UModal v-model:open="confirmOpen" :title="confirmTitle" :content="{ onCloseAutoFocus }">
       <template #body>
         <p class="text-sm text-muted">{{ confirmBody }}</p>
       </template>

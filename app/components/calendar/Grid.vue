@@ -40,7 +40,15 @@ const now = ref(Date.now())
 let nowHandle: ReturnType<typeof setInterval> | null = null
 /** Coarse pointer (touch device) → render resize handles for the armed block. */
 const isCoarse = ref(false)
+/**
+ * The now line is client-only: its position is wall-clock and timezone
+ * dependent, so a server render lands a minute (or the server's UTC offset)
+ * away from the browser's — a hydration style mismatch Vue never patches.
+ */
+const nowReady = ref(false)
 onMounted(() => {
+  now.value = Date.now()
+  nowReady.value = true
   nowHandle = setInterval(() => (now.value = Date.now()), 30_000)
   isCoarse.value = window.matchMedia('(pointer: coarse)').matches
 })
@@ -653,7 +661,8 @@ function blockEdge(billable: boolean): string {
             <button
               type="button"
               :title="b.title || undefined"
-              class="absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-sm py-1 pl-1.5 pr-7 text-left transition-[filter] hover:brightness-[1.12]"
+              :aria-label="b.title ? `${b.name} · ${d.wd} ${d.num}${b.title.slice(b.name.length)} · ${b.sub}` : undefined"
+              class="absolute inset-x-[3px] flex flex-col gap-px overflow-hidden rounded-sm py-1 pl-1.5 pr-7 text-left transition-[filter] hover:brightness-[1.12] focus-visible:z-10 focus-visible:outline-offset-1"
               :class="[
                 b.dragging ? 'z-10 cursor-grabbing opacity-90 shadow-md' : 'cursor-grab',
                 isCoarse && armedId === b.id && !b.dragging ? 'ring ring-primary/60' : ''
@@ -669,7 +678,7 @@ function blockEdge(billable: boolean): string {
             >
               <span class="pointer-events-none absolute inset-x-0 top-0 h-[6px] cursor-ns-resize" />
               <span class="truncate text-[11px] font-medium leading-[1.25] text-highlighted">{{ b.name }}</span>
-              <span class="tnum truncate text-[10px] text-muted">{{ b.sub }}</span>
+              <span class="tnum truncate text-[10px] text-toned">{{ b.sub }}</span>
               <span class="pointer-events-none absolute inset-x-0 bottom-0 h-[6px] cursor-ns-resize" />
             </button>
 
@@ -743,7 +752,7 @@ function blockEdge(billable: boolean): string {
 
           <!-- Now line -->
           <span
-            v-if="nowLine && nowLine.dayIdx === di"
+            v-if="nowReady && nowLine && nowLine.dayIdx === di"
             class="pointer-events-none absolute inset-x-0 z-20 h-px bg-primary"
             :style="{ top: nowLine.top + 'px', boxShadow: '0 0 6px var(--ui-primary)' }"
           >

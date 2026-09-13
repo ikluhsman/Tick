@@ -3,7 +3,8 @@
 // Pages set their own "<Page> · Tick" titles; this template only fills in
 // the fallback when a page sets none.
 useHead({
-  titleTemplate: title => title || 'Tick'
+  titleTemplate: title => title || 'Tick',
+  htmlAttrs: { lang: 'en' }
 })
 </script>
 

@@ -31,6 +31,16 @@ const roleLine = computed(() => {
   return u.defaultRate != null ? `${role} · $${u.defaultRate}/h default` : role
 })
 
+// The drawer leaves focus on the "More" trigger behind the sheet; move it to
+// the first link so keyboard and screen-reader users land inside the dialog
+// (Escape still returns focus to the trigger).
+const sheetEl = useTemplateRef<HTMLElement>('sheetEl')
+watch(open, async (v) => {
+  if (!v) return
+  await nextTick()
+  requestAnimationFrame(() => sheetEl.value?.querySelector<HTMLElement>('a[href]')?.focus())
+})
+
 async function logout() {
   open.value = false
   await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
@@ -40,10 +50,10 @@ async function logout() {
 </script>
 
 <template>
-  <UDrawer v-model:open="open" :handle="true" aria-label="More">
+  <UDrawer v-model:open="open" :handle="true" title="More" description="Projects, clients, tags, settings and your account">
     <template #content>
-      <div class="flex flex-col gap-1 px-3 pt-1 pb-[max(12px,env(safe-area-inset-bottom))]">
-        <div class="px-3 pb-1 text-[10px] tracking-[0.1em] uppercase text-dimmed">Manage</div>
+      <div ref="sheetEl" class="flex flex-col gap-1 px-3 pt-1 pb-[max(12px,env(safe-area-inset-bottom))]">
+        <div class="px-3 pb-1 text-[10px] tracking-[0.1em] uppercase text-muted">Manage</div>
 
         <NuxtLink
           v-for="l in links"
@@ -63,12 +73,12 @@ async function logout() {
 
         <!-- User + logout -->
         <div class="flex min-h-12 items-center gap-3 px-3">
-          <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-accented text-[11px] font-semibold text-default">
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-accented text-[11px] font-semibold text-default" aria-hidden="true">
             {{ initials(user?.name) }}
           </span>
           <span class="min-w-0 flex-1 leading-tight">
             <span class="block truncate text-[13px] text-default">{{ user?.name ?? '—' }}</span>
-            <span class="block truncate text-[11px] text-dimmed tnum">{{ roleLine }}</span>
+            <span class="block truncate text-[11px] text-muted tnum">{{ roleLine }}</span>
           </span>
           <UButton
             color="neutral"

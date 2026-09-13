@@ -34,8 +34,17 @@ const creating = ref(false)
 const searchInput = useTemplateRef<{ inputRef?: HTMLInputElement }>('searchInput')
 const listEl = useTemplateRef<HTMLElement>('listEl')
 
+// ── Focus return + screen-reader announcements ─────────────────────────────
+// The trigger is remembered on open. When it no longer exists at close (the
+// "+" dropdown's menu item unmounts; "Move to…" goes when the selection
+// clears) focus lands on the visible "+" (timer target) or <main>, never body.
+let returnFocus: HTMLElement | null = null
+const announcement = ref('')
+
 watch(() => ui.pickerOpen, (v) => {
   if (!v) return
+  if (import.meta.client) returnFocus = document.activeElement as HTMLElement | null
+  announcement.value = ''
   tab.value = ui.pickerTab
   search.value = ''
   highlighted.value = 0
@@ -212,14 +221,33 @@ async function createFromSearch() {
   }
 }
 
+/** Polite status text for the row the arrow keys just moved to. */
+function announceHighlighted() {
+  const it = visible.value[highlighted.value]
+  if (!it) return
+  const parts = [it.name, it.sub, it.meta].filter(Boolean).join(', ')
+  announcement.value = `${parts} — ${highlighted.value + 1} of ${allItems.value.length}`
+}
+
+// Result count after typing (not on every arrow move)
+watch([search, tab], () => {
+  if (!ui.pickerOpen) return
+  const n = allItems.value.length
+  announcement.value = n
+    ? `${n} ${n === 1 ? 'result' : 'results'}`
+    : search.value.trim() ? `No matches — press Enter to create “${search.value.trim()}”` : 'Nothing here yet'
+})
+
 function onKeydown(e: KeyboardEvent) {
   const count = visible.value.length
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     if (count) highlighted.value = (highlighted.value + 1) % count
+    announceHighlighted()
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     if (count) highlighted.value = (highlighted.value - 1 + count) % count
+    announceHighlighted()
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const it = visible.value[highlighted.value]
@@ -232,6 +260,20 @@ function onKeydown(e: KeyboardEvent) {
 function onOpenAutoFocus(e: Event) {
   e.preventDefault()
   nextTick(() => searchInput.value?.inputRef?.focus())
+}
+
+function onCloseAutoFocus(e: Event) {
+  const el = returnFocus
+  returnFocus = null
+  let target: HTMLElement | null = el?.isConnected && !el.closest('[role="menu"]') ? el : null
+  if (!target && ui.pickerTarget === 'timer') {
+    target = [...document.querySelectorAll<HTMLElement>('button[aria-label="Add client, project or task"]')]
+      .find(b => b.offsetParent !== null) ?? null
+  }
+  target ??= document.getElementById('main')
+  if (!target) return
+  e.preventDefault()
+  target.focus()
 }
 </script>
 
@@ -246,8 +288,9 @@ function onOpenAutoFocus(e: Event) {
       overlay: 'z-20',
       content: 'top-[12vh] translate-y-0 max-w-[520px] z-20 max-sm:top-auto max-sm:bottom-0 max-sm:left-0 max-sm:translate-x-0 max-sm:w-full max-sm:max-w-full max-sm:rounded-b-none'
     }"
-    :content="{ onOpenAutoFocus }"
-    aria-label="Pick a client, project or task"
+    :content="{ onOpenAutoFocus, onCloseAutoFocus }"
+    title="Pick a client, project or task"
+    description="Type to search, arrow keys to move, Enter to pick, Escape to close."
   >
     <template #content>
       <!-- Grab handle (bottom sheet only) -->
@@ -265,6 +308,7 @@ function onOpenAutoFocus(e: Event) {
             :class="[tab === t.value ? '' : 'text-toned', 'max-sm:min-h-11 max-sm:px-4']"
             role="tab"
             :aria-selected="tab === t.value"
+            aria-controls="picker-results"
             @click="tab = t.value"
           />
         </div>
@@ -275,6 +319,7 @@ function onOpenAutoFocus(e: Event) {
           v-model="search"
           icon="i-lucide-search"
           :placeholder="placeholder"
+          :aria-label="placeholder"
           size="lg"
           class="w-full"
           @keydown="onKeydown"
@@ -284,7 +329,7 @@ function onOpenAutoFocus(e: Event) {
         <button
           v-if="ui.pickerTarget === 'bulk'"
           type="button"
-          class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
+          class="focus-visible:outline-offset-[-2px] flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
           :disabled="moving"
           @click="bulkMove(null, null, 'No client / project / task')"
         >
@@ -296,12 +341,21 @@ function onOpenAutoFocus(e: Event) {
         </button>
 
         <!-- Results -->
-        <div ref="listEl" class="flex max-h-[340px] flex-col gap-px overflow-y-auto max-sm:max-h-[45vh]">
+        <!-- Arrow-key position / result count, read out politely -->
+        <div role="status" class="sr-only">{{ announcement }}</div>
+
+        <!-- Results -->
+        <div
+          id="picker-results"
+          ref="listEl"
+          role="tabpanel"
+          class="flex max-h-[340px] flex-col gap-px overflow-y-auto max-sm:max-h-[45vh]"
+        >
           <button
             v-for="(it, i) in visible"
             :key="it.id"
             type="button"
-            class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left max-sm:min-h-12"
+            class="flex items-center gap-3 rounded-md px-2.5 py-[9px] text-left focus-visible:outline-offset-[-2px] max-sm:min-h-12"
             :class="i === highlighted
               ? 'bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'
               : 'hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)]'"
@@ -319,7 +373,7 @@ function onOpenAutoFocus(e: Event) {
           <button
             v-if="moreCount > 0"
             type="button"
-            class="flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-11"
+            class="focus-visible:outline-offset-[-2px] flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-11"
             @click="limit += PAGE"
           >
             <UIcon name="i-lucide-chevron-down" class="size-3.5 shrink-0" />
@@ -329,7 +383,7 @@ function onOpenAutoFocus(e: Event) {
           <button
             v-if="showCreate"
             type="button"
-            class="flex items-center gap-3 rounded-md border border-dashed border-default px-2.5 py-[9px] text-left text-sm text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
+            class="focus-visible:outline-offset-[-2px] flex items-center gap-3 rounded-md border border-dashed border-default px-2.5 py-[9px] text-left text-sm text-primary hover:bg-[color-mix(in_srgb,var(--ui-text)_7%,transparent)] max-sm:min-h-12"
             :disabled="creating"
             @click="createFromSearch"
           >
@@ -343,7 +397,7 @@ function onOpenAutoFocus(e: Event) {
         </div>
 
         <!-- Footer hint -->
-        <p class="text-[11px] text-dimmed">
+        <p class="text-[11px] text-muted">
           Picking a task brings its project and client along. ↑↓ move · ↵ pick · esc close
         </p>
       </div>

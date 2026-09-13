@@ -10,6 +10,16 @@
   --ui-radius: 0.5rem;
 }
 
+/* Keyboard focus indicator for hand-rolled controls (calendar blocks, entry
+   names, preset/font cards, swatches, nav links…). Zero-specificity base rule:
+   Nuxt UI components keep their own focus-visible utilities, which win. */
+@layer base {
+  :where(a[href], button, summary, [role="button"], [role="tab"], [role="checkbox"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
+}
+
 /* Tabular numerals wherever time or money appears */
 .tnum {
   font-variant-numeric: tabular-nums;
@@ -48,6 +58,29 @@
 
 .tick-glow {
   animation: tick-glow 2s ease-in-out infinite;
+}
+
+/* prefers-reduced-motion: the running glow holds still at its resting state,
+   and every CSS animation/transition (menus, dialogs, toasts, rises) resolves
+   near-instantly. Durations go to ~0 rather than `none` so reka's Presence
+   still receives animationend and unmounts closing dialogs. GSAP draw-ins
+   check the same query in dashReducedMotion(). */
+@media (prefers-reduced-motion: reduce) {
+  .tick-glow {
+    animation: none;
+    box-shadow:
+      0 0 0 1px var(--ui-primary),
+      0 0 12px color-mix(in srgb, var(--ui-primary) 30%, transparent);
+  }
+
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Starfield — nine tiny radial-gradient dots (≤ .8px, 30–70% white).

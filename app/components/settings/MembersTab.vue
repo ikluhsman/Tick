@@ -204,7 +204,7 @@ function apiError(err: unknown): string {
     <div class="overflow-hidden rounded-lg border border-default bg-elevated shadow-sm">
       <div class="flex flex-wrap items-center gap-[11px] border-b border-default px-[22px] py-3">
         <div class="min-w-0 flex-1">
-          <h3 class="text-[15px] font-medium text-highlighted">Members</h3>
+          <h2 class="text-[15px] font-medium text-highlighted">Members</h2>
           <p class="text-xs text-muted">
             Roles gate settings; the rate override beats a member's own default (Rule 2).
           </p>
@@ -237,6 +237,7 @@ function apiError(err: unknown): string {
       >
         <div class="flex min-w-0 items-center gap-2.5">
           <span
+            aria-hidden="true"
             class="grid size-[28px] shrink-0 place-items-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary"
           >
             {{ initials(m.name) }}
@@ -244,7 +245,7 @@ function apiError(err: unknown): string {
           <div class="min-w-0">
             <div class="truncate text-sm font-medium text-highlighted">
               {{ m.name }}
-              <span v-if="m.userId === me?.id" class="text-xs font-normal text-dimmed">(you)</span>
+              <span v-if="m.userId === me?.id" class="text-xs font-normal text-muted">(you)</span>
             </div>
             <div class="truncate text-xs text-muted">{{ m.email }}</div>
           </div>
@@ -272,10 +273,10 @@ function apiError(err: unknown): string {
           @keydown.enter="($event.target as HTMLInputElement).blur()"
         >
           <template #leading>
-            <span class="text-xs text-dimmed">$</span>
+            <span class="text-xs text-muted">$</span>
           </template>
           <template #trailing>
-            <span class="text-xs text-dimmed">/h</span>
+            <span class="text-xs text-muted">/h</span>
           </template>
         </UInput>
 
@@ -303,7 +304,7 @@ function apiError(err: unknown): string {
     <!-- Pending invites -->
     <div v-if="canManage && invites.length" class="overflow-hidden rounded-lg border border-default bg-elevated shadow-sm">
       <div class="border-b border-default px-[22px] py-3">
-        <h3 class="text-[15px] font-medium text-highlighted">Pending invites</h3>
+        <h2 class="text-[15px] font-medium text-highlighted">Pending invites</h2>
         <p class="text-xs text-muted">Not accepted yet — the link stays copyable either way.</p>
       </div>
       <div

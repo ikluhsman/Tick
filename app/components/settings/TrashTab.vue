@@ -176,7 +176,7 @@ function apiError(err: unknown): string {
       >
         <div class="flex items-center gap-2 border-b border-default px-[22px] py-2.5">
           <UIcon :name="s.icon" class="size-4 text-dimmed" />
-          <h3 class="text-[14px] font-medium text-highlighted">{{ s.label }}</h3>
+          <h2 class="text-[14px] font-medium text-highlighted">{{ s.label }}</h2>
           <span class="tnum text-xs text-muted">{{ trash[s.key].length }}</span>
         </div>
 

@@ -16,7 +16,7 @@ const emit = defineEmits<{ delete: [entry: EntryDto] }>()
 <template>
   <section class="flex flex-col gap-2">
     <div class="flex items-baseline gap-2.5 px-1.5">
-      <h3 class="text-base font-medium text-highlighted">{{ label }}</h3>
+      <h2 class="text-base font-medium text-highlighted">{{ label }}</h2>
       <span v-if="sub" class="text-xs text-muted">{{ sub }}</span>
       <span class="tnum ml-auto text-sm font-medium text-toned">{{ formatDuration(totalSec) }}</span>
     </div>

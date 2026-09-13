@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div
+  <main
     class="relative flex min-h-screen flex-col items-center justify-center gap-6 bg-default p-6 text-default"
     :style="{ background: 'linear-gradient(180deg, color-mix(in srgb, var(--ui-bg-elevated) 40%, var(--ui-bg)) 0%, var(--ui-bg) 60%)' }"
   >
@@ -15,5 +15,5 @@
     <div class="relative w-full max-w-[400px]">
       <slot />
     </div>
-  </div>
+  </main>
 </template>

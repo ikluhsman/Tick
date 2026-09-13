@@ -140,9 +140,29 @@ function undoToast(message: string, result: DeleteResult) {
   })
 }
 
+/**
+ * Keyboard focus must not fall to <body> when the focused row disappears:
+ * pick the neighbouring row's name button (next, else previous) before the
+ * delete, and move focus there once the row has unmounted. Only acts when
+ * focus was inside the deleted row, so pointer users see no change.
+ */
+function focusNeighbourAfterRemoval(id: string): () => void {
+  const rows = [...document.querySelectorAll<HTMLElement>('[data-entry-id]')]
+  const i = rows.findIndex(r => r.dataset.entryId === id)
+  const row = rows[i]
+  if (!row || !row.contains(document.activeElement)) return () => {}
+  const target = (rows[i + 1] ?? rows[i - 1])?.querySelector<HTMLElement>('[data-entry-name]') ?? null
+  return () => nextTick(() => {
+    if (document.activeElement && document.activeElement !== document.body && document.activeElement.isConnected) return
+    ;(target?.isConnected ? target : document.getElementById('main'))?.focus()
+  })
+}
+
 async function onDelete(entry: EntryDto) {
+  const restoreFocus = focusNeighbourAfterRemoval(entry.id)
   try {
     const result = await entriesStore.remove(entry.id)
+    restoreFocus()
     undoToast(`Deleted “${entry.name}”`, result)
   } catch {
     // row stays; server said no
@@ -153,6 +173,11 @@ async function onBulkDelete() {
   const count = entriesStore.selection.size
   try {
     const result = await entriesStore.bulkDelete()
+    // The selection bar (and its Delete trigger) is gone — land on the list
+    nextTick(() => {
+      if (document.activeElement && document.activeElement !== document.body) return
+      ;(document.querySelector<HTMLElement>('[data-entry-name]') ?? document.getElementById('main'))?.focus()
+    })
     if (result) undoToast(`Moved ${count} ${count === 1 ? 'entry' : 'entries'} to trash`, result)
   } catch {
     // selection stays for retry
@@ -175,6 +200,7 @@ async function onBulkDelete() {
             variant="outline"
             :color="entriesStore.groupBy === 'day' ? 'primary' : 'neutral'"
             :class="entriesStore.groupBy === 'day' ? '' : 'text-muted'"
+            :aria-pressed="entriesStore.groupBy === 'day'"
             @click="entriesStore.groupBy = 'day'"
           />
           <UButton
@@ -182,6 +208,7 @@ async function onBulkDelete() {
             variant="outline"
             :color="entriesStore.groupBy === 'project' ? 'primary' : 'neutral'"
             :class="entriesStore.groupBy === 'project' ? '' : 'text-muted'"
+            :aria-pressed="entriesStore.groupBy === 'project'"
             @click="entriesStore.groupBy = 'project'"
           />
         </UFieldGroup>
@@ -189,6 +216,7 @@ async function onBulkDelete() {
           v-model="entriesStore.filter"
           icon="i-lucide-search"
           placeholder="Filter, #tag, @project"
+          aria-label="Filter entries — #tag, @project or text"
           class="w-60"
         />
         <UButton
@@ -220,7 +248,7 @@ async function onBulkDelete() {
     <!-- Empty state: filtered-to-nothing gets its own copy + a Clear filter action -->
     <div v-else class="rounded-lg bg-elevated p-[22px] text-center shadow-sm ring ring-default">
       <template v-if="entriesStore.filter.trim()">
-        <h3 class="mb-1 text-lg font-medium text-highlighted">No entries match your filter</h3>
+        <h2 class="mb-1 text-lg font-medium text-highlighted">No entries match your filter</h2>
         <p class="mb-3 text-[13px] text-muted">
           Nothing matches “{{ entriesStore.filter.trim() }}” in the last 30 days.
         </p>
@@ -233,7 +261,7 @@ async function onBulkDelete() {
         />
       </template>
       <template v-else>
-        <h3 class="mb-1 text-lg font-medium text-highlighted">Nothing here yet</h3>
+        <h2 class="mb-1 text-lg font-medium text-highlighted">Nothing here yet</h2>
         <p class="text-[13px] text-muted">Start the timer above, or add a manual entry.</p>
       </template>
     </div>

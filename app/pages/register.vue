@@ -145,6 +145,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         :ui="{ title: 'font-medium' }"
         @submit="onSubmit"
       >
+        <template #title>
+          <h1>{{ invite ? `Join ${invite.orgName}` : 'Create your workspace' }}</h1>
+        </template>
         <template #validation>
           <UAlert
             v-if="inviteProblem && !errorMessage"

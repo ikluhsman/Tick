@@ -67,7 +67,7 @@ onMounted(() => {
   <UCard class="bg-elevated shadow-sm" :ui="{ body: 'p-4 sm:p-4' }">
     <div class="flex items-baseline gap-2.5">
       <h2 class="text-[15px] font-medium text-highlighted">This week</h2>
-      <span class="text-[11px] text-dimmed">{{ rangeLabel }}</span>
+      <span class="text-[11px] text-muted">{{ rangeLabel }}</span>
     </div>
     <div ref="barsEl" class="mt-1.5 flex flex-col gap-1.75">
       <div
