@@ -1,0 +1,53 @@
+version: 2
+
+updates:
+  # The app.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # One PR a week for the routine stuff; majors still come in one PR each
+      # so a breaking change is reviewed on its own.
+      minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  # The documentation site (its own Nuxt app + lockfile).
+  - package-ecosystem: npm
+    directory: /docs
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+    open-pull-requests-limit: 3
+    labels: [dependencies, docs]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  # The actions used by .github/workflows/*.yml.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+    open-pull-requests-limit: 3
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']

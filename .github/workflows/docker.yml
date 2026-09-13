@@ -1,9 +1,27 @@
 name: Docker
 
+# Image publishing is GATED. This workflow no longer listens to `push` on its
+# own — it is called by CI (.github/workflows/ci.yml) from a job that lists
+# typecheck, unit, integration and e2e in `needs`. Before this change, every
+# push to main published `latest` even if the app did not compile.
+#
+# Why `workflow_call` rather than `workflow_run`:
+#   * `workflow_run` runs detached from the ref that triggered CI: `github.ref`
+#     is the default branch even when CI ran for a `v*` tag, so the
+#     `type=semver` rules below would silently stop emitting version tags (and
+#     the checkout would need the head_sha wired in by hand).
+#   * `workflow_run` fires on *completed* — success or failure — so the gate
+#     would be a hand-written `if:` on someone else's conclusion instead of a
+#     real dependency edge.
+#   A called workflow keeps the caller's event, ref and sha, so every tag rule
+#   here is byte-for-byte what it was when this file ran on `push`; the only
+#   thing that changed is that something has to pass first.
+#
+# There is deliberately no `workflow_dispatch`: a manual run would be a way to
+# publish an untested image, which is the exact hole this closes. Re-run the CI
+# run instead.
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
+  workflow_call:
 
 permissions:
   contents: read
@@ -12,6 +30,7 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,3 +66,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # The GHCR package is public: `docker pull ghcr.io/ticktimer/tick:latest`
+      # works without `docker login`. Package visibility is a GHCR setting, not
+      # something this workflow controls — if it is ever flipped to private,
+      # the pull instructions in README.md and docs/content/2.installation.md
+      # stop being true.

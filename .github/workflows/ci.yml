@@ -1,0 +1,254 @@
+name: CI
+
+# The gate. Every job here must pass before the Docker image is published:
+# `publish` calls .github/workflows/docker.yml as a reusable workflow and lists
+# the test jobs in `needs`, so a type error or a broken endpoint can no longer
+# reach the `latest` tag.
+#
+# Tag pushes (`v*`) run the full suite too — that is what makes the semver
+# tags in docker.yml trustworthy.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+# Least privilege by default; `publish` raises its own job-level permissions.
+permissions:
+  contents: read
+
+# A new push to the same branch/PR cancels the run it supersedes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Matches the Dockerfile (node:22-alpine) and the documented "Node 22+".
+  NODE_VERSION: '22'
+  # Every suite hard-codes this connection string (test/helpers/server.ts,
+  # test/e2e/helpers/fixtures.ts, test/unit/cascade.spec.ts — the last one
+  # *refuses* to run against a database not named tick_test). The postgres
+  # service below is configured to match it exactly: user tick, password
+  # tick_dev_password, database tick_test, published on localhost:5432.
+  NUXT_DATABASE_URL: postgresql://tick:tick_dev_password@localhost:5432/tick_test
+  # Not a secret: a throwaway 32+ char value so session sealing works in CI.
+  NUXT_SESSION_PASSWORD: tick-ci-session-password-not-a-secret-0123456789
+  # tick_test is managed with `db:push`, so it carries no drizzle migration
+  # journal — replaying 0000 over it would fail on the existing tables.
+  NUXT_AUTO_MIGRATE: 'false'
+  # Auth endpoints allow 10 POSTs per IP per minute; suites that sign in
+  # dozens of times would trip the limiter.
+  NUXT_AUTH_RATE_LIMIT: '0'
+
+jobs:
+  # 1 — types. There is no linter configured in this repo (no eslint dep, no
+  # `lint` script), so `nuxt typecheck` is the whole static-analysis story.
+  # Add the lint step here if one is ever introduced.
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+  # 2 — unit tests (`vitest run`, test/**/*.spec.ts).
+  # Most of these specs are pure, but test/unit/cascade.spec.ts exercises the
+  # Drizzle transactions in server/utils/cascade.ts against a real database
+  # (cascade.ts has no pure exports), so this job needs Postgres and a pushed
+  # schema. It does NOT need the demo seed: that spec creates and drops its own
+  # org + user per test.
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: tick
+          POSTGRES_PASSWORD: tick_dev_password
+          POSTGRES_DB: tick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tick -d tick_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Push schema into tick_test
+        run: npm run db:push -- --force
+
+      - name: Unit tests
+        run: npm test
+
+  # 3 — integration tests: a real production build of the Nitro server booted
+  # on 127.0.0.1:3801-3803 against tick_test, driven over HTTP.
+  # There is no `test:integration` npm script; the suite is its own vitest
+  # project and is invoked exactly as documented in vitest.integration.config.ts.
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    # The globalSetup builds the app from cold here (a few minutes) before the
+    # first test runs.
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: tick
+          POSTGRES_PASSWORD: tick_dev_password
+          POSTGRES_DB: tick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tick -d tick_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # test/integration/global-setup.ts does both of these itself when they
+      # are missing; doing them here as well is idempotent and turns a database
+      # problem into one obvious failed step instead of 40 failing tests.
+      - name: Push schema into tick_test
+        run: npm run db:push -- --force
+
+      - name: Seed tick_test
+        run: npm run db:seed
+
+      - name: Integration tests
+        run: npx vitest run --config vitest.integration.config.ts
+
+  # 4 — end-to-end: Playwright against a real production build served on 3804.
+  #
+  # NOTE ON STABILITY: this job is NOT marked `continue-on-error`. It is a hard
+  # gate, deliberately. The suite passes locally (one worker, files in order,
+  # no wall-clock assumptions — see test/e2e/README.md) and it has never been
+  # observed running on GitHub Actions, so there is no evidence of flakiness to
+  # justify making it advisory. If it does prove unstable on CI hardware, the
+  # fix is to stabilise the spec that flakes — adding `continue-on-error: true`
+  # here silently un-gates the image publish below and must be a loud,
+  # deliberate decision, not a quick patch.
+  e2e:
+    name: E2E tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: tick
+          POSTGRES_PASSWORD: tick_dev_password
+          POSTGRES_DB: tick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tick -d tick_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Playwright's documented CI recipe: cache the browser bundle, keyed on
+      # the lockfile (which pins @playwright/test), and install the OS
+      # dependencies either way.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium + OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Install OS dependencies (cached browser)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+
+      # playwright.config.ts pins launchOptions.executablePath to the headless
+      # shell installed on the author's machine, with E2E_CHROMIUM as the
+      # documented override. Point it at whatever `playwright install` just
+      # put on this runner.
+      - name: Resolve the Chromium binary for playwright.config.ts
+        run: echo "E2E_CHROMIUM=$(node -p "require('@playwright/test').chromium.executablePath()")" >> "$GITHUB_ENV"
+
+      # Build once, up front, so the build cost is its own step and the
+      # Playwright webServer (test/e2e/serve.mjs → buildIfStale) finds a fresh
+      # bundle and boots immediately.
+      - name: Build the app for e2e
+        run: node test/e2e/build.mjs --build
+
+      # test/e2e/global-setup.ts runs db:push --force + db:seed itself before
+      # the first spec; these steps make a database failure obvious early.
+      - name: Push schema into tick_test
+        run: npm run db:push -- --force
+
+      - name: Seed tick_test
+        run: npm run db:seed
+
+      - name: E2E tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: test/e2e/.cache/results
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # 5 — the gate's payoff. Reusable-workflow call, so `needs` is a real
+  # dependency rather than a hand-written `if:` on someone else's run result.
+  # Only on push (branch main or a v* tag) — pull requests never publish.
+  publish:
+    name: Publish image
+    needs: [typecheck, unit, integration, e2e]
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker.yml
