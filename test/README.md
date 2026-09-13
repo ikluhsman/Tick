@@ -28,7 +28,7 @@ axe rule id, impact, help text and the failing selector).
 Current unit files:
 
 - `test/unit/parse.spec.ts` — `app/utils/parse.ts`: `parseDate`, `parseTime`, `parseDuration`, `parseEstimate`. Every date/time/duration format listed in `docs/content/3.guide/1.timer-and-entries.md` has a case, plus the invalid-input cases that must return `null`.
-- `test/unit/format.spec.ts` — `app/utils/format.ts`: `formatDuration`, `formatClock`, `formatMoney`, `formatTime`, `formatRange`, `formatDayLabel`, `formatDaySub`, `formatDateLong`, `formatEstimate`, `clientColorVar`, `clientColorInk`, plus `formatDuration` ↔ `parseDuration` round-trips.
+- `test/unit/format.spec.ts` — `app/utils/format.ts`: `formatDuration`, `formatClock`, `formatMoney`, `formatTime`, `formatRange`, `formatDayLabel`, `formatDaySub`, `formatDateLong`, `formatEstimate`, `clientColorVar`, plus `formatDuration` ↔ `parseDuration` round-trips.
 
 ## Config
 

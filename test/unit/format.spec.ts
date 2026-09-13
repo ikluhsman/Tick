@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  clientColorInk,
   clientColorVar,
   formatClock,
   formatDateLong,
@@ -208,29 +207,9 @@ describe('clientColorVar', () => {
   })
 })
 
-describe('clientColorInk', () => {
-  // Measured (Playwright, real computed colors) ≥4.5:1 against every
-  // CLIENT_COLOR_PALETTE entry in both Nocturne (dark) and Daylight (light) —
-  // see the swing-15 report. `secondary-600` (blue, fixed regardless of
-  // preset) always wants light ink; `primary-600` flips because Nocturne's
-  // primary (violet) and Daylight's (sky) land on opposite sides of the
-  // light/dark line at the 600 step.
-  it('is mode-independent for the 400 shades and secondary-600', () => {
-    expect(clientColorInk('primary-400', false)).toBe('var(--ui-color-neutral-950)')
-    expect(clientColorInk('primary-400', true)).toBe('var(--ui-color-neutral-950)')
-    expect(clientColorInk('neutral-400', false)).toBe('var(--ui-color-neutral-950)')
-    expect(clientColorInk('neutral-400', true)).toBe('var(--ui-color-neutral-950)')
-    expect(clientColorInk('secondary-600', false)).toBe('var(--ui-color-neutral-50)')
-    expect(clientColorInk('secondary-600', true)).toBe('var(--ui-color-neutral-50)')
-  })
-
-  it('flips primary-600 with color-mode', () => {
-    expect(clientColorInk('primary-600', true)).toBe('var(--ui-color-neutral-50)')
-    expect(clientColorInk('primary-600', false)).toBe('var(--ui-color-neutral-950)')
-  })
-
-  it('defaults to dark ink for an unrecognized token', () => {
-    expect(clientColorInk(null, false)).toBe('var(--ui-color-neutral-950)')
-    expect(clientColorInk(undefined, true)).toBe('var(--ui-color-neutral-950)')
-  })
-})
+// The avatar-initials ink (app/pages/clients.vue) used to be a JS function
+// (`clientColorInk`) keyed off color-mode, but that's the wrong variable —
+// the swatch's hue (17 primaries × 9 neutrals, user-chosen) decides the ink,
+// not the app's mode. It's now a CSS-only relative-color computation
+// (`.tick-on-swatch` in app/assets/css/main.css) with no JS unit to test;
+// see test/e2e/client-color-contrast.spec.ts for its coverage.

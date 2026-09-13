@@ -37,6 +37,28 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Ink for text painted on a client-color swatch (avatar initials —
+   app/pages/clients.vue). CLIENT_COLOR_PALETTE (server/utils/entry-dto.ts)
+   draws from the user's chosen primary (17 Tailwind colors) and neutral (9)
+   in EITHER color mode, so the ink a swatch needs depends on that swatch's
+   own lightness, not the app's dark/light mode — a mode-keyed class (even
+   a dark:-aware one) is wrong for some hue/mode pairing (e.g. amber in dark
+   mode, violet in light mode). The element sets `--client-bg` inline
+   (`clientColorVar(...)`); this flips ink to white/black based on the
+   swatch's actual computed OKLCH lightness.
+   First declaration is the fallback for browsers without relative color
+   syntax (plain dark ink). The second overrides it there: white when the
+   swatch's lightness is below T, black at or above it. T=0.583 sits in the
+   middle of the widest window (measured against every primary × every
+   neutral this app supports, both modes) that clears 4.5:1 everywhere —
+   see test/e2e/client-color-contrast.spec.ts. Re-measure if
+   CLIENT_COLOR_PALETTE's shade steps (currently -400/-600) ever change. */
+.tick-on-swatch {
+  background: var(--client-bg);
+  color: var(--ui-color-neutral-950);
+  color: oklch(from var(--client-bg) clamp(0, (0.583 - l) * 1000, 1) 0 0);
+}
+
 /* Menus / dialogs / toasts enter with translateY(8px) → 0, opacity 0 → 1 */
 @keyframes tick-rise {
   from {

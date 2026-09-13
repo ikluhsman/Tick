@@ -89,11 +89,13 @@ Settings) plus the picker and manual-entry dialogs, asserting zero
 `wcag2a`/`wcag2aa`/`wcag21a`/`wcag21aa` violations. Logged-in pages run once
 per shipped color-mode default — **Nocturne** (dark) and **Daylight**
 (light) — switched via the real Settings → Appearance preset buttons (not a
-hand-rolled cookie), and the file resets the account back to Nocturne in an
-`afterAll` once it's done: the preset persists server-side (`users.theme`),
-so leaving it dirty would carry into the *next* run's one-time login. A small
-`@mobile`-tagged subset (`/`, `/time` incl. Select mode on, `/clients`, the
-picker bottom sheet) also runs in the `mobile` project.
+hand-rolled cookie). Every test that switches to a non-default preset restores
+Nocturne in its own `afterEach` (plus a belt-and-suspenders file-level
+`afterAll`): the preset persists server-side (`users.theme`), so leaving it
+dirty would carry into whichever spec — in this run or the *next* run's
+one-time login — happens to go next. A small `@mobile`-tagged subset (`/`,
+`/time` incl. Select mode on, `/clients`, the picker bottom sheet) also runs
+in the `mobile` project.
 
 **Reading a failure**: the assertion message lists every violation with its
 axe rule id, impact (`minor`/`moderate`/`serious`/`critical`), the rule's
@@ -102,6 +104,20 @@ element without re-running anything. There are no disabled rules; a violation
 that turns out to live inside a Nuxt UI internal you can't fix would get a
 `.exclude()` on that exact selector with a comment explaining why (none exist
 as of this writing — check `a11y.spec.ts` itself for the current list).
+
+### Client avatar swatch ink (`client-color-contrast.spec.ts`)
+
+The /clients avatar initials paint their ink with a CSS-only relative-color
+computation (`.tick-on-swatch`, app/assets/css/main.css) instead of a JS
+function, because the right ink depends on whichever primary (17 choices) and
+neutral (9 choices) the user picked — not just the two shipped presets — and
+CSS can't be unit-tested. This spec drives every primary and every neutral
+through the real Settings → Appearance editor, in both color modes, and
+asserts ≥4.5:1 via `getComputedStyle` on a live probe element (not a full axe
+run — much faster, and deterministic in a way reading real seeded-client
+avatars wouldn't be, since seeded client ids are DB-generated per seed run).
+Restores the default theme in its own `afterEach` for the same reason as the
+a11y spec above.
 
 ## Selector conventions
 
