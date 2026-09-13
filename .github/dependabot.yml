@@ -13,6 +13,15 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # vue-tsc 3.x cannot load TypeScript 7 (package.json pins ~5.9); lift
+      # this once vue-tsc supports it.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # @types/node tracks the runtime (Node 22 in Dockerfile + CI), not the
+      # newest Node release.
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
       # One PR a week for the routine stuff; majors still come in one PR each
       # so a breaking change is reviewed on its own.
@@ -32,6 +41,13 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    # Same constraints as the app. CI does not typecheck docs/, so a green
+    # check on a TypeScript 7 PR here proves nothing.
+    ignore:
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
     groups:
       minor-and-patch:
         patterns: ['*']
