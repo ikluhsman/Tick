@@ -22,6 +22,7 @@ describe('sessionCookieProblem', () => {
     expect(msg).toContain('tick.example:3000')
     expect(msg).toContain('https://')
     expect(msg).toContain('NUXT_SESSION_COOKIE_SECURE=false')
+    expect(msg).toMatch(/clear this site's cookies/)
   })
 
   it('reports the generic cookie-blocking cause, with its remediation, when the context is secure', () => {

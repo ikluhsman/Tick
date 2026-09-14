@@ -58,7 +58,7 @@ directly on the plain-HTTP login it enables:
   plain http to 127.0.0.1 and Playwright's `APIRequestContext` will not send a
   `Secure` cookie over http, so the API-driven setup/cleanup helpers would run
   unauthenticated. `session-cookie.spec.ts` case 1 also verifies this override
-  end to end: a plain-HTTP login that would otherwise silently fail.
+  end to end: a plain-HTTP login that the browser would otherwise refuse.
 * The PWA service worker is disabled for this build. An auto-updating worker
   re-registering in every fresh browser context is pure flake and no flow under
   test involves it.

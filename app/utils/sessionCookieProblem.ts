@@ -11,6 +11,7 @@ export function sessionCookieProblem(
   // Browsers store Secure cookies only in a secure context (https:, localhost, 127.x, [::1])
   if (!ctx.secureContext)
     return `${lead} your browser refused the sign-in cookie because this page is plain HTTP (${ctx.host}). `
-      + 'Open Tick over https://, or ask your server admin to set NUXT_SESSION_COOKIE_SECURE=false (trusted networks only).'
+      + 'Open Tick over https://, or ask your server admin to set NUXT_SESSION_COOKIE_SECURE=false (trusted networks only). '
+      + 'If that is already set, clear this site\'s cookies — a cookie left from an earlier https:// visit blocks plain-HTTP sign-in.'
   return `${lead} your browser didn't keep the sign-in cookie. Allow cookies for this site (check private-browsing or cookie-blocking settings) and try again.`
 }
