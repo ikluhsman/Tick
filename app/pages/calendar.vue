@@ -10,6 +10,10 @@ useHead({ title: 'Calendar · Tick' })
 
 const calendar = useCalendarStore()
 const ui = useUiStore()
+// True only on the first mount after a server render — the calendar state
+// (including `anchor`) then came from the SSR payload, computed in the
+// server's timezone. Read before the await below, while it is still set.
+const hydrating = useNuxtApp().isHydrating
 const entriesStore = useEntriesStore()
 const { showUndoToast } = useUndoToast()
 
@@ -36,17 +40,29 @@ async function onDialogDelete(entry: EntryDto) {
 }
 
 // SSR-hydrated grid: fetch on the server (state rides the Pinia payload, so
-// hydration re-fetches nothing) and again on every later client-side visit.
+// hydration re-fetches nothing unless the browser's timezone differs from the
+// server's — see onMounted) and again on every later client-side visit.
 await useAsyncData('calendar-entries', async () => {
   await calendar.fetchRange()
   return true
 })
 
 onMounted(() => {
+  const rangeBefore = calendar.rangeStart
+  // The server anchored the grid on *its* day (UTC in the container), which a
+  // browser behind it reads as yesterday — so the grid opens on the wrong day,
+  // or the wrong week, with none of today's entries until a nav button moves
+  // the anchor (ticktimer/Tick#29). Post-mount, so hydration still matches the
+  // SSR markup.
+  if (hydrating) calendar.localizeAnchor()
   // Mobile defaults to Day view (README §Mobile); the segmented control still
   // switches. Post-mount so SSR markup (week) hydrates cleanly — the range
   // watcher below then fetches the day view.
   if (window.innerWidth < 1024 && calendar.view === 'week') calendar.setView('day')
+  // Re-anchoring usually moves the range and the watcher refetches. When it
+  // doesn't (a timezone whose week matches the server's), the entries still
+  // came from the server's window — shifted by its offset — so refetch here.
+  if (hydrating && calendar.rangeStart === rangeBefore) calendar.fetchRange().catch(() => {})
 })
 
 watch(() => [calendar.rangeStart, calendar.rangeEnd], () => {

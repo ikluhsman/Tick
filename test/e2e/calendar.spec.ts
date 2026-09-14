@@ -85,3 +85,41 @@ test('the block play button starts the timer for that entry', async ({ page, api
   expect(timer.ok()).toBe(true)
   expect(((await timer.json()) as { name: string }).name).toBe(BLOCK)
 })
+
+// ── ticktimer/Tick#29 ───────────────────────────────────────────────────────
+// `anchor` is a *local* start-of-day, but a server render computes it in the
+// server's timezone and it rides the Pinia payload into the browser. The grid's
+// day columns are then derived from it locally, so what breaks is the anchor
+// naming a different calendar day in the browser than it did on the server —
+// which is what happens to every browser behind the server (deployed: a UTC
+// container, and the user west of it). Day view shows that wrong day outright;
+// week view re-derives its Monday from the anchor, so it only slips a whole
+// week when the server's day is a Monday — which is how the bug was reported.
+//
+// One host runs both sides here, so the browser context is put an hour behind.
+const HOST_OFFSET_H = -new Date().getTimezoneOffset() / 60
+const SHIFTED_H = Math.trunc(HOST_OFFSET_H) - 1
+// Etc/GMT signs are inverted: Etc/GMT+7 is UTC-7.
+const SHIFTED_TZ = `Etc/GMT${SHIFTED_H <= 0 ? '+' : '-'}${Math.abs(SHIFTED_H)}`
+
+test.describe('browser timezone differs from the server', () => {
+  test.use({ timezoneId: SHIFTED_TZ })
+
+  test('a server-rendered load anchors the grid on the browser\'s days', async ({ page }) => {
+    // UTC-12 is the westmost zone, and in the host's first hour of the day the
+    // block created above belongs to the browser's yesterday.
+    test.skip(SHIFTED_H < -12, `no zone an hour behind UTC${HOST_OFFSET_H}`)
+    test.skip(new Date().getHours() === 0, 'host and browser are on different days')
+
+    // A Ctrl-R, i.e. the server-rendered path. A client-side visit builds the
+    // store in the browser and was always fine.
+    await page.goto('/calendar')
+    await expect(page.getByRole('heading', { name: 'Calendar' })).toBeVisible()
+    await page.getByRole('button', { name: 'Day', exact: true }).click()
+    await expect(block(page, BLOCK)).toBeVisible()
+
+    await page.reload()
+    await page.getByRole('button', { name: 'Day', exact: true }).click()
+    await expect(block(page, BLOCK)).toBeVisible()
+  })
+})

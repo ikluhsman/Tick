@@ -54,6 +54,26 @@ export const useCalendarStore = defineStore('calendar', () => {
     anchor.value = dayStart(new Date())
   }
 
+  /**
+   * Re-derive the anchor from the browser's clock, returning true when it moved.
+   *
+   * `anchor` is a *local* start-of-day, but during SSR "local" is the server's
+   * timezone — UTC in the container — and the value rides the Pinia payload
+   * into the browser. `days` normalises it back to browser midnights, so what
+   * survives is the calendar *day* it lands on: a browser behind the server
+   * reads the server's midnight as the previous day, and the grid shows that
+   * day (or, when the server's day is a Monday, the whole previous week) with
+   * none of today's entries on it — until a nav button re-derives the anchor
+   * (ticktimer/Tick#29). On a page load the anchor is always "today" by
+   * construction, so recomputing it here is exact.
+   */
+  function localizeAnchor() {
+    const local = dayStart(new Date())
+    if (anchor.value === local) return false
+    anchor.value = local
+    return true
+  }
+
   function setView(v: CalendarView) {
     view.value = v
   }
@@ -123,6 +143,7 @@ export const useCalendarStore = defineStore('calendar', () => {
     prev,
     next,
     today,
+    localizeAnchor,
     setView,
     fetchRange,
     create,
