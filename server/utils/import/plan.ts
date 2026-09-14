@@ -13,14 +13,14 @@ export const IMPORT_MAX_BYTES = 5 * 1024 * 1024
 
 /** Parses + maps a CSV for the given source. Throws 400 on format mismatch. */
 export function runMapper(source: ImportSource, csv: string): MapperResult {
-  const rows = parseCsv(csv)
+  const { rows, lines } = parseCsv(csv)
   if (rows.length < 2) {
     throw createError({ statusCode: 400, message: 'CSV has no data rows (header + at least one row required)' })
   }
   try {
-    if (source === 'toggl') return mapToggl(rows)
-    if (source === 'clockify') return mapClockify(rows)
-    return mapGeneric(rows)
+    if (source === 'toggl') return mapToggl(rows, lines)
+    if (source === 'clockify') return mapClockify(rows, lines)
+    return mapGeneric(rows, lines)
   } catch (err) {
     if (err instanceof ImportFormatError) {
       throw createError({ statusCode: 400, message: err.message })

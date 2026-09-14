@@ -25,81 +25,130 @@ import { toCsv } from '../helpers/factories'
 
 describe('parseCsv', () => {
   it('parses a simple grid', () => {
-    expect(parseCsv('a,b,c\n1,2,3')).toEqual([
-      ['a', 'b', 'c'],
-      ['1', '2', '3']
-    ])
+    expect(parseCsv('a,b,c\n1,2,3')).toEqual({
+      rows: [
+        ['a', 'b', 'c'],
+        ['1', '2', '3']
+      ],
+      lines: [1, 2]
+    })
   })
 
   it('returns no rows for empty input', () => {
-    expect(parseCsv('')).toEqual([])
+    expect(parseCsv('')).toEqual({ rows: [], lines: [] })
   })
 
   it('keeps commas inside quoted fields', () => {
-    expect(parseCsv('a,"b,c",d')).toEqual([['a', 'b,c', 'd']])
+    expect(parseCsv('a,"b,c",d')).toEqual({ rows: [['a', 'b,c', 'd']], lines: [1] })
   })
 
   it('unescapes doubled quotes', () => {
-    expect(parseCsv('"he said ""hi""",x')).toEqual([['he said "hi"', 'x']])
+    expect(parseCsv('"he said ""hi""",x')).toEqual({ rows: [['he said "hi"', 'x']], lines: [1] })
   })
 
   it('keeps newlines inside quoted fields', () => {
-    expect(parseCsv('a,"line1\nline2",b')).toEqual([['a', 'line1\nline2', 'b']])
+    expect(parseCsv('a,"line1\nline2",b')).toEqual({ rows: [['a', 'line1\nline2', 'b']], lines: [1] })
   })
 
   it('keeps CRLF inside quoted fields', () => {
-    expect(parseCsv('a,"line1\r\nline2"')).toEqual([['a', 'line1\r\nline2']])
+    expect(parseCsv('a,"line1\r\nline2"')).toEqual({ rows: [['a', 'line1\r\nline2']], lines: [1] })
+  })
+
+  it('tracks the real starting line after a multi-line quoted field', () => {
+    // Row 1 spans source lines 1-2 (the quoted field swallows one newline);
+    // row 2 therefore starts at line 3, not at "row index + 1" (= 2).
+    expect(parseCsv('a,"line1\nline2",b\nc,d,e')).toEqual({
+      rows: [
+        ['a', 'line1\nline2', 'b'],
+        ['c', 'd', 'e']
+      ],
+      lines: [1, 3]
+    })
   })
 
   it('handles CRLF line endings', () => {
-    expect(parseCsv('a,b\r\n1,2\r\n')).toEqual([
-      ['a', 'b'],
-      ['1', '2']
-    ])
+    expect(parseCsv('a,b\r\n1,2\r\n')).toEqual({
+      rows: [
+        ['a', 'b'],
+        ['1', '2']
+      ],
+      lines: [1, 2]
+    })
   })
 
   it('handles bare CR line endings', () => {
-    expect(parseCsv('a,b\r1,2')).toEqual([
-      ['a', 'b'],
-      ['1', '2']
-    ])
+    expect(parseCsv('a,b\r1,2')).toEqual({
+      rows: [
+        ['a', 'b'],
+        ['1', '2']
+      ],
+      lines: [1, 2]
+    })
+  })
+
+  it('does not add a phantom row for a trailing LF newline', () => {
+    expect(parseCsv('a,b\n1,2\n')).toEqual({
+      rows: [
+        ['a', 'b'],
+        ['1', '2']
+      ],
+      lines: [1, 2]
+    })
+  })
+
+  it('drops a blank line at the very end without adding a phantom row', () => {
+    expect(parseCsv('a,b\n1,2\n\n')).toEqual({
+      rows: [
+        ['a', 'b'],
+        ['1', '2']
+      ],
+      lines: [1, 2]
+    })
   })
 
   it('strips a UTF-8 BOM from the first header cell', () => {
-    const rows = parseCsv('\uFEFFDescription,Start date\nWork,2026-09-12')
+    const { rows } = parseCsv('\uFEFFDescription,Start date\nWork,2026-09-12')
     expect(rows[0]![0]).toBe('Description')
   })
 
-  it('drops blank lines but keeps a row of empty cells', () => {
-    expect(parseCsv('a,b\n\n\n1,2\n')).toEqual([
-      ['a', 'b'],
-      ['1', '2']
-    ])
-    expect(parseCsv(',,')).toEqual([['', '', '']])
+  it('drops blank lines but keeps a row of empty cells, and advances the line count past them', () => {
+    expect(parseCsv('a,b\n\n\n1,2\n')).toEqual({
+      rows: [
+        ['a', 'b'],
+        ['1', '2']
+      ],
+      // Two blank lines (2, 3) sit between the header and the data row, so
+      // the data row starts at line 4 \u2014 not at "row index + 1" (= 2).
+      lines: [1, 4]
+    })
+    expect(parseCsv(',,')).toEqual({ rows: [['', '', '']], lines: [1] })
   })
 
   it('preserves ragged rows as-is (short and long)', () => {
-    expect(parseCsv('a,b,c\n1\n1,2,3,4')).toEqual([
-      ['a', 'b', 'c'],
-      ['1'],
-      ['1', '2', '3', '4']
-    ])
+    expect(parseCsv('a,b,c\n1\n1,2,3,4')).toEqual({
+      rows: [
+        ['a', 'b', 'c'],
+        ['1'],
+        ['1', '2', '3', '4']
+      ],
+      lines: [1, 2, 3]
+    })
   })
 
   it('keeps a trailing empty field', () => {
-    expect(parseCsv('a,b,')).toEqual([['a', 'b', '']])
+    expect(parseCsv('a,b,')).toEqual({ rows: [['a', 'b', '']], lines: [1] })
   })
 
   it('parses the final row when the file has no trailing newline', () => {
-    expect(parseCsv('a\n b')).toEqual([['a'], [' b']])
+    expect(parseCsv('a\n b')).toEqual({ rows: [['a'], [' b']], lines: [1, 2] })
   })
 
   it('treats a quote that is not at the start of a field as literal text', () => {
-    expect(parseCsv('a"b,c')).toEqual([['a"b', 'c']])
+    expect(parseCsv('a"b,c')).toEqual({ rows: [['a"b', 'c']], lines: [1] })
   })
 
   it('does not lose data on an unterminated quote', () => {
-    expect(parseCsv('a,"b,c')).toEqual([['a', 'b,c']])
+    expect(parseCsv('a,"b,c')).toEqual({ rows: [['a', 'b,c']], lines: [1] })
   })
 })
 
@@ -341,9 +390,30 @@ describe('mapToggl', () => {
 
   it('reads from real CSV text, quoted fields and all', () => {
     const text = toCsv([TOGGL_HEADER, togglRow({ Description: 'Intake, "phase 2"' })], '\r\n')
-    const { entries, warnings } = mapToggl(parseCsv(text))
+    const { rows, lines } = parseCsv(text)
+    const { entries, warnings } = mapToggl(rows, lines)
     expect(warnings).toEqual([])
     expect(entries[0]!.name).toBe('Intake, "phase 2"')
+  })
+
+  it('reports a warning at the row\'s real line after a blank line and a multi-line quoted field', () => {
+    const text = toCsv([
+      TOGGL_HEADER,
+      [],
+      togglRow({ Description: 'Intake\nform, phase 2' }),
+      togglRow({ 'Start date': 'yesterday' })
+    ])
+    // Explicit line count: header=1, blank line=2, the multi-line quoted
+    // Description spans lines 3-4, so the bad row starts at line 5 — not
+    // at "row index + 1" (= 3).
+    const badRowLine = 5
+    const { rows, lines } = parseCsv(text)
+    const { entries, warnings } = mapToggl(rows, lines)
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.line).toBe(3)
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]!.line).toBe(badRowLine)
+    expect(warnings[0]!.reason).toMatch(/start date\/time/i)
   })
 })
 
@@ -411,6 +481,26 @@ describe('mapClockify', () => {
     expect(() => mapClockify([TOGGL_HEADER.filter(h => h !== 'Description')])).toThrow(
       ImportFormatError
     )
+  })
+
+  it('reports a warning at the row\'s real line after a blank line and a multi-line quoted field', () => {
+    const text = toCsv([
+      CLOCKIFY_HEADER,
+      [],
+      clockifyRow({ Description: 'Hero\nlayout, pass' }),
+      clockifyRow({ 'Start Date': '02/31/2026' })
+    ])
+    // Explicit line count: header=1, blank line=2, the multi-line quoted
+    // Description spans lines 3-4, so the bad row starts at line 5 — not
+    // at "row index + 1" (= 3).
+    const badRowLine = 5
+    const { rows, lines } = parseCsv(text)
+    const { entries, warnings } = mapClockify(rows, lines)
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.line).toBe(3)
+    expect(warnings).toEqual([
+      { line: badRowLine, reason: 'Unparseable start date/time "02/31/2026 09:05 AM"' }
+    ])
   })
 })
 
@@ -494,9 +584,30 @@ describe('mapGeneric', () => {
 
   it('reads a BOM-prefixed CRLF file end to end', () => {
     const text = '\uFEFF' + toCsv([GENERIC_HEADER, genericRow()], '\r\n') + '\r\n'
-    const { entries, warnings } = mapGeneric(parseCsv(text))
+    const { rows, lines } = parseCsv(text)
+    const { entries, warnings } = mapGeneric(rows, lines)
     expect(warnings).toEqual([])
     expect(entries).toHaveLength(1)
     expect(entries[0]!.name).toBe('Standup + planning')
+  })
+
+  it('reports a warning at the row\'s real line after a blank line and a multi-line quoted field', () => {
+    const text = toCsv([
+      GENERIC_HEADER,
+      [],
+      genericRow({ name: 'Standup\nplanning, sync' }),
+      genericRow({ start: 'tomorrow' })
+    ])
+    // Explicit line count: header=1, blank line=2, the multi-line quoted
+    // name spans lines 3-4, so the bad row starts at line 5 \u2014 not at
+    // "row index + 1" (= 3).
+    const badRowLine = 5
+    const { rows, lines } = parseCsv(text)
+    const { entries, warnings } = mapGeneric(rows, lines)
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.line).toBe(3)
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]!.line).toBe(badRowLine)
+    expect(warnings[0]!.reason).toMatch(/ISO start/)
   })
 })
