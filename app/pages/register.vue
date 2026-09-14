@@ -77,10 +77,14 @@ const fields = computed<AuthFormField[]>(() => [
 
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
+// Set once the account is created but the sign-in cookie was refused: retrying
+// the same form would hit a 409 (account already exists) and replace this
+// explanation with a message that doesn't say what to do next.
+const accountCreated = ref(false)
 const { fetch: refreshSession, session } = useUserSession()
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-  if (loading.value) return
+  if (loading.value || accountCreated.value) return
   loading.value = true
   errorMessage.value = null
   try {
@@ -90,7 +94,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     })
     await refreshSession()
     const problem = sessionCookieProblem(session.value, 'account', { secureContext: window.isSecureContext, host: location.host })
-    if (problem) { errorMessage.value = problem; return }
+    if (problem) { errorMessage.value = problem; accountCreated.value = true; return }
     await navigateTo('/')
   } catch (err) {
     const e = err as { data?: { message?: string } }
@@ -132,6 +136,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         :schema="schema"
         :fields="fields"
         :loading="loading"
+        :disabled="accountCreated"
         :title="invite ? `Join ${invite.orgName}` : 'Create your workspace'"
         :description="
           invite
@@ -160,17 +165,26 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           />
           <UAlert
             v-if="errorMessage"
-            color="error"
+            :color="accountCreated ? 'warning' : 'error'"
             variant="subtle"
             icon="i-lucide-circle-alert"
             :title="errorMessage"
           />
         </template>
         <template #footer>
-          Already have an account?
-          <NuxtLink to="/login" class="font-medium text-primary">
-            Sign in
-          </NuxtLink>
+          <span v-if="accountCreated">
+            Your workspace is ready —
+            <NuxtLink to="/login" class="font-medium text-primary">
+              sign in
+            </NuxtLink>
+            once you've sorted out the cookie.
+          </span>
+          <span v-else>
+            Already have an account?
+            <NuxtLink to="/login" class="font-medium text-primary">
+              Sign in
+            </NuxtLink>
+          </span>
         </template>
       </UAuthForm>
   </UPageCard>
