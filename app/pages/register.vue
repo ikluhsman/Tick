@@ -77,7 +77,7 @@ const fields = computed<AuthFormField[]>(() => [
 
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
-const { fetch: refreshSession } = useUserSession()
+const { fetch: refreshSession, session } = useUserSession()
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (loading.value) return
@@ -89,6 +89,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       body: invite.value && inviteToken ? { ...event.data, inviteToken } : event.data
     })
     await refreshSession()
+    const problem = sessionCookieProblem(session.value, 'account', { secureContext: window.isSecureContext, host: location.host })
+    if (problem) { errorMessage.value = problem; return }
     await navigateTo('/')
   } catch (err) {
     const e = err as { data?: { message?: string } }
