@@ -1,14 +1,14 @@
 <script setup lang="ts">
 // Time page — header with week subline, By day / By project segmented control,
 // free-text filter (#tag @name), Manual entry button, selection bar, day/project
-// groups of entry rows, empty state. Owns the delete flows' undo toasts (Rule 4).
+// groups of entry rows, empty state. Owns the delete flows' undo toasts (Rule 4),
+// including the edit dialog's Delete.
 import type { DeleteResult, EntryDto } from '#shared/types'
 
 useHead({ title: 'Time · Tick' })
 
 const entriesStore = useEntriesStore()
 const ui = useUiStore()
-const toast = useToast()
 const route = useRoute()
 
 // ── Mobile (<1024px) "Select" mode ──────────────────────────────────────────
@@ -207,42 +207,10 @@ function showMore() {
 }
 
 // ── Delete flows + undo toast (Rule 4: countdown visible, Undo restores) ────
-function undoToast(message: string, result: DeleteResult) {
-  const id = `undo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-  const undoSeconds = ui.undoSeconds // Rule 4: 3–30s, Settings → Profile
-  let left = undoSeconds
-  const tick = setInterval(() => {
-    left -= 1
-    if (left <= 0) {
-      clearInterval(tick)
-      return
-    }
-    // Countdown is plain text only. duration must be re-passed unchanged:
-    // update() hard-sets it from this patch, so omitting it would drop the
-    // toast to the provider default mid-count and passing a shrinking value
-    // pushes progress past 100 (ProgressRoot "Invalid prop" spam). A constant
-    // value never re-triggers reka's [open, duration] watch, so the close
-    // timer started by add() keeps running untouched.
-    toast.update(id, { description: `Undo within ${left}s`, duration: undoSeconds * 1000 })
-  }, 1000)
+const { showUndoToast } = useUndoToast()
 
-  toast.add({
-    id,
-    title: message,
-    description: `Undo within ${left}s`,
-    icon: 'i-lucide-trash-2',
-    color: 'neutral',
-    duration: undoSeconds * 1000,
-    actions: [{
-      label: 'Undo',
-      color: 'primary',
-      variant: 'outline',
-      onClick: () => {
-        clearInterval(tick)
-        entriesStore.restore(result).catch(() => {})
-      }
-    }]
-  })
+function undoToast(message: string, result: DeleteResult) {
+  showUndoToast(message, () => entriesStore.restore(result).catch(() => {}))
 }
 
 /**
@@ -426,6 +394,6 @@ async function onBulkDelete() {
     <!-- Manual entry / edit dialog. The shared picker mounts in the default
          layout (after the page slot), so teleport order still layers it
          above this dialog. -->
-    <TimeManualEntryDialog />
+    <TimeManualEntryDialog @delete="onDelete" />
   </div>
 </template>

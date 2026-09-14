@@ -4,10 +4,14 @@
 // Max-width 1200 (wider than other pages, per the mock). The picker modal is
 // mounted here for the dialog's ref field; the timer bar shares it while the
 // page is open.
+import type { EntryDto } from '#shared/types'
+
 useHead({ title: 'Calendar · Tick' })
 
 const calendar = useCalendarStore()
 const ui = useUiStore()
+const entriesStore = useEntriesStore()
+const { showUndoToast } = useUndoToast()
 
 // Clicking a block opens the Time page's edit dialog (mounted below). It saves
 // through the entries store, which the grid doesn't read — so refetch the
@@ -15,6 +19,21 @@ const ui = useUiStore()
 watch(() => ui.editEntry, (open, was) => {
   if (was && !open) calendar.fetchRange().catch(() => {})
 })
+
+// The editEntry watcher's refetch runs before this DELETE settles, so refetch
+// again after it and after an Undo.
+async function onDialogDelete(entry: EntryDto) {
+  try {
+    const result = await entriesStore.remove(entry.id)
+    calendar.fetchRange().catch(() => {})
+    showUndoToast(`Deleted “${entry.name}”`, async () => {
+      await entriesStore.restore(result).catch(() => {})
+      await calendar.fetchRange().catch(() => {})
+    })
+  } catch {
+    // request failed; the block stays and nothing else changed
+  }
+}
 
 // SSR-hydrated grid: fetch on the server (state rides the Pinia payload, so
 // hydration re-fetches nothing) and again on every later client-side visit.
@@ -140,6 +159,6 @@ function onCreate({ day, startMin, endMin }: { day: number, startMin: number, en
     <CalendarEntryDialog v-model:open="dialogOpen" :prefill="prefill" />
 
     <!-- Edit dialog for a clicked block (opens from ui.editEntry) -->
-    <TimeManualEntryDialog />
+    <TimeManualEntryDialog @delete="onDialogDelete" />
   </div>
 </template>

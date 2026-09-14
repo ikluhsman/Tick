@@ -300,6 +300,79 @@ test.describe('mobile shell', { tag: '@mobile' }, () => {
     expect(obscured, `focused rows hidden under the bar:\n${obscured.join('\n')}`).toEqual([])
   })
 
+  test('mobile list: deleting an entry via the "…" overflow menu shows the undo toast and undo restores it', async ({ page, api }) => {
+    const entryName = name('E2E mobile overflow delete')
+    await createEntry(api, { name: entryName, billable: true, ...slot(20) })
+
+    await page.goto('/time')
+    const today = group(page, 'Today')
+    const row = entryRow(today, entryName)
+    await expect(row).toBeVisible()
+
+    // Start again/Edit/Delete icon buttons are desktop-only here — a second
+    // always-visible icon crowded the name column at 390px, so all three
+    // fold into the "…" menu instead (swipe gestures still cover them too).
+    await expect(row.getByRole('button', { name: 'Start again' })).toBeHidden()
+    await expect(row.getByRole('button', { name: 'Edit entry' })).toBeHidden()
+    await expect(row.getByRole('button', { name: 'Delete entry' })).toBeHidden()
+
+    await row.getByRole('button', { name: 'Entry actions' }).click()
+    await page.getByRole('menuitem', { name: 'Delete entry' }).click()
+    await expect(row).toHaveCount(0)
+
+    // Rule 4: same undo toast the swipe-to-delete gesture produces.
+    await expect(page.getByText(`Deleted “${entryName}”`, { exact: true })).toBeVisible()
+    await expect(page.getByText(/^Undo within \d+s$/)).toBeVisible()
+
+    await page.getByRole('button', { name: 'Undo' }).click()
+    await expect(entryRow(today, entryName)).toBeVisible()
+  })
+
+  test('mobile list: the "…" overflow menu also opens the edit dialog', async ({ page, api }) => {
+    const entryName = name('E2E mobile overflow edit')
+    await createEntry(api, { name: entryName, billable: true, ...slot(21) })
+
+    await page.goto('/time')
+    const today = group(page, 'Today')
+    const row = entryRow(today, entryName)
+    await expect(row).toBeVisible()
+
+    await row.getByRole('button', { name: 'Entry actions' }).click()
+    // Start again lives in the same menu (folded in alongside Edit/Delete).
+    await expect(page.getByRole('menuitem', { name: 'Start again' })).toBeVisible()
+    await page.getByRole('menuitem', { name: 'Edit entry' }).click()
+    const dialog = page.getByRole('dialog').filter({
+      has: page.getByRole('heading', { name: 'Edit entry' })
+    })
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByLabel('What did you work on?')).toHaveValue(entryName)
+  })
+
+  test('mobile: the edit dialog\'s Delete removes the entry and undo restores it', async ({ page, api }) => {
+    const entryName = name('E2E mobile dialog delete')
+    await createEntry(api, { name: entryName, billable: true, ...slot(22) })
+
+    await page.goto('/time')
+    const today = group(page, 'Today')
+    const row = entryRow(today, entryName)
+    await expect(row).toBeVisible()
+
+    // Tapping the name is the existing route into edit mode on mobile.
+    await row.getByRole('button', { name: entryName, exact: true }).click()
+    const dialog = page.getByRole('dialog').filter({
+      has: page.getByRole('heading', { name: 'Edit entry' })
+    })
+    await expect(dialog).toBeVisible()
+
+    await dialog.getByRole('button', { name: 'Delete entry' }).click()
+    await expect(dialog).toBeHidden()
+    await expect(entryRow(today, entryName)).toHaveCount(0)
+
+    await expect(page.getByText(`Deleted “${entryName}”`, { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Undo' }).click()
+    await expect(entryRow(today, entryName)).toBeVisible()
+  })
+
   test('bulk-action bar stays reachable and on-screen once the list scrolls', async ({ page, api }) => {
     // Enough rows to push well past the fold; hour ascending so the lowest
     // hour (oldest) sorts to the very bottom of the "Today" group.

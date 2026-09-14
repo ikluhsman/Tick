@@ -5,12 +5,15 @@
 // Submits via entriesStore.addManual — the saved entry sorts into its day group.
 // Doubles as "Edit entry" when ui.editEntry is set: opens prefilled and saves
 // via entriesStore.updateEntry (the row re-sorts into its day group).
+// Edit mode's Delete emits `delete`; the host page runs removal + undo toast.
 import type { ChainRef, EntryDto, SessionUser } from '#shared/types'
 
 const ui = useUiStore()
 const entriesStore = useEntriesStore()
 const catalog = useCatalogStore()
 const { user } = useUserSession()
+
+const emit = defineEmits<{ delete: [entry: EntryDto] }>()
 
 const open = computed({
   get: () => ui.manualOpen,
@@ -177,6 +180,14 @@ async function submit() {
   saving.value = false
 }
 
+/** Edit mode's Delete: close now, let the host page run the real delete flow. */
+function requestDelete() {
+  if (!editing.value) return
+  const entry = editing.value
+  ui.closeManual()
+  emit('delete', entry)
+}
+
 function onOpenAutoFocus(e: Event) {
   e.preventDefault()
   nextTick(() => descInput.value?.inputRef?.focus())
@@ -279,16 +290,27 @@ function onOpenAutoFocus(e: Event) {
           <UInput v-model="tagsInput" placeholder="design, qa" class="w-full" @keydown.enter.prevent="submit" />
         </UFormField>
 
-        <div class="flex justify-end gap-2">
-          <UButton color="neutral" variant="outline" label="Cancel" @click="ui.closeManual()" />
+        <div class="flex items-center gap-2">
           <UButton
-            color="primary"
-            variant="outline"
-            :label="editing ? 'Save' : 'Add entry'"
-            :disabled="!parsed.valid"
-            :loading="saving"
-            @click="submit"
+            v-if="editing"
+            color="error"
+            variant="ghost"
+            size="sm"
+            icon="i-lucide-trash-2"
+            label="Delete entry"
+            @click="requestDelete"
           />
+          <div class="ml-auto flex gap-2">
+            <UButton color="neutral" variant="outline" label="Cancel" @click="ui.closeManual()" />
+            <UButton
+              color="primary"
+              variant="outline"
+              :label="editing ? 'Save' : 'Add entry'"
+              :disabled="!parsed.valid"
+              :loading="saving"
+              @click="submit"
+            />
+          </div>
         </div>
       </div>
     </template>
