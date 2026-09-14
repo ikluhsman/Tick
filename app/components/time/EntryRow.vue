@@ -5,11 +5,14 @@
 // delete bubbles up so the page can show the undo toast (Rule 4); ▶ copies
 // name/ref/billable onto the timer and starts it; ✎ (and clicking the name)
 // opens the Manual-entry dialog in edit mode via ui.openEdit.
-// Mobile (<1024px) the row collapses to name+chain | duration+range | ▶, and
-// touch swipes take over: swipe LEFT reveals a 72px Delete action, swipe
+// Mobile (<1024px) the row collapses to name+chain | duration+range | …,
+// and touch swipes take over: swipe LEFT reveals a 72px Delete action, swipe
 // RIGHT starts the entry again. Gestures are touch-only (desktop hover
 // actions untouched) with a horizontal-intent threshold so vertical
-// scrolling never fights the swipe (touch-action: pan-y).
+// scrolling never fights the swipe (touch-action: pan-y). Gestures aren't
+// discoverable, so mobile also gets one visible "…" menu with all three row
+// actions; separate icons there leave the name column no room at 390px.
+import type { DropdownMenuItem } from '@nuxt/ui'
 import type { EntryDto } from '#shared/types'
 
 const props = withDefaults(
@@ -48,6 +51,13 @@ const billTitle = computed(() => {
   if (!props.entry.billable) return 'Not billable'
   return props.entry.resolvedRate != null ? `Billable at $${props.entry.resolvedRate}/h` : 'Billable'
 })
+
+/** Mobile-only "…" menu (Entry actions). */
+const entryActionItems = computed<DropdownMenuItem[]>(() => [
+  { label: 'Start again', icon: 'i-lucide-play', onSelect: () => startAgain() },
+  { label: 'Edit entry', icon: 'i-lucide-pencil', onSelect: () => ui.openEdit(props.entry) },
+  { label: 'Delete entry', icon: 'i-lucide-trash-2', color: 'error', onSelect: () => emit('delete') }
+])
 
 const busy = ref(false)
 
@@ -286,9 +296,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
         </div>
       </div>
 
-      <!-- Row actions (mobile keeps only ▶ at a 44px target). <1024px Edit and
-           Delete stay in the tab order / accessibility tree (visually hidden
-           until focused) as the non-swipe alternative to the touch gestures. -->
+      <!-- Row actions: separate icons at ≥1024px, one "…" menu below. -->
       <div class="flex gap-0.5">
         <UButton
           icon="i-lucide-play"
@@ -297,10 +305,21 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
           square
           title="Start again"
           aria-label="Start again"
-          class="size-[30px] justify-center max-lg:size-11"
+          class="size-[30px] justify-center max-lg:hidden"
           :ui="{ leadingIcon: 'size-[13px]' }"
           @click="startAgain"
         />
+        <UDropdownMenu :items="entryActionItems" :content="{ align: 'end' }" :ui="{ content: 'min-w-40' }" class="lg:hidden">
+          <UButton
+            icon="i-lucide-ellipsis"
+            color="neutral"
+            variant="ghost"
+            square
+            aria-label="Entry actions"
+            class="size-11 justify-center"
+            :ui="{ leadingIcon: 'size-[13px]' }"
+          />
+        </UDropdownMenu>
         <UButton
           icon="i-lucide-pencil"
           color="neutral"
@@ -308,7 +327,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
           square
           title="Edit entry"
           aria-label="Edit entry"
-          class="size-[30px] justify-center max-lg:sr-only max-lg:focus-visible:not-sr-only"
+          class="size-[30px] justify-center max-lg:hidden"
           :ui="{ leadingIcon: 'size-[13px]' }"
           @click="ui.openEdit(entry)"
         />
@@ -319,7 +338,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
           square
           title="Delete (undo available)"
           aria-label="Delete entry"
-          class="size-[30px] justify-center text-dimmed hover:text-primary max-lg:sr-only max-lg:focus-visible:not-sr-only"
+          class="size-[30px] justify-center text-dimmed hover:text-primary max-lg:hidden"
           :ui="{ leadingIcon: 'size-3.5' }"
           @click="emit('delete')"
         />

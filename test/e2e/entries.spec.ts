@@ -102,6 +102,34 @@ test('deleting an entry shows the undo toast and undo restores the row', async (
   await expect(entryRow(today, entryName)).toBeVisible()
 })
 
+test('the edit dialog\'s Delete removes the entry and shows the undo toast', async ({ page, api }) => {
+  const entryName = name('E2E dialog delete')
+  await createEntry(api, { name: entryName, billable: true, ...slot(0, 10) })
+
+  await page.goto('/time')
+  const today = group(page, 'Today')
+  const row = entryRow(today, entryName)
+  await expect(row).toBeVisible()
+
+  await row.getByRole('button', { name: entryName, exact: true }).click()
+  const dialog = page.getByRole('dialog').filter({
+    has: page.getByRole('heading', { name: 'Edit entry' })
+  })
+  await expect(dialog).toBeVisible()
+
+  // Same delete flow as the row's own Delete button: the dialog just closes
+  // and routes the actual removal + undo toast through the Time page.
+  await dialog.getByRole('button', { name: 'Delete entry' }).click()
+  await expect(dialog).toBeHidden()
+  await expect(entryRow(today, entryName)).toHaveCount(0)
+
+  await expect(page.getByText(`Deleted “${entryName}”`, { exact: true })).toBeVisible()
+  await expect(page.getByText(/^Undo within \d+s$/)).toBeVisible()
+
+  await page.getByRole('button', { name: 'Undo' }).click()
+  await expect(entryRow(today, entryName)).toBeVisible()
+})
+
 test('deleting the sole selected row via its own Delete button restores focus to a neighbour', async ({ page, api }) => {
   // Selecting exactly this row, then deleting it, flips hasSelection back to
   // false from under a row that isn't the selection bar — the page's
