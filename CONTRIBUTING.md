@@ -185,7 +185,8 @@ characters and put the *why* in the body.
   | `3.guide/` | timer & entries, reports, imports/exports, theme editor |
   | `4.reference/` | data model, API surface, environment variables, security |
 
-  Run it locally with `cd docs && npm i && npm run dev`.
+  Run it locally with `cd docs && npm i && npm run dev`. For local dev,
+  building, and deploying the site itself, see [docs/README.md](docs/README.md).
 
 - **`README.md`** — the short version: install paths, env vars, development.
 - **`test/README.md`**, **`test/e2e/README.md`** — the test suites.
