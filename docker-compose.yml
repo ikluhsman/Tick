@@ -9,6 +9,8 @@ services:
     ports:
       # TICK_IP=127.0.0.1 when a reverse proxy runs on the same host. Docker writes
       # published ports straight into iptables, so ufw/firewalld do NOT block them.
+      # Reaching Tick over plain http:// from another machine (no TLS proxy) also
+      # needs NUXT_SESSION_COOKIE_SECURE=false.
       - '${TICK_IP:-0.0.0.0}:${TICK_PORT:-3000}:3000'
     environment:
       NUXT_DATABASE_URL: postgresql://tick:${POSTGRES_PASSWORD:-tick}@db:5432/tick
@@ -18,6 +20,9 @@ services:
       NUXT_PUBLIC_REGISTRATION: ${NUXT_PUBLIC_REGISTRATION:-open}
       # blank = 10 per IP per minute; 0 disables (rate-limit at the proxy instead)
       NUXT_AUTH_RATE_LIMIT: ${NUXT_AUTH_RATE_LIMIT:-}
+      # true (default) | false — false ONLY for plain-HTTP access on a trusted LAN/VPN
+      # (docs: Security → Plain HTTP). Must default to true: an empty value is rejected at boot.
+      NUXT_SESSION_COOKIE_SECURE: ${NUXT_SESSION_COOKIE_SECURE:-true}
       # Mail stays off until both NUXT_SMTP_HOST and NUXT_MAIL_FROM are set
       NUXT_SMTP_HOST: ${NUXT_SMTP_HOST:-}
       NUXT_SMTP_PORT: ${NUXT_SMTP_PORT:-}
