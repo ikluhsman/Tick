@@ -46,7 +46,7 @@ function openClientForm(client: ClientDto | null) {
       <div role="table" aria-label="Clients">
         <div
           role="row"
-          class="grid grid-cols-[minmax(0,1.4fr)_1fr_1fr_1fr_1fr_70px] gap-[11px] border-b border-default px-[22px] py-2 text-[10px] tracking-[0.08em] text-muted uppercase"
+          class="hidden gap-[11px] border-b border-default px-[22px] py-2 text-[10px] tracking-[0.08em] text-muted uppercase sm:grid sm:grid-cols-[minmax(0,1.4fr)_1fr_1fr_1fr_1fr_70px]"
         >
           <span role="columnheader">Client</span>
           <span role="columnheader">Rate</span>
@@ -56,11 +56,16 @@ function openClientForm(client: ClientDto | null) {
           <span role="columnheader"><span class="sr-only">Actions</span></span>
         </div>
 
+        <!-- Below sm: name on its own line, secondary figures stacked underneath in
+             a muted sub-line, actions kept on their own reachable line. The middle
+             four cells stay individual role="cell" elements (`display: contents`
+             turns their wrapper into a no-op at sm+ so they land back in their own
+             grid tracks, matching the header above exactly). -->
         <div
           v-for="c in catalog.clients"
           :key="c.id"
           role="row"
-          class="grid grid-cols-[minmax(0,1.4fr)_1fr_1fr_1fr_1fr_70px] items-center gap-[11px] border-b border-default px-[22px] py-[11px] text-[13px] transition-colors last:border-0 hover:bg-accented/30"
+          class="flex flex-col gap-1 border-b border-default px-[22px] py-[11px] text-[13px] transition-colors last:border-0 hover:bg-accented/30 sm:grid sm:grid-cols-[minmax(0,1.4fr)_1fr_1fr_1fr_1fr_70px] sm:items-center sm:gap-[11px]"
         >
           <div class="flex min-w-0 items-center gap-2.5" role="cell">
             <span
@@ -73,19 +78,29 @@ function openClientForm(client: ClientDto | null) {
             <span class="truncate text-sm font-medium text-highlighted">{{ c.name }}</span>
           </div>
 
-          <span class="tnum" :class="c.rate != null ? 'text-default' : 'text-muted'" role="cell">
-            <template v-if="c.rate != null">${{ c.rate }}/h</template>
-            <template v-else-if="userRate != null">${{ userRate }}/h (default)</template>
-            <template v-else>— (default)</template>
-          </span>
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 sm:contents">
+            <span
+              class="tnum text-xs text-muted sm:text-[13px]"
+              :class="c.rate != null ? 'sm:text-default' : ''"
+              role="cell"
+            >
+              <template v-if="c.rate != null">${{ c.rate }}/h</template>
+              <template v-else-if="userRate != null">${{ userRate }}/h (default)</template>
+              <template v-else>— (default)</template>
+            </span>
 
-          <span class="tnum" role="cell">{{ c.projectCount }}</span>
-          <span class="tnum" role="cell">{{ c.taskCount }}</span>
+            <span class="tnum text-xs text-muted sm:text-[13px] sm:text-default" role="cell">
+              {{ c.projectCount }}<span class="sm:hidden"> {{ c.projectCount === 1 ? 'project' : 'projects' }}</span>
+            </span>
+            <span class="tnum text-xs text-muted sm:text-[13px] sm:text-default" role="cell">
+              {{ c.taskCount }}<span class="sm:hidden"> {{ c.taskCount === 1 ? 'task' : 'tasks' }}</span>
+            </span>
 
-          <span class="tnum" role="cell">
-            {{ formatDuration(c.trackedSec) }}
-            <span class="text-muted"> · {{ formatMoney(c.amount) }}</span>
-          </span>
+            <span class="tnum text-xs text-muted sm:text-[13px] sm:text-default" role="cell">
+              {{ formatDuration(c.trackedSec) }}
+              <span class="text-muted"> · {{ formatMoney(c.amount) }}</span>
+            </span>
+          </div>
 
           <div class="flex justify-end gap-0.5" role="cell">
             <UButton

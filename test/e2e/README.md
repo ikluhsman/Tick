@@ -88,7 +88,7 @@ directly on the plain-HTTP login it enables:
 | Project | Viewport | Runs |
 | --- | --- | --- |
 | `desktop` | 1440×900 | everything except `@mobile` |
-| `mobile` | 390×844, `hasTouch` | only tests tagged `@mobile` (`mobile.spec.ts`, and the `a11y.spec.ts` mobile subset) |
+| `mobile` | 390×844, `hasTouch` | only tests tagged `@mobile` (`mobile.spec.ts`, `manage-mobile.spec.ts`, and the `a11y.spec.ts` mobile subset) |
 
 ## Accessibility (`a11y.spec.ts`)
 
@@ -104,8 +104,8 @@ Nocturne in its own `afterEach`: the preset persists server-side
 whichever spec runs next. This doesn't need a run-to-run cleanup step —
 global setup's reseed clears `users.theme` between separate
 `npm run test:e2e` invocations. A small `@mobile`-tagged subset (`/`, `/time`
-incl. Select mode on + the bulk-action bar, `/clients`, the picker bottom
-sheet) also runs in the `mobile` project.
+incl. Select mode on + the bulk-action bar, `/clients`, `/tags`, the picker
+bottom sheet) also runs in the `mobile` project.
 
 **Reading a failure**: the assertion message lists every violation with its
 axe rule id, impact (`minor`/`moderate`/`serious`/`critical`), the rule's
@@ -114,6 +114,17 @@ element without re-running anything. There are no disabled rules; a violation
 that turns out to live inside a Nuxt UI internal you can't fix would get a
 `.exclude()` on that exact selector with a comment explaining why (none exist
 as of this writing — check `a11y.spec.ts` itself for the current list).
+
+### Client/tag row layout at phone width (`manage-mobile.spec.ts`)
+
+Issue #8: the /clients and /tags row grids gave the name/tag track
+`minmax(0, …)` while the other tracks were bare `1fr` (`minmax(auto, 1fr)`,
+which won't shrink below its content), so at 390px the flexible track
+absorbed the whole shortfall and collapsed toward zero — invisible client
+names, overlapping "Client"/"Rate" header labels. `@mobile`-tagged, asserting
+each row's name/tag cell renders wider than 80px and that the column-header
+row (hidden entirely below `sm` now) stays hidden. Read-only against the
+seed — nothing to clean up.
 
 ### Client avatar swatch ink (`client-color-contrast.spec.ts`)
 

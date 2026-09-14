@@ -106,7 +106,7 @@ async function removeTag(t: TagDto) {
       <div role="table" aria-label="Tags">
         <div
           role="row"
-          class="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_80px_90px_110px_70px] gap-[11px] border-b border-default px-[22px] py-2 text-[10px] tracking-[0.08em] text-muted uppercase"
+          class="hidden gap-[11px] border-b border-default px-[22px] py-2 text-[10px] tracking-[0.08em] text-muted uppercase sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_80px_90px_110px_70px]"
         >
           <span role="columnheader">Tag</span>
           <span role="columnheader">Used on</span>
@@ -116,21 +116,32 @@ async function removeTag(t: TagDto) {
           <span role="columnheader"><span class="sr-only">Actions</span></span>
         </div>
 
+        <!-- Below sm: the #tag chip stays on its own line, the other figures stack
+             into a muted sub-line, actions stay on their own reachable line. The
+             middle four cells stay individual role="cell" elements (`display:
+             contents` turns their wrapper into a no-op at sm+ so they land back in
+             their own grid tracks, matching the header above exactly). -->
         <div
           v-for="t in catalog.tags"
           :key="t.id"
           role="row"
-          class="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_80px_90px_110px_70px] items-center gap-[11px] border-b border-default px-[22px] py-2.5 text-[13px] transition-colors last:border-0 hover:bg-accented/30"
+          class="flex flex-col gap-1 border-b border-default px-[22px] py-2.5 text-[13px] transition-colors last:border-0 hover:bg-accented/30 sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_80px_90px_110px_70px] sm:items-center sm:gap-[11px]"
         >
           <span class="min-w-0" role="cell">
             <UBadge color="neutral" variant="soft" class="text-xs">#{{ t.name }}</UBadge>
           </span>
-          <span class="truncate text-xs text-muted" role="cell">{{ usedOnLabel(t) }}</span>
-          <span class="tnum text-right text-toned" role="cell">{{ t.entryCount }}</span>
-          <span class="tnum text-right font-medium text-highlighted" role="cell">
-            {{ t.trackedSec ? formatDuration(t.trackedSec) : '—' }}
-          </span>
-          <span class="text-xs text-muted" role="cell">{{ lastUsedLabel(t.lastUsed) }}</span>
+
+          <div class="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 sm:contents">
+            <span class="truncate text-xs text-muted" role="cell">{{ usedOnLabel(t) }}</span>
+            <span class="tnum text-xs text-muted sm:text-right sm:text-toned" role="cell">
+              {{ t.entryCount }}<span class="sm:hidden"> {{ t.entryCount === 1 ? 'entry' : 'entries' }}</span>
+            </span>
+            <span class="tnum text-xs text-muted sm:text-right sm:font-medium sm:text-highlighted" role="cell">
+              {{ t.trackedSec ? formatDuration(t.trackedSec) : '—' }}
+            </span>
+            <span class="text-xs text-muted" role="cell">{{ lastUsedLabel(t.lastUsed) }}</span>
+          </div>
+
           <div class="flex justify-end gap-0.5" role="cell">
             <UButton
               icon="i-lucide-filter"
