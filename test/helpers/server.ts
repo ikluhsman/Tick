@@ -8,7 +8,8 @@
  *    database (`tick_test`). The dev database is never reachable from a test.
  *  - The build lives in `.nuxt/it/` (gitignored) so it never overwrites the
  *    `.nuxt/` + `.output/` the running dev server owns.
- *  - Ports are explicit per suite (3801 shared, 3802 rate-limit, 3803 demo).
+ *  - Ports are explicit per suite (3801 shared, 3802 rate-limit, 3803 demo,
+ *    3805 session-cookie; 3804 belongs to e2e).
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
@@ -31,6 +32,7 @@ const SERVER_ENTRY = resolve(OUTPUT_DIR, 'server/index.mjs')
 export const PORT_MAIN = 3801
 export const PORT_RATE_LIMIT = 3802
 export const PORT_DEMO = 3803
+export const PORT_SESSION_COOKIE = 3805
 
 /** The long-lived server booted by the vitest globalSetup. */
 export const MAIN_URL = `http://127.0.0.1:${PORT_MAIN}`
@@ -120,10 +122,14 @@ export async function startServer(opts: StartServerOptions): Promise<TestServer>
   const url = `http://127.0.0.1:${opts.port}`
   const logs: string[] = []
 
+  // Strip any inherited value so a developer's shell can't flip the default
+  // test. Don't blank it: an empty value aborts startup (server/plugins/00.session-cookie.ts).
+  const { NUXT_SESSION_COOKIE_SECURE: _s, NITRO_SESSION_COOKIE_SECURE: _n, ...inherited } = process.env
+
   const child: ChildProcess = spawn(process.execPath, [SERVER_ENTRY], {
     cwd: opts.cwd ?? ROOT,
     env: {
-      ...process.env,
+      ...inherited,
       NODE_ENV: 'production',
       NITRO_HOST: '127.0.0.1',
       NITRO_PORT: String(opts.port),

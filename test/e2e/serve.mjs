@@ -16,6 +16,11 @@ process.env.NUXT_AUTH_RATE_LIMIT ??= '0'
 // drizzle migration journal — replaying 0000 over it would fail on existing
 // tables. This is the documented escape hatch in server/plugins/migrate.ts.
 process.env.NUXT_AUTO_MIGRATE ??= 'false'
+// Playwright's APIRequestContext (global-setup login, API setup/cleanup) treats only
+// "localhost" as a secure host, so it never sends a Secure cookie to http://127.0.0.1
+// (the browser context does). Use the real operator switch instead of baking config
+// into the bundle, so the env path is what e2e exercises.
+process.env.NUXT_SESSION_COOKIE_SECURE ??= 'false'
 process.env.PORT ??= '3804'
 process.env.NITRO_PORT = process.env.PORT
 process.env.HOST ??= '127.0.0.1'

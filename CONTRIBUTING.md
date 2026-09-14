@@ -79,7 +79,7 @@ and cascade suites respectively.
 | --- | --- | --- | --- |
 | Types | `npm run typecheck` | no | `nuxt typecheck` (vue-tsc). There is no linter in this repo. |
 | Unit | `npm test` | yes (schema only) | Vitest, `test/**/*.spec.ts`. Mostly pure; `cascade.spec.ts` drives real transactions. |
-| Integration | `npx vitest run --config vitest.integration.config.ts` | yes (schema + seed) | Builds the app and boots Nitro on 3801–3803, drives it over HTTP. First run is slow — it builds. |
+| Integration | `npx vitest run --config vitest.integration.config.ts` | yes (schema + seed) | Builds the app and boots Nitro on 3801–3805 (3804 belongs to e2e), drives it over HTTP. First run is slow — it builds. |
 | E2E | `npm run test:e2e` | yes (schema + seed) | Playwright against a production build served on 3804. |
 
 Useful variants:

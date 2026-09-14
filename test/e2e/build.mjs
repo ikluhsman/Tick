@@ -70,14 +70,7 @@ export async function buildApp() {
       buildDir: BUILD_DIR,
       devtools: { enabled: false },
       pwa: { disable: true },
-      nitro: { output: { dir: OUTPUT_DIR } },
-      // h3 marks the session cookie Secure in a production build. The suite
-      // talks plain http to 127.0.0.1; Playwright's APIRequestContext will not
-      // send a Secure cookie over http, so the API-driven setup/cleanup
-      // helpers would run unauthenticated. Baked into the e2e bundle only —
-      // this key does not exist in runtimeConfig, so it cannot be set from the
-      // environment at runtime. Nothing under test asserts on cookie flags.
-      runtimeConfig: { session: { cookie: { secure: false } } }
+      nitro: { output: { dir: OUTPUT_DIR } }
     }
   })
   await nuxt.ready()

@@ -2,12 +2,12 @@
 // every page a never-decreasing Date.now() and never hands a spec control
 // back until the app has hydrated.
 //
-// The session cookie is Secure (h3's default in a production build). A browser
-// accepts that over http://127.0.0.1 because localhost is a trustworthy origin,
-// but Playwright's standalone APIRequestContext does not send it — so the
-// built-in `request` fixture would run unauthenticated. `page.request` shares
-// the browser context's cookie jar, so setup/cleanup calls carry the same
-// session the test is driving.
+// The e2e server runs with NUXT_SESSION_COOKIE_SECURE=false (set in serve.mjs)
+// because Playwright's standalone APIRequestContext treats only "localhost" as
+// a secure host and never sends a Secure cookie to http://127.0.0.1 (the
+// browser context does). `page.request` shares the browser context's cookie
+// jar either way, so setup/cleanup calls carry the same session the test is
+// driving.
 //
 // Every spec imports `test`/`expect` from here, not from `@playwright/test`:
 // this is the one place that wraps page.goto/page.reload. Those are the only
