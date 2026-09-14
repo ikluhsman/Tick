@@ -31,7 +31,7 @@ const fields: AuthFormField[] = [
 
 const loading = ref(false)
 const errorMessage = ref<string | null>(null)
-const { fetch: refreshSession } = useUserSession()
+const { fetch: refreshSession, session } = useUserSession()
 
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (loading.value) return
@@ -40,6 +40,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   try {
     await $fetch('/api/auth/login', { method: 'POST', body: event.data })
     await refreshSession()
+    const problem = sessionCookieProblem(session.value, 'signin', { secureContext: window.isSecureContext, host: location.host })
+    if (problem) { errorMessage.value = problem; return }
     // Apply the account's saved theme (users.theme) so another device picks it
     // up on login; save() re-persists it locally (and writes the color-mode
     // cookie, so later SSR loads render the right mode on the first byte).

@@ -105,7 +105,7 @@ jobs:
         run: npm test
 
   # 3 — integration tests: a real production build of the Nitro server booted
-  # on 127.0.0.1:3801-3803 against tick_test, driven over HTTP.
+  # on 127.0.0.1:3801-3805, minus the e2e port 3804, against tick_test, driven over HTTP.
   # There is no `test:integration` npm script; the suite is its own vitest
   # project and is invoked exactly as documented in vitest.integration.config.ts.
   integration:

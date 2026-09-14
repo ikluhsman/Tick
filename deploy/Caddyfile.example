@@ -4,7 +4,8 @@
 
 tick.example.com {
 	# Internal host? Uncomment for a Caddy-managed local CA cert
-	# (or use `http://tick.internal.lan` as the site address for plain HTTP):
+	# (or use `http://tick.internal.lan` as the site address for plain HTTP,
+	# then also set NUXT_SESSION_COOKIE_SECURE=false on Tick; `tls internal` avoids that):
 	# tls internal
 
 	encode gzip

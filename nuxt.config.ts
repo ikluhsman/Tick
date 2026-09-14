@@ -80,6 +80,12 @@ export default defineNuxtConfig({
     // NUXT_AUTH_RATE_LIMIT — max POSTs per IP per auth endpoint per minute
     // ('' = default 10, '0' disables; see server/middleware/01.rate-limit.ts)
     authRateLimit: '',
+    // Session cookie (nuxt-auth-utils → h3 useSession). nuxt-auth-utils seeds only
+    // cookie.sameSite, and NUXT_* env vars only map onto keys that exist, so `secure`
+    // must be declared here for NUXT_SESSION_COOKIE_SECURE to reach it.
+    // true (default) | false — false ONLY for plain-HTTP access on a trusted network.
+    // Validated at boot by server/plugins/00.session-cookie.ts.
+    session: { cookie: { sameSite: 'lax', secure: true } }, // NUXT_SESSION_COOKIE_SECURE
     public: {
       demoMode: false, // NUXT_PUBLIC_DEMO_MODE — shows the demo banner
       // NUXT_PUBLIC_REGISTRATION — 'open' (default, back-compat) | 'invite'

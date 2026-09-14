@@ -57,7 +57,7 @@ The built server applies pending SQL migrations on startup (set `NUXT_AUTO_MIGRA
 
 ## Reverse proxy
 
-For real deployments put nginx or Caddy in front of the app for TLS, compression and security headers. Ready-made configs live in [`deploy/`](deploy/) — [`nginx.conf.example`](deploy/nginx.conf.example) (public-TLS and internal plain-HTTP variants) and [`Caddyfile.example`](deploy/Caddyfile.example) (auto-TLS). Both pass the `X-Forwarded-*` headers Tick needs, allow 8 MB CSV imports, and keep the PWA service worker uncached so installed clients update promptly. See [`deploy/README.md`](deploy/README.md).
+For real deployments put nginx or Caddy in front of the app for TLS, compression and security headers. Ready-made configs live in [`deploy/`](deploy/) — [`nginx.conf.example`](deploy/nginx.conf.example) (public-TLS and internal plain-HTTP variants) and [`Caddyfile.example`](deploy/Caddyfile.example) (auto-TLS). Both pass the `X-Forwarded-*` headers Tick needs, allow 8 MB CSV imports, and keep the PWA service worker uncached so installed clients update promptly. See [`deploy/README.md`](deploy/README.md). Reaching Tick over plain HTTP instead — no TLS at all — needs `NUXT_SESSION_COOKIE_SECURE=false`; without it, login returns success but the sign-in page reports that the browser refused the cookie. See "Plain HTTP and the Secure flag" in [`docs/content/4.reference/4.security.md`](docs/content/4.reference/4.security.md).
 
 ## Environment variables
 
@@ -68,6 +68,7 @@ For real deployments put nginx or Caddy in front of the app for TLS, compression
 | `NUXT_AUTO_MIGRATE` | no | `true` | Apply pending SQL migrations on production startup; `false` to run them out-of-band (`npx drizzle-kit migrate`) |
 | `NUXT_MIGRATIONS_DIR` | no | `<cwd>/server/db/migrations` | Override the migrations folder location |
 | `NUXT_AUTH_RATE_LIMIT` | no | `10` | Max POSTs per IP per minute to each auth endpoint (login/register/forgot/reset); `0` disables it |
+| `NUXT_SESSION_COOKIE_SECURE` | no | `true` | Secure flag on the session cookie. `false`/`0` only for plain-HTTP access on a trusted network; otherwise login "succeeds" but the browser drops the cookie. An empty or unrecognized value stops startup |
 | `NUXT_DEMO_MODE` | no | `false` | Public-demo hardening: reseeds the demo org every 24h and returns `403` for destructive operations (password change, org rename, member removal, invite create/revoke, import commit, permanent trash deletion) |
 | `NUXT_PUBLIC_DEMO_MODE` | no | `false` | Shows the "Demo — data resets nightly" banner in the app shell |
 | `NITRO_HOST` | no | `0.0.0.0` (image) | Bind address of the production server |

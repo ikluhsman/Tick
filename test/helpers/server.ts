@@ -8,7 +8,8 @@
  *    database (`tick_test`). The dev database is never reachable from a test.
  *  - The build lives in `.nuxt/it/` (gitignored) so it never overwrites the
  *    `.nuxt/` + `.output/` the running dev server owns.
- *  - Ports are explicit per suite (3801 shared, 3802 rate-limit, 3803 demo).
+ *  - Ports are explicit per suite (3801 shared, 3802 rate-limit, 3803 demo,
+ *    3805 session-cookie; 3804 belongs to e2e).
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
@@ -31,6 +32,7 @@ const SERVER_ENTRY = resolve(OUTPUT_DIR, 'server/index.mjs')
 export const PORT_MAIN = 3801
 export const PORT_RATE_LIMIT = 3802
 export const PORT_DEMO = 3803
+export const PORT_SESSION_COOKIE = 3805
 
 /** The long-lived server booted by the vitest globalSetup. */
 export const MAIN_URL = `http://127.0.0.1:${PORT_MAIN}`
@@ -120,10 +122,29 @@ export async function startServer(opts: StartServerOptions): Promise<TestServer>
   const url = `http://127.0.0.1:${opts.port}`
   const logs: string[] = []
 
+  // A server leaked by an earlier interrupted or misassessed run would let this
+  // one silently attach to someone else's process instead of its own child.
+  try {
+    const probe = await fetch(`${url}/api/me`, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(300)
+    })
+    if (probe.status > 0) {
+      throw new Error(`port ${opts.port} already in use (stale server from a previous run?)`)
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('port ')) throw err
+    // Nothing answered — the port is free, as expected.
+  }
+
+  // Strip any inherited value so a developer's shell can't flip the default
+  // test. Don't blank it: an empty value aborts startup (server/plugins/00.session-cookie.ts).
+  const { NUXT_SESSION_COOKIE_SECURE: _s, NITRO_SESSION_COOKIE_SECURE: _n, ...inherited } = process.env
+
   const child: ChildProcess = spawn(process.execPath, [SERVER_ENTRY], {
     cwd: opts.cwd ?? ROOT,
     env: {
-      ...process.env,
+      ...inherited,
       NODE_ENV: 'production',
       NITRO_HOST: '127.0.0.1',
       NITRO_PORT: String(opts.port),
@@ -300,6 +321,8 @@ export interface TestAccount {
   email: string
   password: string
   name: string
+  /** The raw register response, so callers can inspect its Set-Cookie lines. */
+  response: ApiResponse<SessionUserLike>
 }
 
 export interface SessionUserLike {
@@ -338,7 +361,7 @@ export async function registerAccount(
   if (res.status !== 200) {
     throw new Error(`register failed (${res.status}): ${res.text}`)
   }
-  return { client, user: res.body, email, password, name }
+  return { client, user: res.body, email, password, name, response: res }
 }
 
 /** A second, independent session for an existing account. */

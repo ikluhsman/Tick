@@ -100,6 +100,10 @@ server {
 # Variant B — internal host, plain HTTP (no TLS)
 # For a LAN-only box where TLS is handled elsewhere or not wanted.
 # Comment out BOTH server blocks above and uncomment this one.
+#
+# Plain HTTP ⇒ browsers refuse Tick's Secure session cookie: also set
+# NUXT_SESSION_COOKIE_SECURE=false on the app (trusted network only) — or
+# better, keep variant A with an internal-CA cert.
 # ---------------------------------------------------------------------------
 
 # server {
