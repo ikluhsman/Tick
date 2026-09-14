@@ -13,7 +13,7 @@ sudo nginx -t && sudo systemctl reload nginx
 Two variants inside the file:
 
 - **Variant A (default): public host with TLS.** Port 80 redirects to 443. Certs via certbot (`certbot --nginx -d tick.example.com` also works and writes the lines for you) or your internal CA.
-- **Variant B (commented): internal host, plain HTTP.** For a LAN-only box — comment out variant A, uncomment variant B. Also set `NUXT_SESSION_COOKIE_SECURE=false` on Tick, or sign-in silently fails; prefer `tls internal` instead.
+- **Variant B (commented): internal host, plain HTTP.** For a LAN-only box — comment out variant A, uncomment variant B. Also set `NUXT_SESSION_COOKIE_SECURE=false` on Tick, or login returns success but the sign-in page reports that the browser refused the cookie; prefer variant A with an internal CA cert instead.
 
 Enable the HSTS header only after TLS works; browsers cache it and a bad cert then locks users out for the max-age.
 
@@ -24,7 +24,7 @@ sudo cp Caddyfile.example /etc/caddy/Caddyfile   # edit the site address
 sudo systemctl reload caddy
 ```
 
-Public hostnames get automatic Let's Encrypt certificates. For an internal box, uncomment `tls internal` (Caddy's built-in CA — trust its root cert on your devices) or change the site address to `http://tick.internal.lan` for plain HTTP — plus `NUXT_SESSION_COOKIE_SECURE=false` on Tick; `tls internal` avoids that.
+Public hostnames get automatic Let's Encrypt certificates. For an internal box, uncomment `tls internal` (Caddy's built-in CA — trust its root cert on your devices) or change the site address to `http://tick.internal.lan` for plain HTTP — plus `NUXT_SESSION_COOKIE_SECURE=false` on Tick, since login otherwise returns success but the sign-in page reports that the browser refused the cookie; `tls internal` avoids that.
 
 ## Both configs already handle
 
