@@ -216,6 +216,39 @@ describe('GET /api/summary/reports', () => {
     )
   })
 
+  it('tag totals for org A are untouched by a heavily tagged org B in the same range (#12)', async () => {
+    // A second org with many tagged entries overlapping org A's report window —
+    // proves the tag-breakdown query is scoped to org A's own entry_tags rows,
+    // not incidentally correct only because the join happens to filter them out.
+    const other = await registerAccount()
+    const bigProject = (await other.client.post('/api/projects', { name: 'Big' })).body
+    const otherTags = ['gamma', 'delta', 'epsilon']
+    for (let i = 0; i < 30; i++) {
+      const res = await other.client.post('/api/entries', {
+        name: `other-${i}`,
+        refType: 'project',
+        refId: bigProject.id,
+        start: iso(i % 2 === 0 ? D1 : D2, 0, (i % 24) * 30),
+        end: iso(i % 2 === 0 ? D1 : D2, 0, (i % 24) * 30 + 15),
+        tags: [otherTags[i % otherTags.length]!]
+      })
+      expect(res.status).toBe(200)
+    }
+
+    // Org A's tag-grouped totals are exactly what the fixture-only fixture
+    // computed above — org B's volume of same-range tagged entries changes
+    // nothing.
+    const res = await api.get(`/api/summary/reports?from=${FROM}&to=${TO}&groupBy=tag`)
+    expect(res.status).toBe(200)
+    const groups = res.body.groups as any[]
+    expect(groups.map(g => g.label).sort()).toEqual(['#alpha', '#beta', 'Untagged'])
+    expect(groups.find(g => g.key === 'alpha')).toMatchObject({ entries: 2, sec: 10800 })
+    expect(groups.find(g => g.key === 'beta')).toMatchObject({ entries: 1, sec: 7200 })
+    expect(groups.find(g => g.key === 'untagged')).toMatchObject({ entries: 2, sec: 5400 })
+    expect(res.body.totals.sec).toBe(16200)
+    expect(res.body.totals.amount).toBe(500)
+  }, 30_000)
+
   it('honours the billable filter', async () => {
     const billable = await api.get(
       `/api/summary/reports?from=${FROM}&to=${TO}&billable=billable&groupBy=project`
