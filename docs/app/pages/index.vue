@@ -6,7 +6,8 @@ useSeoMeta({
   description: 'Tick is a self-hosted, MIT-licensed time tracker for freelancers and small teams.'
 })
 
-const quickstart = `git clone https://github.com/your-org/tick && cd tick
+const quickstart = `git clone https://github.com/ticktimer/Tick.git tick && cd tick
+cp .env.example .env          # set NUXT_SESSION_PASSWORD: openssl rand -base64 36
 docker compose up -d          # app + Postgres on :3000`
 
 const features = [

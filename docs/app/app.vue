@@ -53,7 +53,7 @@ useSeoMeta({
           variant="ghost"
           icon="i-simple-icons-github"
           aria-label="GitHub"
-          to="https://github.com"
+          to="https://github.com/ticktimer/Tick"
           target="_blank"
         />
       </template>
