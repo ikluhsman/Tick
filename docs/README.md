@@ -15,8 +15,10 @@ npm ci          # installs from package-lock.json; plain `npm install` also work
 npm run dev     # http://localhost:3000
 ```
 
-Requires **Node 22.19 or newer** (the `better-sqlite3` dependency ships
-prebuilt binaries only for recent Node 22/24 — see Troubleshooting below).
+Requires **Node ^22.19 or ^24.11+** (nuxt 4.5.2's `engines` field is
+`^22.19.0 || ^24.11.0 || >=26.0.0` — Node 23.x and 24.0–24.10 are not
+supported; the `better-sqlite3` dependency also ships prebuilt binaries only
+for recent Node 22/24 — see Troubleshooting below).
 
 ### Building and previewing a static export locally
 
@@ -43,16 +45,22 @@ You only need to do this once, when the site is first connected.
 
 1. **Sign in to Netlify** at [app.netlify.com](https://app.netlify.com) (a
    GitHub login is fine).
-2. **Start a new site from Git** — the option to import an existing project
+2. **Add new project → Import an existing project** — the option to import
    from a Git provider, from the Netlify dashboard or
    [app.netlify.com/start](https://app.netlify.com/start).
 3. **Choose GitHub**, and authorize the Netlify GitHub App if this is the
    first time. When picking the repository, make sure the `ticktimer`
    GitHub org is selected/authorized — if `ticktimer/Tick` doesn't show up in
    the repo list, the GitHub App most likely hasn't been granted access to
-   that org or that specific repo yet. That's controlled from your GitHub
-   account (Settings → Applications → Installed GitHub Apps → Netlify →
-   Repository access), not from Netlify. See Netlify's
+   that org or that specific repo yet. In the empty repo picker, choose
+   **Configure Netlify on GitHub**, select the `ticktimer` organization, and
+   grant access to `Tick` (all repos, or just this one). Only a `ticktimer`
+   **organization owner** can complete this — for orgs, GitHub App access
+   lives under the org's own settings
+   (`github.com/organizations/ticktimer/settings/installations` → Third-party
+   Access → GitHub Apps), not under your personal account's Settings →
+   Applications. A non-owner member who tries from the repo picker only
+   sends the owner a request to approve it. See Netlify's
    [repository permissions and linking](https://docs.netlify.com/build/git-workflows/repo-permissions-linking/)
    docs.
 4. **Pick `ticktimer/Tick`** as the repository.
@@ -61,14 +69,14 @@ You only need to do this once, when the site is first connected.
    and the publish directory already set, and those settings take precedence
    over anything typed into the UI. You shouldn't need to type a base
    directory, build command, or publish directory here at all.
-6. **Deploy.** The first build runs immediately. It takes roughly 20–30
-   seconds once queued (the `generate` step itself is under 20s).
+6. **Deploy.** The first build runs immediately — expect a minute or two for
+   an uncached `npm ci` of the full dependency tree; the `generate` step
+   itself is fast (under 10s locally).
 
 Netlify assigns a random name and URL like `https://random-name-123.netlify.app`.
-To change it: **Site settings → Site information → Change site name** (or
-**Domain management → Options → Edit site name**), then pick something like
-`ticktimer-docs`. Netlify.app subdomains are first-come-first-served, so if
-your first choice is taken, try another.
+To change it: **Project overview → Customize → Manage project name and cover
+image**, then pick something like `ticktimer-docs`. Netlify.app subdomains
+are first-come-first-served, so if your first choice is taken, try another.
 
 ### What triggers a deploy
 
@@ -96,16 +104,27 @@ regardless).
 ## Alternative: deploying with the Netlify CLI
 
 You don't need this if the GitHub integration above is set up — it's here for
-local one-off deploys or testing. From `docs/`:
+local one-off deploys or testing. Run these from the **repo root**, not
+`docs/` — `netlify.toml` already sets `base = "docs"`, and the CLI resolves
+that relative to your current directory, so running it from inside `docs/`
+makes it look for a nonexistent `docs/docs` and fail with a config error.
 
 ```bash
 npm install -g netlify-cli
-netlify init      # first time: links this folder to a Netlify site, or creates one
-netlify deploy --build --prod   # build + deploy straight to production
+netlify login
+netlify link      # first time: links this folder to the existing Netlify project
+netlify deploy --prod   # build + deploy straight to production
 ```
 
-Leave off `--prod` to get a draft deploy URL instead of publishing. See
-Netlify's [CLI getting-started guide](https://docs.netlify.com/api-and-cli-guides/cli-guides/get-started-with-cli/).
+Leave off `--prod` to get a draft deploy URL instead of publishing (`netlify
+deploy`). Use `netlify link` rather than `netlify init` here: `init` sets up
+*continuous deployment* and, if it doesn't detect an existing link, offers to
+**create a new project** — since the GitHub integration above already
+connected `ticktimer/Tick`, that would create a second project also building
+from the same repo. `link` (and `init`) also append `.netlify` to the repo
+root's `.gitignore` if it's not already there — check `git status` afterwards
+so that doesn't end up as a stray tracked-file change. See Netlify's
+[CLI getting-started guide](https://docs.netlify.com/api-and-cli-guides/cli-guides/get-started-with-cli/).
 
 ## Adding a custom domain later
 
@@ -113,23 +132,38 @@ Netlify's [CLI getting-started guide](https://docs.netlify.com/api-and-cli-guide
    but that's not required).
 2. In the Netlify dashboard: **Domain management → Add a domain**, then
    **Add a domain you already own**, and enter it.
-3. **DNS records** — pick one:
+3. **DNS records** — add the domain in Netlify first (step 2), then open
+   **Domain management → Production domains → Pending DNS verification** to
+   read the exact records Netlify wants for it. In general, pick one:
    - **Subdomain** (e.g. `docs.ticktimer.dev`): add a **CNAME** record at
      your DNS provider pointing the subdomain at your `*.netlify.app`
      hostname.
    - **Apex/root domain** (e.g. `ticktimer.dev` with no subdomain): apex
      domains can't use CNAME. Either delegate the domain to **Netlify DNS**
      (simplest — Netlify manages every record), or, if you keep an external
-     DNS provider, add an ALIAS/ANAME/flattened-CNAME record if it supports
-     one, otherwise an A record. See Netlify's
+     DNS provider, add an ALIAS/ANAME/flattened-CNAME record pointing to
+     `apex-loadbalancer.netlify.com` if your provider supports one,
+     otherwise an A record pointing to `75.2.60.5`. See Netlify's
      [external DNS configuration](https://docs.netlify.com/manage/domains/configure-domains/configure-external-dns/)
      and [Netlify DNS setup](https://docs.netlify.com/manage/domains/set-up-netlify-dns/)
      docs.
 4. **HTTPS** is provisioned automatically once DNS resolves to Netlify — no
    certificate to generate or upload yourself.
-5. **Point the old `*.netlify.app` URL at the new domain**: once the custom
-   domain is verified, set it as the **primary domain** in Domain management;
-   Netlify then redirects the `netlify.app` URL to it.
+5. **The old `*.netlify.app` URL keeps working**: once the custom domain is
+   verified, set it as the **primary domain** in Domain management so links
+   and canonical URLs use it — but Netlify does *not* redirect the
+   `netlify.app` URL to it; that subdomain keeps serving the site at 200
+   indefinitely (verified: neither `vitejs.netlify.app` nor
+   `vue-docs.netlify.app` redirect, despite both projects having a primary
+   custom domain). If you want the `netlify.app` URL to redirect once the
+   custom domain is live, add it yourself, e.g. in `netlify.toml`:
+   ```toml
+   [[redirects]]
+     from = "https://ticktimer-docs.netlify.app/*"
+     to = "https://docs.ticktimer.dev/:splat"
+     status = 301
+     force = true
+   ```
 
 See the full walkthrough at Netlify's
 [assign a domain to your site](https://docs.netlify.com/manage/domains/manage-domains/assign-a-domain-to-your-site-app/)
@@ -139,15 +173,20 @@ docs.
 
 - **Build fails with a Node/engine or native-module error (e.g.
   `better-sqlite3` failing to install or load):** this project requires
-  **Node ≥ 22.19** (the repo pins `NODE_VERSION` in the root `netlify.toml`,
-  so this shouldn't come up on Netlify itself unless that value is changed).
-  Locally, check `node --version` and switch to a supported Node 22.x/24.x
-  release if it's older.
+  **Node ^22.19 or ^24.11+** (the repo pins `NODE_VERSION` in the root
+  `netlify.toml`, so this shouldn't come up on Netlify itself unless that
+  value is changed). Locally, check `node --version` and switch to a
+  supported Node 22.19+/24.11+ release if it's older or in between.
 - **A page 404s that should exist:** confirm the content file exists under
   `docs/content/` and that the build log shows it being prerendered (look for
   the route in the "Prerendered N routes" build-log section). A blank page
-  (not a 404) after following a link usually means a caching issue — try a
-  hard refresh; see the stale-deploy note below.
+  (not a 404) after following a link usually means the client-side route and
+  the Nuxt Content lookup key disagree on a trailing slash (Netlify's Pretty
+  URLs redirect `/about` to `/about/`, but content is keyed without the
+  slash) — `[...slug].vue` strips the trailing slash before using the route
+  path as the lookup key specifically to avoid this; if it still happens,
+  check that logic first. A hard refresh is only worth trying as a fallback
+  in case of a genuinely stale cached deploy (see below).
 - **The live site looks stale after a merge:** check the **Deploys** tab —
   if the latest commit's deploy shows "failed" or is still "building", the
   previous successful deploy stays live until a new one finishes. Also check
@@ -156,5 +195,7 @@ docs.
 - **A deploy succeeded but the change isn't visible:** browsers can cache
   HTML; HTML responses are left at Netlify's default (revalidating) cache
   policy specifically so this doesn't linger — a normal reload should pick up
-  the new deploy. Static assets under `/_nuxt/*` are fingerprinted and cached
-  for a year, so they never need a cache-bust.
+  the new deploy. Hashed assets under `/_nuxt/*` are fingerprinted and cached
+  for a year, so they never need a cache-bust (the one exception is Nuxt's
+  own unhashed build-manifest file, `/_nuxt/builds/latest.json`, which Nitro
+  deliberately caches for only a second so clients notice new deploys).
