@@ -4,17 +4,22 @@ import type { ContentNavigationItem } from '@nuxt/content'
 
 const route = useRoute()
 
+// Netlify's Pretty URLs redirect /about -> /about/, but content paths are
+// stored without a trailing slash; a raw route.path lookup finds nothing at
+// "/about/" and the page renders blank post-hydration with no console error.
+const path = computed(() => route.path.replace(/\/+$/, '') || '/')
+
 const navigation = inject<Ref<ContentNavigationItem[]>>('navigation')
 
-const { data: page } = await useAsyncData(route.path, () => {
-  return queryCollection('docs').path(route.path).first()
+const { data: page } = await useAsyncData(path.value, () => {
+  return queryCollection('docs').path(path.value).first()
 })
 if (!page.value) {
   throw createError({ statusCode: 404, statusMessage: 'Page not found', fatal: true })
 }
 
-const { data: surround } = await useAsyncData(`${route.path}-surround`, () => {
-  return queryCollectionItemSurroundings('docs', route.path, {
+const { data: surround } = await useAsyncData(`${path.value}-surround`, () => {
+  return queryCollectionItemSurroundings('docs', path.value, {
     fields: ['description']
   })
 })

@@ -36,7 +36,18 @@ useSeoMeta({
 
       <template #right>
         <UContentSearchButton :collapsed="false" class="w-40 lg:w-56" />
-        <UColorModeButton />
+        <!--
+          A static host renders the prerendered HTML (light-mode default)
+          regardless of the visitor's stored preference, so the button's
+          aria-label is briefly wrong until the client re-evaluates color
+          mode. ClientOnly defers it instead of shipping the stale label.
+        -->
+        <ClientOnly>
+          <UColorModeButton />
+          <template #fallback>
+            <div class="size-8" />
+          </template>
+        </ClientOnly>
         <UButton
           color="neutral"
           variant="ghost"
