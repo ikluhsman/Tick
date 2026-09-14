@@ -12,7 +12,7 @@ import {
   type ParsedEntry
 } from './csv'
 
-export function mapGeneric(rows: string[][]): MapperResult {
+export function mapGeneric(rows: string[][], lines?: number[]): MapperResult {
   const header = headerMap(rows[0] ?? [])
   requireColumns(header, ['start', 'end'], 'generic CSV')
 
@@ -22,7 +22,9 @@ export function mapGeneric(rows: string[][]): MapperResult {
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i]!
-    const line = i + 1
+    // Real source line from parseCsv when available, else the row index
+    // (only hand-built test rows without blank lines/quoted newlines lack it).
+    const line = lines ? lines[i]! : i + 1
     const start = parseIsoCell(cellAt(row, col('start')))
     if (!start) {
       warnings.push({ line, reason: `Unparseable ISO start "${cellAt(row, col('start'))}"` })

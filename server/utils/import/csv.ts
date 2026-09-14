@@ -2,16 +2,33 @@
 // Handles: UTF-8 BOM, quoted fields, escaped quotes (""), commas/newlines
 // inside quotes, CRLF/LF/CR line endings. No deps.
 
-/** Parses CSV text into rows of string cells. Blank lines are dropped. */
-export function parseCsv(text: string): string[][] {
+/** `parseCsv` result: cells per row, plus each row's 1-based starting source line. */
+export interface ParsedCsv {
+  rows: string[][]
+  /** rows[i] starts on source line lines[i] (1-based; header = line 1). */
+  lines: number[]
+}
+
+/**
+ * Parses CSV text into rows of string cells, tracking each row's 1-based
+ * starting line in the source file (header = line 1). Blank lines are
+ * dropped from the result but still advance the line count for what
+ * follows, and a newline inside a quoted field advances it too — so a
+ * row after a blank line or a multi-line quoted field still gets its
+ * real line number.
+ */
+export function parseCsv(text: string): ParsedCsv {
   // Strip BOM.
   if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1)
 
   const rows: string[][] = []
+  const lines: number[] = []
   let row: string[] = []
   let cell = ''
   let inQuotes = false
   let sawAny = false // cell has content or was explicitly quoted ("")
+  let line = 1 // current source line (1-based)
+  let rowLine = 1 // source line on which `row` started
 
   const pushCell = () => {
     row.push(cell)
@@ -21,7 +38,10 @@ export function parseCsv(text: string): string[][] {
   const pushRow = () => {
     pushCell()
     // Drop rows that are entirely empty (blank line).
-    if (row.length > 1 || row[0] !== '') rows.push(row)
+    if (row.length > 1 || row[0] !== '') {
+      rows.push(row)
+      lines.push(rowLine)
+    }
     row = []
   }
 
@@ -35,6 +55,17 @@ export function parseCsv(text: string): string[][] {
         } else {
           inQuotes = false
         }
+      } else if (ch === '\n') {
+        cell += ch
+        line++
+      } else if (ch === '\r') {
+        // Collapse CRLF to one line advance, same as outside quotes.
+        cell += ch
+        if (text[i + 1] === '\n') {
+          cell += '\n'
+          i++
+        }
+        line++
       } else {
         cell += ch
       }
@@ -47,16 +78,20 @@ export function parseCsv(text: string): string[][] {
       pushCell()
     } else if (ch === '\n') {
       pushRow()
+      line++
+      rowLine = line
     } else if (ch === '\r') {
       pushRow()
       if (text[i + 1] === '\n') i++
+      line++
+      rowLine = line
     } else {
       cell += ch
       sawAny = true
     }
   }
   if (cell !== '' || sawAny || row.length) pushRow()
-  return rows
+  return { rows, lines }
 }
 
 /* ------------------------------------------------- shared mapper contracts */

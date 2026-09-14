@@ -13,7 +13,7 @@ import {
   type ParsedEntry
 } from './csv'
 
-export function mapClockify(rows: string[][]): MapperResult {
+export function mapClockify(rows: string[][], lines?: number[]): MapperResult {
   const header = headerMap(rows[0] ?? [])
   requireColumns(header, ['Description', 'Start Date', 'Start Time'], 'Clockify')
 
@@ -23,7 +23,9 @@ export function mapClockify(rows: string[][]): MapperResult {
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i]!
-    const line = i + 1
+    // Real source line from parseCsv when available, else the row index
+    // (only hand-built test rows without blank lines/quoted newlines lack it).
+    const line = lines ? lines[i]! : i + 1
     const start = parseDateTime(cellAt(row, col('Start Date')), cellAt(row, col('Start Time')))
     if (!start) {
       warnings.push({ line, reason: `Unparseable start date/time "${cellAt(row, col('Start Date'))} ${cellAt(row, col('Start Time'))}"` })
