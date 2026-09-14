@@ -176,3 +176,6 @@ handoff_design_*/
 
 # Vitest JSON report written by the rtk vitest proxy
 .vitest/
+
+# Ad-hoc notes and scratch output at the repo root (nothing tracked lives there as .txt)
+/*.txt
