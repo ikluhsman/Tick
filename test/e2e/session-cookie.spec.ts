@@ -1,16 +1,17 @@
-// Simulates the actual #6 failure (a Secure cookie issued to a non-secure
-// origin) on loopback, since CI has no LAN IP: --host-resolver-rules maps a
-// non-localhost hostname onto 127.0.0.1. Chromium's secure-context check is
-// textual (only "localhost" and loopback IP literals are trustworthy), so
-// http://tick.test is treated as plain HTTP even though it resolves locally.
+// Simulates a Secure cookie issued to a non-secure origin, on loopback, since
+// CI has no LAN IP: --host-resolver-rules maps a non-localhost hostname onto
+// 127.0.0.1. Chromium's secure-context check is textual (only "localhost" and
+// loopback IP literals are trustworthy), so http://tick.test is treated as
+// plain HTTP even though it resolves locally.
 //
 // The e2e server always runs with NUXT_SESSION_COOKIE_SECURE=false (serve.mjs),
-// so these cases can't reproduce a Secure cookie failing on plain HTTP
-// directly — see README's "Not possible in CI" note. What they prove instead:
-// the override lets a real plain-HTTP login work end to end, and the
-// detection message (app/utils/sessionCookieProblem.ts) picks the right
-// branch when a stubbed 2xx response mimics the "no user" outcome, without
-// needing a browser that actually dropped a cookie.
+// so these cases can't reproduce a Secure cookie failing on plain HTTP against
+// a server running with the default — test/integration/session-cookie.test.ts
+// covers that (it asserts Secure is actually present). What they prove
+// instead: the override lets a real plain-HTTP login work end to end (case 1),
+// and the detection message (app/utils/sessionCookieProblem.ts) picks the
+// right branch when a stubbed 2xx response mimics the "no user" outcome,
+// without needing a browser that actually dropped a cookie (cases 2-3).
 import { chromium, type Browser, type Page } from '@playwright/test'
 import { expect, test } from './helpers/test'
 import { waitForHydration } from './helpers/hydration'

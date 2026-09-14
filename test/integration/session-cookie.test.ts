@@ -1,13 +1,13 @@
 /**
- * Session cookie Secure flag (issue #6, docs/content/4.reference/4.security.md
+ * Session cookie Secure flag (docs/content/4.reference/4.security.md
  * §Plain HTTP and the Secure flag). nuxt-auth-utils caches one session config
  * and shares it across every Set-Cookie path — login, register, logout,
  * anonymous issue, and the module's own GET/DELETE /api/_auth/session — so one
  * assertion set run against each server proves them all consistent.
  *
- * `NUXT_SESSION_COOKIE_SECURE` accepts only true/false/1/0/undefined
- * (server/plugins/00.session-cookie.ts); anything else — including an empty
- * string, which would otherwise silently drop Secure — aborts startup.
+ * server/plugins/00.session-cookie.ts accepts true/1/undefined (Secure) and
+ * false/0 (not Secure); anything else — including an empty string, which
+ * would otherwise silently drop Secure — aborts startup.
  */
 import { afterAll, describe, expect, it } from 'vitest'
 import {

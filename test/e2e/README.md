@@ -45,7 +45,9 @@ set in `playwright.config.ts` (`launchOptions.executablePath`).
 
 ### Environment tweaks the e2e build makes
 
-These are test-environment concessions, and nothing under test asserts on them:
+The first two are test-environment concessions that nothing under test asserts
+on. The third is also load-bearing for `session-cookie.spec.ts`, which asserts
+directly on the plain-HTTP login it enables:
 
 * `NUXT_AUTH_RATE_LIMIT=0` — the auth endpoints allow 10 POSTs per IP per
   minute; a suite that signs in repeatedly would trip the limiter.
@@ -55,7 +57,8 @@ These are test-environment concessions, and nothing under test asserts on them:
 * `NUXT_SESSION_COOKIE_SECURE=false` (set in `serve.mjs`) — the suite talks
   plain http to 127.0.0.1 and Playwright's `APIRequestContext` will not send a
   `Secure` cookie over http, so the API-driven setup/cleanup helpers would run
-  unauthenticated.
+  unauthenticated. `session-cookie.spec.ts` case 1 also verifies this override
+  end to end: a plain-HTTP login that would otherwise silently fail.
 * The PWA service worker is disabled for this build. An auto-updating worker
   re-registering in every fresh browser context is pure flake and no flow under
   test involves it.
