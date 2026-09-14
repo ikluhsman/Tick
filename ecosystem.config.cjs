@@ -6,7 +6,7 @@
 //   NUXT_DATABASE_URL      required — postgresql://user:pass@host:5432/tick
 //   NUXT_SESSION_PASSWORD  required — 32+ random chars (`openssl rand -base64 36`)
 //   NUXT_AUTO_MIGRATE      optional — 'false' to skip startup SQL migrations
-//   NUXT_SESSION_COOKIE_SECURE optional — 'false' only for plain-HTTP LAN access (docs: Security). Empty/other values abort startup.
+//   NUXT_SESSION_COOKIE_SECURE optional — 'false' only for plain-HTTP LAN access (docs: Security). Empty/unrecognized values abort startup.
 //   NITRO_HOST / NITRO_PORT optional — bind address/port (defaults below)
 module.exports = {
   apps: [
