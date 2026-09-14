@@ -122,6 +122,21 @@ export async function startServer(opts: StartServerOptions): Promise<TestServer>
   const url = `http://127.0.0.1:${opts.port}`
   const logs: string[] = []
 
+  // A server leaked by an earlier interrupted or misassessed run would let this
+  // one silently attach to someone else's process instead of its own child.
+  try {
+    const probe = await fetch(`${url}/api/me`, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(300)
+    })
+    if (probe.status > 0) {
+      throw new Error(`port ${opts.port} already in use (stale server from a previous run?)`)
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('port ')) throw err
+    // Nothing answered — the port is free, as expected.
+  }
+
   // Strip any inherited value so a developer's shell can't flip the default
   // test. Don't blank it: an empty value aborts startup (server/plugins/00.session-cookie.ts).
   const { NUXT_SESSION_COOKIE_SECURE: _s, NITRO_SESSION_COOKIE_SECURE: _n, ...inherited } = process.env
@@ -306,6 +321,8 @@ export interface TestAccount {
   email: string
   password: string
   name: string
+  /** The raw register response, so callers can inspect its Set-Cookie lines. */
+  response: ApiResponse<SessionUserLike>
 }
 
 export interface SessionUserLike {
@@ -344,7 +361,7 @@ export async function registerAccount(
   if (res.status !== 200) {
     throw new Error(`register failed (${res.status}): ${res.text}`)
   }
-  return { client, user: res.body, email, password, name }
+  return { client, user: res.body, email, password, name, response: res }
 }
 
 /** A second, independent session for an existing account. */

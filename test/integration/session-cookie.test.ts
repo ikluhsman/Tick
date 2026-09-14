@@ -32,8 +32,8 @@ const sessionCookieLines = (r: ApiResponse | Response): string[] => {
 
 const isSecure = (line: string) => /;\s*Secure(\s*;|\s*$)/i.test(line)
 const isHttpOnly = (line: string) => /;\s*HttpOnly(\s*;|\s*$)/i.test(line)
-const isLax = (line: string) => /;\s*SameSite=Lax/i.test(line)
-const isRootPath = (line: string) => /;\s*Path=\//i.test(line)
+const isLax = (line: string) => /;\s*SameSite=Lax(\s*;|\s*$)/i.test(line)
+const isRootPath = (line: string) => /;\s*Path=\/(\s*;|\s*$)/i.test(line)
 
 function assertSessionCookie(lines: string[], expectSecure: boolean) {
   expect(lines.length).toBeGreaterThanOrEqual(1)
@@ -48,6 +48,8 @@ function assertSessionCookie(lines: string[], expectSecure: boolean) {
 describe('default (NUXT_SESSION_COOKIE_SECURE unset)', () => {
   it('sets Secure on every session Set-Cookie path', async () => {
     const acct = await registerAccount(MAIN_URL)
+    assertSessionCookie(sessionCookieLines(acct.response), true)
+
     const client = new ApiClient(MAIN_URL)
 
     const login = await client.post('/api/auth/login', {
@@ -96,6 +98,12 @@ describe('NUXT_SESSION_COOKIE_SECURE=false', () => {
       port: PORT_SESSION_COOKIE,
       env: { NUXT_SESSION_COOKIE_SECURE: 'false' }
     })
+
+    // register.post.ts also calls setUserSession; assert its Set-Cookie directly
+    // rather than only relying on it sharing config with the paths below.
+    const registerOnThisServer = await registerAccount(server.url)
+    assertSessionCookie(sessionCookieLines(registerOnThisServer.response), false)
+
     const client = new ApiClient(server.url)
 
     const login = await client.post('/api/auth/login', {
@@ -115,6 +123,9 @@ describe('NUXT_SESSION_COOKIE_SECURE=false', () => {
     await secondClient.post('/api/auth/login', { email: acct.email, password: acct.password })
     const moduleDelete = await secondClient.del('/api/_auth/session')
     assertSessionCookie(sessionCookieLines(moduleDelete), false)
+
+    const anonSession = await fetch(`${server.url}/api/_auth/session`, { redirect: 'manual' })
+    assertSessionCookie(sessionCookieLines(anonSession), false)
 
     const anonMe = await fetch(`${server.url}/api/me`, { redirect: 'manual' })
     expect(anonMe.status).toBe(401)
@@ -140,15 +151,17 @@ describe('NUXT_SESSION_COOKIE_SECURE=false', () => {
 
 describe('negative controls (startup refused)', () => {
   it('empty string aborts startup — the silently-dropped-Secure case', async () => {
-    await expect(
-      startServer({ port: PORT_SESSION_COOKIE, env: { NUXT_SESSION_COOKIE_SECURE: '' } })
-    ).rejects.toThrow(/NUXT_SESSION_COOKIE_SECURE must be "true" or "false"/)
+    // If startServer resolves instead of rejecting — the regression this test
+    // exists to catch — close its server rather than leaking it on the port.
+    const p = startServer({ port: PORT_SESSION_COOKIE, env: { NUXT_SESSION_COOKIE_SECURE: '' } })
+    p.then(s => s.close(), () => {})
+    await expect(p).rejects.toThrow(/NUXT_SESSION_COOKIE_SECURE must be "true" or "false"/)
   })
 
   it('an unrecognized word aborts startup — the silently-ignored case', async () => {
-    await expect(
-      startServer({ port: PORT_SESSION_COOKIE, env: { NUXT_SESSION_COOKIE_SECURE: 'no' } })
-    ).rejects.toThrow(/NUXT_SESSION_COOKIE_SECURE must be "true" or "false"/)
+    const p = startServer({ port: PORT_SESSION_COOKIE, env: { NUXT_SESSION_COOKIE_SECURE: 'no' } })
+    p.then(s => s.close(), () => {})
+    await expect(p).rejects.toThrow(/NUXT_SESSION_COOKIE_SECURE must be "true" or "false"/)
   })
 
   it('explicit "true" starts and keeps Secure', async () => {
