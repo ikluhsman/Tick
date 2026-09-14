@@ -164,16 +164,20 @@ export async function buildReportSummary(
         null::text as label,
         null::text as sub`)
 
-  // Tag grouping fans an entry out to each of its live tags ("Untagged" when none).
+  // Tag grouping fans an entry out to each of its live tags ("Untagged" when
+  // none). The subquery stays LATERAL on b.id so it only reads tag links of
+  // this report's entries (entry_tags' PK leads with entry_id); an
+  // `in (select id from b)` form planned worse.
   const tagJoin
     = groupBy === 'tag'
-      ? sql.raw(`
-        left join (
-          select et.entry_id, g.name
+      ? sql`
+        left join lateral (
+          select g.name
           from entry_tags et
-          join tags g on g.id = et.tag_id and g.deleted_at is null
-        ) tg on tg.entry_id = b.id`)
-      : sql.raw('')
+          join tags g on g.id = et.tag_id and g.org_id = ${orgId} and g.deleted_at is null
+          where et.entry_id = b.id
+        ) tg on true`
+      : sql``
 
   const groupedQ = db.execute(sql`
     with b as (${base})
