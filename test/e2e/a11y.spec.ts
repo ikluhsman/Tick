@@ -217,6 +217,11 @@ test.describe('mobile subset', { tag: '@mobile' }, () => {
     await checkA11y(page, '/clients (mobile)')
   })
 
+  test('/tags has no violations', async ({ page }) => {
+    await page.goto('/tags')
+    await checkA11y(page, '/tags (mobile)')
+  })
+
   test('picker bottom sheet has no violations', async ({ page }) => {
     await page.goto('/time')
     await timerPlus(page).click()
