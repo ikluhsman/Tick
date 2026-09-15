@@ -9,6 +9,7 @@ import type { EntryDto } from '#shared/types'
 useHead({ title: 'Calendar · Tick' })
 
 const calendar = useCalendarStore()
+const { timeZone, zoned } = useTimeZone()
 const ui = useUiStore()
 // True only on the first mount after a server render — the calendar state
 // (including `anchor`) then came from the SSR payload, computed in the
@@ -49,19 +50,14 @@ await useAsyncData('calendar-entries', async () => {
 
 onMounted(() => {
   const rangeBefore = calendar.rangeStart
-  // The server anchored the grid on *its* day (UTC in the container), which a
-  // browser behind it reads as yesterday — so the grid opens on the wrong day,
-  // or the wrong week, with none of today's entries until a nav button moves
-  // the anchor (ticktimer/Tick#29). Post-mount, so hydration still matches the
-  // SSR markup.
-  if (hydrating) calendar.localizeAnchor()
   // Mobile defaults to Day view (README §Mobile); the segmented control still
   // switches. Post-mount so SSR markup (week) hydrates cleanly — the range
   // watcher below then fetches the day view.
   if (window.innerWidth < 1024 && calendar.view === 'week') calendar.setView('day')
-  // Re-anchoring usually moves the range and the watcher refetches. When it
-  // doesn't (a timezone whose week matches the server's), the entries still
-  // came from the server's window — shifted by its offset — so refetch here.
+  // The store re-anchors itself when the browser's timezone arrives, which moves
+  // the range and makes the watcher refetch. When it doesn't move (the cookie
+  // was already set, so SSR used the right zone), the entries came from the
+  // server's own window only if that zone differed — refetch to be sure.
   if (hydrating && calendar.rangeStart === rangeBefore) calendar.fetchRange().catch(() => {})
 })
 
@@ -71,16 +67,16 @@ watch(() => [calendar.rangeStart, calendar.rangeEnd], () => {
 
 // ── Header copy ─────────────────────────────────────────────────────────────
 const title = computed(() => {
-  if (calendar.view === 'day') return formatDateLong(calendar.anchor)
-  const a = new Date(calendar.rangeStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  const b = new Date(calendar.rangeStart + 6 * 86_400_000)
+  if (calendar.view === 'day') return formatDateLong(calendar.anchor, timeZone.value)
+  const a = zoned(calendar.rangeStart).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const b = zoned(calendar.rangeStart + 6 * 86_400_000)
     .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   return `${a} – ${b}`
 })
 
 const summary = computed(() => {
   const totalSec = calendar.entries.reduce((acc, e) => acc + e.durationSec, 0)
-  if (calendar.view === 'day') return `${formatDuration(totalSec)} · ${formatDayLabel(calendar.anchor)}`
+  if (calendar.view === 'day') return `${formatDuration(totalSec)} · ${formatDayLabel(calendar.anchor, new Date(), timeZone.value)}`
   const w = calendar.weekOffset
   const rel = w === 0
     ? 'current week'
@@ -101,11 +97,12 @@ function onCreateFromKeyboard() {
 }
 
 function onCreate({ day, startMin, endMin }: { day: number, startMin: number, endMin: number }) {
-  const d = new Date(day)
+  // The dialog's date field is the user's calendar day, not the host's.
+  const d = zoned(day)
   prefill.value = {
     date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-    start: formatTime(day + startMin * 60_000),
-    end: formatTime(day + endMin * 60_000)
+    start: formatTime(day + startMin * 60_000, timeZone.value),
+    end: formatTime(day + endMin * 60_000, timeZone.value)
   }
   dialogOpen.value = true
 }

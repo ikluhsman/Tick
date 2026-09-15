@@ -1,7 +1,19 @@
 // Display formatters — pure functions, unit-testable.
 // Locale is pinned to en-US so SSR and client render identically.
+//
+// Anything that reads a clock takes an optional IANA `tz`. Without it these read
+// the *runtime's* local fields, which on the server is the container's zone —
+// the hydration mismatch in ticktimer/Tick#7. Callers that render during SSR
+// pass the zone from useTimeZone(); see app/utils/tz.ts for why shifting the
+// Date is enough to make every existing format string correct.
+import { zonedDate } from './tz'
 
 const DAY_MS = 86_400_000
+
+/** Shift into `tz` for display when one was given; otherwise leave it alone. */
+function inZone(d: Date | string | number, tz?: string): Date {
+  return tz ? zonedDate(d, tz) : new Date(d)
+}
 
 /**
  * Map a server client-color token ("primary-400", "neutral-400") to a paintable
@@ -33,9 +45,9 @@ export function formatClock(sec: number): string {
     .join(':')
 }
 
-/** Date-ish → "9:05am". */
-export function formatTime(d: Date | string | number): string {
-  const date = new Date(d)
+/** Date-ish → "9:05am", in `tz` when given. */
+export function formatTime(d: Date | string | number, tz?: string): string {
+  const date = inZone(d, tz)
   let h = date.getHours()
   const m = date.getMinutes()
   const ap = h >= 12 ? 'pm' : 'am'
@@ -44,8 +56,12 @@ export function formatTime(d: Date | string | number): string {
 }
 
 /** "9:05am – 11:20am". */
-export function formatRange(start: Date | string | number, end: Date | string | number): string {
-  return `${formatTime(start)} – ${formatTime(end)}`
+export function formatRange(
+  start: Date | string | number,
+  end: Date | string | number,
+  tz?: string
+): string {
+  return `${formatTime(start, tz)} – ${formatTime(end, tz)}`
 }
 
 /** "$3,699" — rounded to whole dollars. */
@@ -57,9 +73,15 @@ export function formatMoney(n: number): string {
  * Day-group label: Today · Yesterday · weekday name (<7 days ago) ·
  * "Wed, Sep 2" (plus year when it differs from the reference year).
  */
-export function formatDayLabel(d: Date | string | number, ref: Date = new Date()): string {
-  const date = new Date(d)
-  const diff = Math.round((startOfDay(ref).getTime() - startOfDay(date).getTime()) / DAY_MS)
+export function formatDayLabel(
+  d: Date | string | number,
+  ref: Date = new Date(),
+  tz?: string
+): string {
+  const date = inZone(d, tz)
+  // "Today" has to mean today *where the user is*, so the reference shifts too.
+  const refDate = inZone(ref, tz)
+  const diff = Math.round((startOfDay(refDate).getTime() - startOfDay(date).getTime()) / DAY_MS)
   if (diff === 0) return 'Today'
   if (diff === 1) return 'Yesterday'
   if (diff > 1 && diff < 7) return date.toLocaleDateString('en-US', { weekday: 'long' })
@@ -67,18 +89,18 @@ export function formatDayLabel(d: Date | string | number, ref: Date = new Date()
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-    year: date.getFullYear() !== ref.getFullYear() ? 'numeric' : undefined
+    year: date.getFullYear() !== refDate.getFullYear() ? 'numeric' : undefined
   })
 }
 
 /** "Sep 11" — the muted date beside a day-group label. */
-export function formatDaySub(d: Date | string | number): string {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+export function formatDaySub(d: Date | string | number, tz?: string): string {
+  return inZone(d, tz).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 /** "Fri, Sep 11, 2026" — manual-entry interpretation line. */
-export function formatDateLong(d: Date | string | number): string {
-  return new Date(d).toLocaleDateString('en-US', {
+export function formatDateLong(d: Date | string | number, tz?: string): string {
+  return inZone(d, tz).toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

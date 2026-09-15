@@ -33,6 +33,8 @@ const emit = defineEmits<{ delete: [] }>()
 const entriesStore = useEntriesStore()
 const timer = useTimerStore()
 const ui = useUiStore()
+// Times print in the browser's zone on both renders (ticktimer/Tick#7).
+const { timeZone } = useTimeZone()
 
 const selected = computed(() => entriesStore.selection.has(props.entry.id))
 
@@ -266,7 +268,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
 
       <!-- Time range (desktop; mobile shows it under the duration) -->
       <span class="tnum whitespace-nowrap text-xs text-muted max-lg:hidden">
-        {{ formatRange(entry.start, entry.end ?? entry.start) }}
+        {{ formatRange(entry.start, entry.end ?? entry.start, timeZone) }}
       </span>
 
       <!-- Billable toggle (26px square, outlined $) — desktop only -->
@@ -292,7 +294,7 @@ const swipeActive = computed(() => dragging.value || offset.value !== 0)
           {{ entry.billable && entry.amount != null ? formatMoney(entry.amount) : '—' }}
         </div>
         <div class="tnum text-[11px] text-muted lg:hidden">
-          {{ formatRange(entry.start, entry.end ?? entry.start) }}
+          {{ formatRange(entry.start, entry.end ?? entry.start, timeZone) }}
         </div>
       </div>
 

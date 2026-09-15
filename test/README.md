@@ -31,6 +31,7 @@ axe rule id, impact, help text and the failing selector).
 Current unit files:
 
 - `test/unit/parse.spec.ts` — `app/utils/parse.ts`: `parseDate`, `parseTime`, `parseDuration`, `parseEstimate`. Every date/time/duration format listed in `docs/content/3.guide/1.timer-and-entries.md` has a case, plus the invalid-input cases that must return `null`.
+- `test/unit/tz.spec.ts` — `app/utils/tz.ts`: the timezone arithmetic behind ticktimer/Tick#7 — real UTC offsets, DST transitions (including a 25-hour day), half-hour and :45 zones, and `instantAtWallTime` as the inverse of `zonedDate`. Pinned to absolute offsets, so it holds under any host `TZ`.
 - `test/unit/cascade-plan.spec.ts` — `server/utils/cascade-plan.ts`: Rule 3's decision table, every delete-dialog checkbox combination for clients and projects — which rows go to trash, which are kept and detached, which refs the surviving entries lose. The SQL that applies the plan is proved against a real database in `test/integration/cascade-sql.test.ts`.
 - `test/unit/format.spec.ts` — `app/utils/format.ts`: `formatDuration`, `formatClock`, `formatMoney`, `formatTime`, `formatRange`, `formatDayLabel`, `formatDaySub`, `formatDateLong`, `formatEstimate`, `clientColorVar`, plus `formatDuration` ↔ `parseDuration` round-trips.
 
@@ -64,5 +65,9 @@ relative path (`../../app/utils/parse`); the aliases `~`, `~~`, `@@` and
    - The suite is verified under UTC, America/Denver, Europe/Berlin,
      Australia/Sydney, Asia/Kolkata, Pacific/Chatham and America/Sao_Paulo:
      `TZ=Pacific/Chatham npm test`.
+   - Display helpers that read a clock take an explicit `tz` (see
+     `app/utils/tz.ts`). A test that asserts on a formatted time or a day label
+     should pass one rather than relying on the host's zone — the app itself
+     does, because the server's zone is not the user's (ticktimer/Tick#7).
 4. Never soften an assertion to make it pass. If the code is wrong, that is a
    bug — file it or fix the code.
