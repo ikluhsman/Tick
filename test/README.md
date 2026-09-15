@@ -10,13 +10,16 @@ npm test -- -t "parseDuration"             # one describe/it by name
 npm run test:e2e  # Playwright (separate runner, see test/e2e)
 ```
 
-`npm test` never touches the dev server on :3790 or the dev database.
+`npm test` needs no database and no running server — pure modules only, so it
+runs on a fresh clone (ticktimer/Tick#13). Anything that needs Postgres belongs
+in `test/integration/**`.
 
 ## Layout
 
 | Path | What lives there |
 | --- | --- |
 | `test/unit/*.spec.ts` | Pure-function and module-level units. No Nuxt runtime, no network, no DB. |
+| `test/integration/*.test.ts` | Needs Postgres. Its own runner and config — `.test.ts`, so the unit `include` never picks it up. See `vitest.integration.config.ts`. |
 | `test/e2e/**` | Playwright specs. Excluded from Vitest in `vitest.config.ts`. |
 
 `test/e2e/a11y.spec.ts` sweeps every main page (plus the picker and
@@ -28,6 +31,7 @@ axe rule id, impact, help text and the failing selector).
 Current unit files:
 
 - `test/unit/parse.spec.ts` — `app/utils/parse.ts`: `parseDate`, `parseTime`, `parseDuration`, `parseEstimate`. Every date/time/duration format listed in `docs/content/3.guide/1.timer-and-entries.md` has a case, plus the invalid-input cases that must return `null`.
+- `test/unit/cascade-plan.spec.ts` — `server/utils/cascade-plan.ts`: Rule 3's decision table, every delete-dialog checkbox combination for clients and projects — which rows go to trash, which are kept and detached, which refs the surviving entries lose. The SQL that applies the plan is proved against a real database in `test/integration/cascade-sql.test.ts`.
 - `test/unit/format.spec.ts` — `app/utils/format.ts`: `formatDuration`, `formatClock`, `formatMoney`, `formatTime`, `formatRange`, `formatDayLabel`, `formatDaySub`, `formatDateLong`, `formatEstimate`, `clientColorVar`, plus `formatDuration` ↔ `parseDuration` round-trips.
 
 ## Config
