@@ -35,6 +35,27 @@ function flushName() {
   timer.setName(nameLocal.value)
 }
 
+// ── Floating dock surface (ticktimer/Tick#34) ──────────────────────────────
+// The card used bg-elevated + border-default + shadow-md, which is exactly the
+// entry cards it sits on top of: it read as the last row of the list rather
+// than as something floating over it.
+//
+// What separates it is an edge, not a fill. On light the dock goes white against
+// the grey cards (bg-default); on dark it keeps bg-elevated, because the step
+// further (bg-accented) drops the muted clock and chips to 3.98:1 against their
+// own background and fails the axe sweep at WCAG AA. So the lift comes from a
+// real drop shadow plus a primary hairline that is always present — the dock is
+// the one primary-tinted surface on the screen — and brightens into a halo while
+// the timer runs. The *pulsing* glow belongs to the play button; a whole pulsing
+// card would be too much.
+const dockShadow = computed(() => {
+  const lift = '0 12px 32px -10px color-mix(in srgb, var(--ui-bg-inverted) 55%, transparent)'
+  const edge = timer.running
+    ? '0 0 0 1px var(--ui-primary), 0 0 22px -6px color-mix(in srgb, var(--ui-primary) 55%, transparent)'
+    : '0 0 0 1px color-mix(in srgb, var(--ui-primary) 45%, transparent), 0 0 18px -8px color-mix(in srgb, var(--ui-primary) 30%, transparent)'
+  return `${lift}, ${edge}`
+})
+
 // ── Chips ──────────────────────────────────────────────────────────────────
 const chainLabel = computed(() => {
   const r = timer.currentRef
@@ -80,7 +101,8 @@ async function toggle() {
   <div
     role="region"
     aria-label="Timer"
-    class="mx-3 flex flex-col gap-2 rounded-lg border border-default bg-elevated py-2.5 pr-2.5 pl-3.5 shadow-md has-[input:focus-visible]:border-primary has-[input:focus-visible]:ring-1 has-[input:focus-visible]:ring-primary"
+    class="mx-3 flex flex-col gap-2 rounded-xl border border-accented bg-default py-2.5 dark:bg-elevated pr-2.5 pl-3.5 has-[input:focus-visible]:border-primary has-[input:focus-visible]:ring-1 has-[input:focus-visible]:ring-primary"
+    :style="{ boxShadow: dockShadow }"
   >
     <!-- Row 1: description · clock · start/stop -->
     <div class="flex items-center gap-2">
