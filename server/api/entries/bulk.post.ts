@@ -72,10 +72,11 @@ export default defineEventHandler(
       return rows.map(r => toEntryDto(r, ctx, tagMap.get(r.id) ?? []))
     }
 
-    // restore
+    // restore — the batch stamp goes with the deleted_at, or a later undo of the
+    // cascade that once trashed these rows would trash-restore them again.
     const rows = await db
       .update(schema.timeEntries)
-      .set({ deletedAt: null })
+      .set({ deletedAt: null, deleteBatchId: null })
       .where(and(own, isNotNull(schema.timeEntries.deletedAt)))
       .returning({ id: schema.timeEntries.id })
     return { count: rows.length }

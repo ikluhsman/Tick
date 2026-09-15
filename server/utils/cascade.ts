@@ -7,6 +7,7 @@
 // This file is the SQL half: collect the live subtree, ask cascade-plan.ts what
 // happens to it, apply that, and snapshot every reference cleared so undo can
 // put it back. Which rows go where is the pure table in ./cascade-plan.
+import { randomUUID } from 'node:crypto'
 import { and, eq, inArray, inUuids, isNotNull, isNull, or, schema } from './drizzle'
 import type { DB } from './drizzle'
 import { planClientCascade, planProjectCascade } from './cascade-plan'
@@ -25,6 +26,12 @@ export interface RelinkSnapshot {
 /** DeleteResult extension (frozen DTO untouched): adds the relink snapshot for undo. */
 export interface CascadeDeleteResult extends DeleteResult {
   relinked: RelinkSnapshot
+  /**
+   * delete_batches.id — the whole operation, recorded server-side. Undo posts
+   * this one id instead of every uuid it touched, which neither the 1MB body
+   * cap nor /api/restore's per-array limits could carry (ticktimer/Tick#11).
+   */
+  batchId: string
 }
 
 /** Entry ref match: points directly at one of these ids (Rule 1 deepest ref). */
@@ -147,13 +154,33 @@ export async function projectCascadeCounts(
 
 /* ----------------------------------------------------------------- deletes */
 
-async function softDeleteEntries(db: Dbx, orgId: string, ids: string[], now: Date) {
+async function softDeleteEntries(
+  db: Dbx,
+  orgId: string,
+  ids: string[],
+  now: Date,
+  batchId: string
+) {
   if (!ids.length) return
   await db
     .update(schema.timeEntries)
-    .set({ deletedAt: now })
+    .set({ deletedAt: now, deleteBatchId: batchId })
     // Entry id lists are unbounded (a client's whole history): one array param.
     .where(and(eq(schema.timeEntries.orgId, orgId), inUuids(schema.timeEntries.id, ids)))
+}
+
+/**
+ * Record the operation so undo can name it with one id. The relink snapshot
+ * rides along because a detached row is still alive — nothing on it says which
+ * cascade cleared its parent, or what the parent was.
+ */
+async function recordBatch(
+  db: Dbx,
+  batchId: string,
+  orgId: string,
+  relinked: RelinkSnapshot
+): Promise<void> {
+  await db.insert(schema.deleteBatches).values({ id: batchId, orgId, relinked })
 }
 
 /**
@@ -204,26 +231,27 @@ export async function cascadeDeleteClient(
     await requireLive(tx, schema.clients, orgId, clientId, 'Client')
     const sub = await collectClientSubtree(tx, orgId, clientId)
     const now = new Date()
+    const batchId = randomUUID()
     const plan = planClientCascade(clientId, sub, flags)
     const { deletedProjects, deletedTasks, deletedEntries } = plan
 
     await tx
       .update(schema.clients)
-      .set({ deletedAt: now })
+      .set({ deletedAt: now, deleteBatchId: batchId })
       .where(eq(schema.clients.id, clientId))
     if (deletedProjects.length) {
       await tx
         .update(schema.projects)
-        .set({ deletedAt: now })
+        .set({ deletedAt: now, deleteBatchId: batchId })
         .where(and(eq(schema.projects.orgId, orgId), inArray(schema.projects.id, deletedProjects)))
     }
     if (deletedTasks.length) {
       await tx
         .update(schema.tasks)
-        .set({ deletedAt: now })
+        .set({ deletedAt: now, deleteBatchId: batchId })
         .where(and(eq(schema.tasks.orgId, orgId), inArray(schema.tasks.id, deletedTasks)))
     }
-    await softDeleteEntries(tx, orgId, deletedEntries, now)
+    await softDeleteEntries(tx, orgId, deletedEntries, now, batchId)
 
     // Kept projects lose their client (rate falls back per Rule 2).
     let relinkProjects: RelinkSnapshot['projects'] = []
@@ -264,6 +292,9 @@ export async function cascadeDeleteClient(
       plan.clearedRefs.taskIds
     )
 
+    const relinked = { projects: relinkProjects, tasks: relinkTasks, entries: relinkEntries }
+    await recordBatch(tx, batchId, orgId, relinked)
+
     return {
       deleted: {
         clients: [clientId],
@@ -276,7 +307,8 @@ export async function cascadeDeleteClient(
         tasks: relinkTasks.length,
         entries: relinkEntries.length
       },
-      relinked: { projects: relinkProjects, tasks: relinkTasks, entries: relinkEntries }
+      relinked,
+      batchId
     }
   })
 }
@@ -292,20 +324,21 @@ export async function cascadeDeleteProject(
     const taskIds = await collectTaskIds(tx, orgId, [projectId])
     const endedEntryIds = await collectEndedEntryIds(tx, orgId, [], [projectId], taskIds)
     const now = new Date()
+    const batchId = randomUUID()
     const plan = planProjectCascade(projectId, { projectIds: [], taskIds, endedEntryIds }, flags)
     const { deletedTasks, deletedEntries } = plan
 
     await tx
       .update(schema.projects)
-      .set({ deletedAt: now })
+      .set({ deletedAt: now, deleteBatchId: batchId })
       .where(eq(schema.projects.id, projectId))
     if (deletedTasks.length) {
       await tx
         .update(schema.tasks)
-        .set({ deletedAt: now })
+        .set({ deletedAt: now, deleteBatchId: batchId })
         .where(and(eq(schema.tasks.orgId, orgId), inArray(schema.tasks.id, deletedTasks)))
     }
-    await softDeleteEntries(tx, orgId, deletedEntries, now)
+    await softDeleteEntries(tx, orgId, deletedEntries, now, batchId)
 
     // Kept tasks become standalone (their project is gone).
     let relinkTasks: RelinkSnapshot['tasks'] = []
@@ -326,10 +359,14 @@ export async function cascadeDeleteProject(
       plan.clearedRefs.taskIds
     )
 
+    const relinked = { projects: [], tasks: relinkTasks, entries: relinkEntries }
+    await recordBatch(tx, batchId, orgId, relinked)
+
     return {
       deleted: { clients: [], projects: [projectId], tasks: deletedTasks, entries: deletedEntries },
       detached: { projects: 0, tasks: relinkTasks.length, entries: relinkEntries.length },
-      relinked: { projects: [], tasks: relinkTasks, entries: relinkEntries }
+      relinked,
+      batchId
     }
   })
 }
@@ -342,12 +379,20 @@ export async function deleteTaskWithDetach(
 ): Promise<CascadeDeleteResult> {
   return db.transaction(async tx => {
     await requireLive(tx, schema.tasks, orgId, taskId, 'Task')
-    await tx.update(schema.tasks).set({ deletedAt: new Date() }).where(eq(schema.tasks.id, taskId))
+    const batchId = randomUUID()
+    await tx
+      .update(schema.tasks)
+      .set({ deletedAt: new Date(), deleteBatchId: batchId })
+      .where(eq(schema.tasks.id, taskId))
+    // One task, but its detached entries are as unbounded as any cascade's.
     const relinkEntries = await detachEntries(tx, orgId, [], [], [taskId])
+    const relinked = { projects: [], tasks: [], entries: relinkEntries }
+    await recordBatch(tx, batchId, orgId, relinked)
     return {
       deleted: { clients: [], projects: [], tasks: [taskId], entries: [] },
       detached: { projects: 0, tasks: 0, entries: relinkEntries.length },
-      relinked: { projects: [], tasks: [], entries: relinkEntries }
+      relinked,
+      batchId
     }
   })
 }

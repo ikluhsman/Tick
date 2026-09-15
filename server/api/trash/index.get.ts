@@ -20,6 +20,16 @@ export default defineEventHandler(async (event): Promise<TrashDto> => {
     await tx.delete(schema.projects).where(expired(schema.projects))
     await tx.delete(schema.clients).where(expired(schema.clients))
     await tx.delete(schema.tags).where(expired(schema.tags))
+    // Undo records for cascades whose rows are past retention: nothing they
+    // name can be restored any more, so they go too rather than accumulate.
+    await tx
+      .delete(schema.deleteBatches)
+      .where(
+        and(
+          eq(schema.deleteBatches.orgId, user.orgId),
+          lt(schema.deleteBatches.createdAt, cutoff)
+        )
+      )
   })
 
   const toItem = (r: { id: string, name: string, deletedAt: Date | null }): TrashItemDto => {

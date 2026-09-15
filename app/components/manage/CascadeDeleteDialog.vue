@@ -111,11 +111,11 @@ const outcome = computed(() => {
 })
 
 async function undoRestore(result: CascadeDeleteResult) {
-  // relinked re-applies the refs the delete cleared (kept project → client, etc.)
-  await $fetch('/api/restore', {
-    method: 'POST',
-    body: { deleted: result.deleted, relinked: result.relinked }
-  })
+  // One id, not the operation's every uuid: the server un-trashes each row it
+  // stamped and re-applies the refs the delete cleared (kept project → client,
+  // etc.) from its own copy of the relink snapshot. Posting the snapshot back
+  // silently restored nothing past ~10k entries (ticktimer/Tick#11).
+  await $fetch('/api/restore', { method: 'POST', body: { batchId: result.batchId } })
   await catalog.fetchAll()
   await entriesStore.refresh().catch(() => {})
 }

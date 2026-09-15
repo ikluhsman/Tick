@@ -53,6 +53,27 @@ export const orgMembers = pgTable(
   ]
 )
 
+/**
+ * One cascade delete, so undo needs nothing but this row's id (Tick#11).
+ *
+ * The rows it trashed carry `delete_batch_id`; what it *detached* cannot be
+ * found that way (those rows are alive and their old parent is gone), so the
+ * relink snapshot — RelinkSnapshot in server/utils/cascade.ts — is stored here.
+ * Purged with the rest of the trash after 30 days.
+ */
+export const deleteBatches = pgTable(
+  'delete_batches',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    orgId: uuid('org_id')
+      .notNull()
+      .references(() => orgs.id, { onDelete: 'cascade' }),
+    relinked: jsonb('relinked').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  t => [index('delete_batches_org_id_idx').on(t.orgId)]
+)
+
 export const clients = pgTable(
   'clients',
   {
@@ -63,9 +84,16 @@ export const clients = pgTable(
     name: text('name').notNull(),
     rate: numeric('rate', { precision: 10, scale: 2, mode: 'number' }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    /** The cascade that trashed this row (deleteBatches.id) — undo finds it by this. */
+    deleteBatchId: uuid('delete_batch_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
-  t => [index('clients_org_id_idx').on(t.orgId)]
+  t => [
+    index('clients_org_id_idx').on(t.orgId),
+    index('clients_delete_batch_idx')
+      .on(t.deleteBatchId)
+      .where(sql`${t.deleteBatchId} is not null`)
+  ]
 )
 
 export const projects = pgTable(
@@ -83,11 +111,16 @@ export const projects = pgTable(
     visibility: text('visibility').notNull().default('private'),
     archived: boolean('archived').notNull().default(false),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    /** The cascade that trashed this row (deleteBatches.id). */
+    deleteBatchId: uuid('delete_batch_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
   t => [
     index('projects_org_id_idx').on(t.orgId),
     index('projects_client_id_idx').on(t.clientId),
+    index('projects_delete_batch_idx')
+      .on(t.deleteBatchId)
+      .where(sql`${t.deleteBatchId} is not null`),
     check('projects_visibility_check', sql`${t.visibility} in ('private', 'public')`)
   ]
 )
@@ -105,9 +138,17 @@ export const tasks = pgTable(
     estimateMinutes: integer('estimate_minutes'),
     done: boolean('done').notNull().default(false),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    /** The cascade that trashed this row (deleteBatches.id). */
+    deleteBatchId: uuid('delete_batch_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
-  t => [index('tasks_org_id_idx').on(t.orgId), index('tasks_project_id_idx').on(t.projectId)]
+  t => [
+    index('tasks_org_id_idx').on(t.orgId),
+    index('tasks_project_id_idx').on(t.projectId),
+    index('tasks_delete_batch_idx')
+      .on(t.deleteBatchId)
+      .where(sql`${t.deleteBatchId} is not null`)
+  ]
 )
 
 export const tags = pgTable(
@@ -143,10 +184,17 @@ export const timeEntries = pgTable(
     start: timestamp('start', { withTimezone: true }).notNull(),
     end: timestamp('end', { withTimezone: true }),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
+    /** The cascade that trashed this row (deleteBatches.id). */
+    deleteBatchId: uuid('delete_batch_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
   },
   t => [
     index('time_entries_user_start_idx').on(t.userId, t.start),
+    // Undo: every row one cascade trashed, however many that is (Tick#11).
+    // Partial, so it holds only rows currently in the trash from a cascade.
+    index('time_entries_delete_batch_idx')
+      .on(t.deleteBatchId)
+      .where(sql`${t.deleteBatchId} is not null`),
     index('time_entries_org_id_idx').on(t.orgId),
     index('time_entries_ref_id_idx').on(t.refId),
     // Org-wide date ranges over live, ended entries (reports, CSV/PDF export,
