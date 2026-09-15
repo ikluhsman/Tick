@@ -29,6 +29,7 @@ const GUTTER_PAD = 8
 const emit = defineEmits<{ create: [payload: { day: number, startMin: number, endMin: number }] }>()
 
 const calendar = useCalendarStore()
+const { timeZone } = useTimeZone()
 const timer = useTimerStore()
 const toast = useToast()
 const ui = useUiStore()
@@ -58,9 +59,9 @@ onBeforeUnmount(() => {
   teardownDrag()
 })
 
+/** Start of the day `t` falls on, in the user's zone (ticktimer/Tick#7). */
 function dayStartOf(t: number): number {
-  const d = new Date(t)
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  return startOfDayInstant(t, timeZone.value)
 }
 
 const cols = computed(() => `52px repeat(${calendar.dayCount}, minmax(0, 1fr))`)
@@ -108,7 +109,8 @@ watch(
 
 // ── Day headers ─────────────────────────────────────────────────────────────
 const headerDays = computed(() => calendar.days.map((dayTs) => {
-  const d = new Date(dayTs)
+  // Display-only shift: the column header names the user's day, not the host's.
+  const d = zonedDate(dayTs, timeZone.value)
   const totalSec = calendar.entries.reduce((acc, e) => {
     return dayStartOf(new Date(e.start).getTime()) === dayTs ? acc + e.durationSec : acc
   }, 0)
@@ -511,7 +513,7 @@ const dayBlocks = computed<Block[][]>(() => {
       billable: e.billable,
       name: e.name,
       sub: subFor(e),
-      title: `${e.name} · ${formatRange(e.start, e.end ?? e.start)} · ${formatDuration(e.durationSec)}`,
+      title: `${e.name} · ${formatRange(e.start, e.end ?? e.start, timeZone.value)} · ${formatDuration(e.durationSec)}`,
       dragging: false
     })
   }
@@ -526,7 +528,7 @@ const dayBlocks = computed<Block[][]>(() => {
       h: heightOf(d.startMin, d.endMin),
       billable: d.entry.billable,
       name: d.entry.name,
-      sub: formatRange(dayTs + d.startMin * 60_000, dayTs + d.endMin * 60_000),
+      sub: formatRange(dayTs + d.startMin * 60_000, dayTs + d.endMin * 60_000, timeZone.value),
       title: '',
       dragging: true
     })
@@ -543,7 +545,7 @@ const ghost = computed(() => {
     dayIdx: d.dayIdx,
     top: topOf(d.startMin),
     h: heightOf(d.startMin, d.endMin),
-    label: formatRange(dayTs + d.startMin * 60_000, dayTs + d.endMin * 60_000)
+    label: formatRange(dayTs + d.startMin * 60_000, dayTs + d.endMin * 60_000, timeZone.value)
   }
 })
 
@@ -563,7 +565,7 @@ const runningBlock = computed(() => {
     h: heightOf(startMin, endMin),
     billable: timer.timer.billable,
     name: timer.timer.name || 'Untitled entry',
-    sub: `${formatTime(startTs)} – now`
+    sub: `${formatTime(startTs, timeZone.value)} – now`
   }
 })
 

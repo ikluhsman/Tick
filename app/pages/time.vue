@@ -96,10 +96,15 @@ watch(
 
 const DAY_MS = 86_400_000
 
+// Days, week boundaries and day labels are all "where the user is", not where
+// the server is — otherwise SSR groups by the container's calendar and the
+// browser regroups on hydration (ticktimer/Tick#7).
+const { timeZone, zoned } = useTimeZone()
+
 // SSR-hydrated list: fetch on the server (state rides the Pinia payload, so
 // hydration re-fetches nothing) and again on every later client-side visit.
 await useAsyncData('time-entries', async () => {
-  const now = new Date()
+  const now = zoned(new Date())
   const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30)
   const to = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
   await entriesStore.fetchRange(from.toISOString(), to.toISOString())
@@ -108,7 +113,7 @@ await useAsyncData('time-entries', async () => {
 
 // ── Header subline: "{week total} this week · {billable} billable · {$} unbilled"
 const weekSummary = computed(() => {
-  const now = new Date()
+  const now = zoned(new Date())
   const dow = (now.getDay() + 6) % 7 // Mon = 0
   const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow).getTime()
   const weekEnd = weekStart + 7 * DAY_MS
@@ -116,7 +121,8 @@ const weekSummary = computed(() => {
   let billableSec = 0
   let unbilled = 0
   for (const e of entriesStore.entries) {
-    const t = new Date(e.start).getTime()
+    // Both sides of the comparison are zoned, so the week is the user's week.
+    const t = zoned(e.start).getTime()
     if (t < weekStart || t >= weekEnd) continue
     totalSec += e.durationSec
     if (e.billable) {
@@ -143,14 +149,14 @@ const groups = computed<Group[]>(() => {
 
   if (entriesStore.groupBy === 'day') {
     for (const e of list) {
-      const k = new Date(e.start).toDateString()
+      const k = dayKeyIn(e.start, timeZone.value)
       if (!map.has(k)) map.set(k, [])
       map.get(k)!.push(e)
     }
     return [...map.values()].map(es => ({
-      key: new Date(es[0]!.start).toDateString(),
-      label: formatDayLabel(es[0]!.start),
-      sub: formatDaySub(es[0]!.start),
+      key: dayKeyIn(es[0]!.start, timeZone.value),
+      label: formatDayLabel(es[0]!.start, new Date(), timeZone.value),
+      sub: formatDaySub(es[0]!.start, timeZone.value),
       totalSec: es.reduce((a, e) => a + e.durationSec, 0),
       entries: es
     }))

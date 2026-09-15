@@ -13,18 +13,23 @@ const { cards, hydrateCards, setCard } = useDashboardCards()
 onMounted(hydrateCards)
 
 // ── Greeting ───────────────────────────────────────────────────────────────
+// "Good morning" and today's date are wall-clock facts: read them in the
+// browser's zone, or SSR greets from the container's (ticktimer/Tick#7).
+const { timeZone, zoned } = useTimeZone()
+
 const firstName = computed(() => {
   const name = (user.value as SessionUser | null)?.name ?? ''
   return name.split(' ')[0] || 'there'
 })
 
 const greeting = computed(() => {
-  const h = new Date().getHours()
+  const h = zoned(new Date()).getHours()
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'
 })
 
 const dateLine = computed(() =>
-  new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  zonedDate(new Date(), timeZone.value)
+    .toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 )
 
 // ── Customize menu (show/hide cards) ───────────────────────────────────────

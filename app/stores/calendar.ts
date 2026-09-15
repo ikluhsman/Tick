@@ -5,26 +5,31 @@
 
 export type CalendarView = 'week' | 'day'
 
-/** Local start-of-day (ms) — day arithmetic via the Date ctor stays DST-safe. */
-function dayStart(d: Date): number {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-}
-
-function addDays(t: number, n: number): number {
-  const d = new Date(t)
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n).getTime()
-}
-
-/** Monday 00:00 of the week containing t. */
-function mondayOf(t: number): number {
-  const d = new Date(t)
-  return addDays(dayStart(d), -((d.getDay() + 6) % 7))
-}
-
 export const useCalendarStore = defineStore('calendar', () => {
   // SSR-safe fetch: forwards the request's cookies during server render;
   // plain $fetch on the client.
   const requestFetch = useRequestFetch()
+
+  // Every boundary below is a day in the *user's* zone, resolved to a real
+  // instant. Using the runtime's own midnights made the server render a
+  // different week from the browser (ticktimer/Tick#7, and the empty grid in
+  // #29); these agree on both sides because both read the same zone.
+  const { timeZone } = useTimeZone()
+
+  /** Start-of-day (ms) of the day `d` falls on, in the user's zone. */
+  function dayStart(d: Date | number): number {
+    return startOfDayInstant(d, timeZone.value)
+  }
+
+  /** `n` calendar days on — 25 hours across a DST end, not a flat 24. */
+  function addDays(t: number, n: number): number {
+    return addDaysInstant(t, timeZone.value, n)
+  }
+
+  /** Monday 00:00 of the week containing t. */
+  function mondayOf(t: number): number {
+    return addDays(t, -((zonedDate(t, timeZone.value).getDay() + 6) % 7))
+  }
 
   const view = ref<CalendarView>('week')
   /** Start-of-day (ms) the visible range anchors on. */
@@ -55,24 +60,23 @@ export const useCalendarStore = defineStore('calendar', () => {
   }
 
   /**
-   * Re-derive the anchor from the browser's clock, returning true when it moved.
+   * Re-anchor when the browser's timezone arrives.
    *
-   * `anchor` is a *local* start-of-day, but during SSR "local" is the server's
-   * timezone — UTC in the container — and the value rides the Pinia payload
-   * into the browser. `days` normalises it back to browser midnights, so what
-   * survives is the calendar *day* it lands on: a browser behind the server
-   * reads the server's midnight as the previous day, and the grid shows that
-   * day (or, when the server's day is a Monday, the whole previous week) with
-   * none of today's entries on it — until a nav button re-derives the anchor
-   * (ticktimer/Tick#29). On a page load the anchor is always "today" by
-   * construction, so recomputing it here is exact.
+   * On a cold load there is no timezone cookie yet, so SSR anchors on the
+   * server's midnight and the client hydrates with that same value (no
+   * mismatch). The plugin then supplies the browser's zone — at which point the
+   * server's midnight reads as a different calendar day, and the grid would show
+   * the day the server guessed: yesterday for anyone west of it, and a whole
+   * week out when the server's day is a Monday (ticktimer/Tick#29, #7).
+   *
+   * The anchor is always "today" by construction at that point — the flip lands
+   * in the same tick as hydration, before the user can page anywhere — so
+   * recomputing it from the clock is exact. It also does the right thing later
+   * for a laptop that changes zones mid-session.
    */
-  function localizeAnchor() {
-    const local = dayStart(new Date())
-    if (anchor.value === local) return false
-    anchor.value = local
-    return true
-  }
+  watch(timeZone, () => {
+    anchor.value = dayStart(new Date())
+  })
 
   function setView(v: CalendarView) {
     view.value = v
@@ -143,7 +147,6 @@ export const useCalendarStore = defineStore('calendar', () => {
     prev,
     next,
     today,
-    localizeAnchor,
     setView,
     fetchRange,
     create,
