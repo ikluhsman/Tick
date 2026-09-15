@@ -43,6 +43,13 @@
       "when": 1789316787075,
       "tag": "0005_worried_xorn",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789480744575,
+      "tag": "0006_bent_black_queen",
+      "breakpoints": true
     }
   ]
 }

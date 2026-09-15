@@ -18,8 +18,12 @@ export interface ProjectPayload {
 
 /**
  * DeleteResult extension returned by the cascade delete endpoints (see
- * server/utils/cascade.ts): the references each detach op cleared, so undo
- * can POST them back via /api/restore. Frozen shared DTO is untouched.
+ * server/utils/cascade.ts). Frozen shared DTO is untouched.
+ *
+ * `batchId` is what undo posts to /api/restore: the whole operation is recorded
+ * server-side, so a cascade over a busy client no longer has to fit its every
+ * uuid back into a 1MB request (ticktimer/Tick#11). `relinked` stays for the
+ * counts the dialog reads; the server holds its own copy.
  */
 export interface CascadeDeleteResult extends DeleteResult {
   relinked: {
@@ -27,6 +31,8 @@ export interface CascadeDeleteResult extends DeleteResult {
     tasks: { id: string, projectId: string }[]
     entries: { id: string, refType: 'client' | 'project' | 'task', refId: string }[]
   }
+  /** delete_batches.id — POST { batchId } to /api/restore to undo the lot. */
+  batchId: string
 }
 
 export interface TaskPayload {

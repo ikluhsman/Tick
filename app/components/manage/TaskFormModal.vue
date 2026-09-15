@@ -128,10 +128,9 @@ async function remove() {
         color: 'primary',
         variant: 'outline',
         onClick: async () => {
-          await $fetch('/api/restore', {
-            method: 'POST',
-            body: { deleted: result.deleted, relinked: result.relinked }
-          })
+          // One batch id — a task's detached entries are as unbounded as any
+          // cascade's, and the snapshot form caps out at 10k (Tick#11).
+          await $fetch('/api/restore', { method: 'POST', body: { batchId: result.batchId } })
           await catalog.fetchAll()
           await useEntriesStore().refresh().catch(() => {})
         }
