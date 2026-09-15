@@ -57,9 +57,9 @@ generated migration will not reach anyone's server. Generate it.
 
 ## 2. Tests
 
-Tick has four suites. Two of them need a **dedicated test database** called
-`tick_test` — never your dev database, and the suites enforce it
-(`test/unit/cascade.spec.ts` refuses any URL not ending in `/tick_test`).
+Tick has four suites. `npm test` needs nothing but the checkout. The other two
+that run code need a **dedicated test database** called `tick_test` — never your
+dev database; they hard-code that name rather than take it from your env.
 
 ```sh
 # one-time: create the test database and give it the schema + demo seed
@@ -72,13 +72,12 @@ The suites hard-code
 `postgresql://tick:tick_dev_password@localhost:5432/tick_test`
 (`test/helpers/server.ts`, `test/e2e/helpers/fixtures.ts`), so a local Postgres
 with the `tick` / `tick_dev_password` credentials is the path of least
-resistance. `E2E_DATABASE_URL` and `TEST_DATABASE_URL` override it for the e2e
-and cascade suites respectively.
+resistance. `E2E_DATABASE_URL` overrides it for the e2e suite.
 
 | Suite | Command | Needs a DB? | Notes |
 | --- | --- | --- | --- |
 | Types | `npm run typecheck` | no | `nuxt typecheck` (vue-tsc). There is no linter in this repo. |
-| Unit | `npm test` | yes (schema only) | Vitest, `test/**/*.spec.ts`. Mostly pure; `cascade.spec.ts` drives real transactions. |
+| Unit | `npm test` | no | Vitest, `test/**/*.spec.ts`. Pure modules only — no database, no Nuxt runtime, no network. Runs on a fresh clone in under a second. |
 | Integration | `npx vitest run --config vitest.integration.config.ts` | yes (schema + seed) | Builds the app and boots Nitro on 3801–3805 (3804 belongs to e2e), drives it over HTTP. First run is slow — it builds. |
 | E2E | `npm run test:e2e` | yes (schema + seed) | Playwright against a production build served on 3804. |
 
@@ -117,7 +116,7 @@ wired, selector conventions).
 request and every push to `main` (and on `v*` tags). Four jobs, all required:
 
 1. **Typecheck** — `npm run typecheck`
-2. **Unit tests** — `npm test`, against a `postgres:17` service container
+2. **Unit tests** — `npm test`, no services
 3. **Integration tests** — `npx vitest run --config vitest.integration.config.ts`
 4. **E2E tests** — `npm run test:e2e`, Chromium installed via
    `playwright install`, the app built once up front

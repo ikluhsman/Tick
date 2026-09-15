@@ -26,11 +26,11 @@ concurrency:
 env:
   # Matches the Dockerfile (node:22-alpine) and the documented "Node 22+".
   NODE_VERSION: '22'
-  # Every suite hard-codes this connection string (test/helpers/server.ts,
-  # test/e2e/helpers/fixtures.ts, test/unit/cascade.spec.ts — the last one
-  # *refuses* to run against a database not named tick_test). The postgres
-  # service below is configured to match it exactly: user tick, password
+  # Every suite that needs a database hard-codes this connection string
+  # (test/helpers/server.ts, test/e2e/helpers/fixtures.ts). The postgres
+  # services below are configured to match it exactly: user tick, password
   # tick_dev_password, database tick_test, published on localhost:5432.
+  # The unit job has no service — it never touches a database.
   NUXT_DATABASE_URL: postgresql://tick:tick_dev_password@localhost:5432/tick_test
   # Not a secret: a throwaway 32+ char value so session sealing works in CI.
   NUXT_SESSION_PASSWORD: tick-ci-session-password-not-a-secret-0123456789
@@ -63,30 +63,13 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-  # 2 — unit tests (`vitest run`, test/**/*.spec.ts).
-  # Most of these specs are pure, but test/unit/cascade.spec.ts exercises the
-  # Drizzle transactions in server/utils/cascade.ts against a real database
-  # (cascade.ts has no pure exports), so this job needs Postgres and a pushed
-  # schema. It does NOT need the demo seed: that spec creates and drops its own
-  # org + user per test.
+  # 2 — unit tests (`vitest run`, test/**/*.spec.ts). Pure modules only: no
+  # services, no database, no build. Anything that needs Postgres lives in the
+  # integration job below (ticktimer/Tick#13).
   unit:
     name: Unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: tick
-          POSTGRES_PASSWORD: tick_dev_password
-          POSTGRES_DB: tick_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U tick -d tick_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
     steps:
       - uses: actions/checkout@v7
 
@@ -97,9 +80,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Push schema into tick_test
-        run: npm run db:push -- --force
 
       - name: Unit tests
         run: npm test

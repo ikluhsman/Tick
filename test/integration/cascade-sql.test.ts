@@ -1,20 +1,23 @@
-// Rule 3 — the downward cascade (Projects ⇒ Tasks ⇒ Entries) and the relink
-// snapshot that makes undo lossless.
+// Rule 3 — the SQL half of the downward cascade (Projects ⇒ Tasks ⇒ Entries)
+// and the relink snapshot that makes undo lossless.
 //
-// server/utils/cascade.ts exports no pure function: every export is a Drizzle
-// transaction, and the behaviour under test IS the SQL (which rows soft-delete,
-// which get detached, what the snapshot remembers). Mocking Drizzle would test
-// the mock, so this spec runs against the dedicated TEST database instead —
-// never the dev one (see the assertion in `beforeAll`).
+// Every export of server/utils/cascade.ts is a Drizzle transaction, and what is
+// under test here IS the SQL: which rows soft-delete, which get detached, what
+// the snapshot remembers. Mocking Drizzle would test the mock, so this file
+// calls the real functions against the TEST database — which is why it lives in
+// the integration suite and not in `npm test` (ticktimer/Tick#13). The decision
+// it applies is unit-tested on its own in test/unit/cascade-plan.spec.ts.
+//
+// This is the one integration file that drives the utils directly instead of
+// going over HTTP; test/integration/cascade.test.ts covers the same rules
+// through the API, including restore.
 //
 // Isolation: every test creates its own org + user, so no test can see another
 // test's rows and file order is irrelevant. Nothing asserts on wall-clock time;
 // `deleted_at` is only ever checked for null / not-null.
 import { randomUUID } from 'node:crypto'
-import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { and, eq, inArray, isNull, schema } from '../../server/utils/drizzle'
+import { and, eq, inArray, isNull } from '../../server/utils/drizzle'
 import type { DB } from '../../server/utils/drizzle'
 import {
   cascadeDeleteClient,
@@ -24,28 +27,17 @@ import {
   projectCascadeCounts
 } from '../../server/utils/cascade'
 import type { CascadeDeleteResult } from '../../server/utils/cascade'
+import { closeTestDb, schema, testDb } from '../helpers/server'
 
-const TEST_DB_URL
-  = process.env.TEST_DATABASE_URL
-    ?? 'postgresql://tick:tick_dev_password@localhost:5432/tick_test'
-
-let sql: ReturnType<typeof postgres>
 let db: DB
 const createdOrgs: string[] = []
 const createdUsers: string[] = []
 
 beforeAll(() => {
-  // Hard stop: this spec writes, so it must never point at the dev database.
-  // Accepts `tick_test` itself and per-worktree variants like `tick_test_i16`
-  // (parallel agents each get their own suffixed database).
-  if (!/\/tick_test(_\w+)?(\?|$)/.test(TEST_DB_URL)) {
-    throw new Error(`Refusing to run cascade tests against ${TEST_DB_URL} — expected …/tick_test or …/tick_test_<suffix>`)
-  }
   // `createError` is a Nitro auto-import; cascade.ts calls it for 404s.
   vi.stubGlobal('createError', (opts: { statusCode?: number, message?: string }) =>
     Object.assign(new Error(opts.message ?? 'Error'), opts))
-  sql = postgres(TEST_DB_URL, { max: 4 })
-  db = drizzle(sql, { schema })
+  db = testDb()
 })
 
 afterAll(async () => {
@@ -53,7 +45,7 @@ afterAll(async () => {
   if (createdUsers.length) {
     await db.delete(schema.users).where(inArray(schema.users.id, createdUsers))
   }
-  await sql.end({ timeout: 5 })
+  await closeTestDb()
 })
 
 /* ------------------------------------------------------------------ fixture */
