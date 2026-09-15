@@ -9,7 +9,7 @@
  *  - The build lives in `.nuxt/it/` (gitignored) so it never overwrites the
  *    `.nuxt/` + `.output/` the running dev server owns.
  *  - Ports are explicit per suite (3801 shared, 3802 rate-limit, 3803 demo,
- *    3805 session-cookie; 3804 belongs to e2e).
+ *    3805 session-cookie, 3806 boot probes; 3804 belongs to e2e).
  */
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
@@ -33,6 +33,8 @@ export const PORT_MAIN = 3801
 export const PORT_RATE_LIMIT = 3802
 export const PORT_DEMO = 3803
 export const PORT_SESSION_COOKIE = 3805
+/** Boot-behaviour probes (migrate-boot.test.ts) — servers expected to die. */
+export const PORT_MIGRATE = 3806
 
 /** The long-lived server booted by the vitest globalSetup. */
 export const MAIN_URL = `http://127.0.0.1:${PORT_MAIN}`
